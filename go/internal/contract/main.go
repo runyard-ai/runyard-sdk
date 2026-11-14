@@ -1,13 +1,14 @@
-// Command contract writes the API's document as the SDKs are generated from
-// it: without the operations marked x-sdk-excluded, and without what only
-// they used.
+// Command contract writes the API's public document — what runyard promises
+// to programs, which the SDKs are generated from and published with: the
+// operations marked x-public, and what they use, and nothing else.
 //
-//	go run ./internal/contract ../../openapi/agents.yaml agents.yaml
+//	go run ./internal/contract ../../openapi/agents.yaml ../../openapi/agents.public.yaml
 //
-// The operations left out are those no program with a key can call through a
-// generated client: the console's own routes, a browser's redirects, a
-// WebSocket. The server, its UIs and its reference keep them; the SDK's
-// published openapi/agents.yaml is the whole document.
+// Every operation not marked is runyard's own — the console's routes, a
+// browser's redirects, a WebSocket, anything not yet promised — and is left
+// out with whatever only it used. The server, its UIs and its reference keep
+// the whole document. The marks are kept, so the public document says what
+// it is, and filtering it again changes nothing.
 //
 // The document is rewritten as yaml.v3's nodes, never as values, so what is
 // kept is kept as it was written: its order, and each scalar's spelling.
@@ -24,8 +25,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// excluded is the field that leaves an operation out, with why.
-const excluded = "x-sdk-excluded"
+// public is the field that puts an operation in: `x-public: true`.
+const public = "x-public"
 
 // methods are a path item's operations; anything else in one (parameters,
 // servers, a summary) is the item's own.
@@ -47,7 +48,7 @@ func run(args []string, stderr io.Writer) int {
 
 func write(args []string) error {
 	if len(args) != 2 {
-		return errors.New("usage: contract <agents.yaml> <the SDKs' agents.yaml>")
+		return errors.New("usage: contract <agents.yaml> <agents.public.yaml>")
 	}
 	src, err := os.ReadFile(args[0]) //nolint:gosec // the document make generate names, as anybody running it does
 	if err != nil {
@@ -60,8 +61,8 @@ func write(args []string) error {
 	return os.WriteFile(args[1], out, 0o644) //nolint:gosec // a document, read by anybody
 }
 
-// filter is src without the operations marked excluded, the paths left with
-// none, and the components nothing kept refers to.
+// filter is src with only the operations marked public, without the paths
+// left with none, and without the components nothing kept refers to.
 func filter(src []byte) ([]byte, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(src, &doc); err != nil {
@@ -80,7 +81,7 @@ func filter(src []byte) ([]byte, error) {
 		if item.Kind != yaml.MappingNode {
 			return nil, fmt.Errorf("the path %s is not a mapping", paths.Content[i].Value)
 		}
-		if err := dropExcluded(paths.Content[i].Value, item); err != nil {
+		if err := dropPrivate(paths.Content[i].Value, item); err != nil {
 			return nil, err
 		}
 		if !hasOperation(item) {
@@ -103,21 +104,22 @@ func filter(src []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// dropExcluded takes the path item's operations marked excluded out of it.
-// A mark is a reason: one that says nothing is refused, so that what is left
-// out is never left out by an accident of editing.
-func dropExcluded(path string, item *yaml.Node) error {
+// dropPrivate takes the path item's operations not marked public out of it.
+// A mark is `true` and nothing else: one that says anything else — false, a
+// word, a map — is refused, so that what is promised is never promised, nor
+// withheld, by an accident of editing.
+func dropPrivate(path string, item *yaml.Node) error {
 	for i := 0; i < len(item.Content); i += 2 {
 		method := item.Content[i].Value
 		if !methods[method] {
 			continue
 		}
-		why := value(item.Content[i+1], excluded)
-		if why == nil {
+		mark := value(item.Content[i+1], public)
+		if mark != nil {
+			if mark.Kind != yaml.ScalarNode || mark.Value != "true" {
+				return fmt.Errorf("%s %s: %s is true or not there", strings.ToUpper(method), path, public)
+			}
 			continue
-		}
-		if why.Kind != yaml.ScalarNode || strings.TrimSpace(why.Value) == "" {
-			return fmt.Errorf("%s %s: %s says no reason", strings.ToUpper(method), path, excluded)
 		}
 		item.Content = append(item.Content[:i], item.Content[i+2:]...)
 		i -= 2

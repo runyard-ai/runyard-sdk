@@ -8,12 +8,16 @@
 # do not choose, and oapi-codegen — ours — does not support 3.1. A dialect that
 # costs a caller a working client buys nothing this document needs.
 #
-# `x-sdk-excluded: <why>` on an operation leaves it out of the SDKs
-# (sdk/go/internal/contract), and only out of them: the server, the UIs and
-# this reference keep it. It marks what no program with a key can call
-# through a generated client — the console's own routes, a browser's
-# redirects, a WebSocket — and openapi/openapi_test.go holds every operation
-# that is one of those to carrying it.
+# What is public is said, operation by operation: `x-public: true`. A public
+# operation is one runyard promises to programs — in the SDKs, and in the
+# public document they are made from and published with
+# (openapi/agents.public.yaml, made from this one by
+# sdk/go/internal/contract). Every other operation is runyard's own: its
+# console's routes, a browser's redirects, a WebSocket, anything not yet
+# decided. The server, the UIs and the reference here serve them all.
+# Private unless said, so that a new route is promised to nobody by
+# accident; and openapi/openapi_test.go refuses a public one no program with
+# a key can call.
 openapi: 3.0.3
 info:
   title: runyard-agents
@@ -207,6 +211,7 @@ paths:
   /healthz:
     get:
       operationId: health
+      x-public: true
       tags: [Meta]
       summary: Whether the server is up
       security: []
@@ -219,6 +224,7 @@ paths:
   /v1/openapi.yaml:
     get:
       operationId: getContract
+      x-public: true
       tags: [Meta]
       summary: This document, as the server serves it
       security: []
@@ -231,6 +237,7 @@ paths:
   /v1/info:
     get:
       operationId: getInfo
+      x-public: true
       tags: [Meta]
       summary: The workspace, and the server's defaults and limits
       responses:
@@ -243,6 +250,7 @@ paths:
   /v1/self:
     get:
       operationId: getSelf
+      x-public: true
       tags: [Meta]
       summary: The key, person, session or platform calling
       description: |
@@ -262,6 +270,7 @@ paths:
   /v1/self/notices:
     get:
       operationId: listNotices
+      x-public: true
       tags: [Meta]
       summary: What the caller should know and act on
       description: |
@@ -278,6 +287,7 @@ paths:
   /v1/self/preferences:
     get:
       operationId: getPreferences
+      x-public: true
       tags: [Meta]
       summary: The person's own choices
       description: |
@@ -297,6 +307,7 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
     put:
       operationId: putPreferences
+      x-public: true
       tags: [Meta]
       summary: Change the person's own choices
       description: Replaces them all, as `PUT /v1/settings` does the workspace's.
@@ -317,6 +328,7 @@ paths:
   /v1/self/directory:
     get:
       operationId: getSelfDirectory
+      x-public: true
       tags: [Meta]
       summary: The orgs and workspaces the caller's person may reach
       description: |
@@ -340,6 +352,7 @@ paths:
   /v1/self/picture:
     get:
       operationId: getSelfPicture
+      x-public: true
       tags: [Meta]
       summary: The person's profile picture
       description: |
@@ -369,6 +382,7 @@ paths:
   /v1/signin/confirm:
     post:
       operationId: confirmSignIn
+      x-public: true
       tags: [Meta]
       summary: Confirm it is you, with your password again
       description: |
@@ -399,6 +413,7 @@ paths:
   /v1/keys:
     get:
       operationId: listKeys
+      x-public: true
       tags: [Keys]
       summary: The keys of the workspace
       description: Every key, for an admin; a member's own, for a member.
@@ -416,6 +431,7 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
     post:
       operationId: createKey
+      x-public: true
       tags: [Keys]
       summary: Mint a key
       description: |
@@ -440,6 +456,7 @@ paths:
   /v1/keys/authorizations:
     post:
       operationId: authorizeKey
+      x-public: true
       tags: [Keys]
       summary: Approve a key for a program that asked for one
       description: |
@@ -518,6 +535,7 @@ paths:
   /v1/keys/authorizations/redeem:
     post:
       operationId: redeemKeyAuthorization
+      x-public: true
       tags: [Keys]
       security: []
       summary: Trade an approval's code for its key
@@ -566,6 +584,7 @@ paths:
       - $ref: "#/components/parameters/KeyId"
     get:
       operationId: getKey
+      x-public: true
       tags: [Keys]
       summary: A key
       responses:
@@ -579,6 +598,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     patch:
       operationId: changeKey
+      x-public: true
       tags: [Keys]
       summary: Change what a key may do
       description: |
@@ -608,6 +628,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     delete:
       operationId: revokeKey
+      x-public: true
       tags: [Keys]
       summary: Revoke a key, at once
       description: |
@@ -625,6 +646,7 @@ paths:
   /v1/connect/apps:
     get:
       operationId: listConnectApps
+      x-public: true
       tags: [Connect]
       summary: The applications that may connect to the workspace
       description: |
@@ -642,6 +664,7 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
     post:
       operationId: registerConnectApp
+      x-public: true
       tags: [Connect]
       summary: Register an application
       description: |
@@ -675,6 +698,7 @@ paths:
       - $ref: "#/components/parameters/AppId"
     delete:
       operationId: removeConnectApp
+      x-public: true
       tags: [Connect]
       summary: Remove a registered application, and its links
       description: |
@@ -696,6 +720,7 @@ paths:
   /v1/connect/consent:
     get:
       operationId: getConnectConsent
+      x-public: true
       tags: [Connect]
       summary: What the consent page asks the person signed in
       description: |
@@ -725,6 +750,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     post:
       operationId: decideConnectConsent
+      x-public: true
       tags: [Connect]
       summary: Approve or deny an application
       description: |
@@ -774,6 +800,7 @@ paths:
   /v1/connect/token:
     post:
       operationId: connectToken
+      x-public: true
       tags: [Connect]
       security:
         - appClient: []
@@ -843,6 +870,7 @@ paths:
   /v1/connect/links:
     get:
       operationId: listConnectLinks
+      x-public: true
       tags: [Connect]
       summary: The applications connected to the workspace
       description: |
@@ -864,6 +892,7 @@ paths:
       - $ref: "#/components/parameters/LinkId"
     delete:
       operationId: revokeConnectLink
+      x-public: true
       tags: [Connect]
       summary: Disconnect an application
       description: The link's key is revoked, at once, and the link goes with it. An admin's, with `keys.admin`.
@@ -876,6 +905,7 @@ paths:
   /v1/users:
     get:
       operationId: listUsers
+      x-public: true
       tags: [People]
       summary: The people of the workspace
       description: |
@@ -901,6 +931,7 @@ paths:
       - $ref: "#/components/parameters/UserEmail"
     put:
       operationId: addUser
+      x-public: true
       tags: [People]
       summary: Put a person in the workspace
       description: |
@@ -927,6 +958,7 @@ paths:
         "409": {$ref: "#/components/responses/Conflict"}
     patch:
       operationId: updateUser
+      x-public: true
       tags: [People]
       summary: Make a person an admin of the workspace, or a member
       description: |
@@ -951,6 +983,7 @@ paths:
         "409": {$ref: "#/components/responses/Conflict"}
     delete:
       operationId: deleteUser
+      x-public: true
       tags: [People]
       summary: Remove a person from the workspace, and what is theirs in it, at once
       description: |
@@ -985,6 +1018,7 @@ paths:
   /v1/invitations:
     get:
       operationId: listInvitations
+      x-public: true
       tags: [People]
       summary: The invitations nobody has used yet
       description: Never their codes, which only their making shows.
@@ -1004,6 +1038,7 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
     post:
       operationId: createInvitation
+      x-public: true
       tags: [People]
       summary: Invite somebody
       description: |
@@ -1036,6 +1071,7 @@ paths:
         schema: {type: string, pattern: "^[a-z0-9]{12}$"}
     delete:
       operationId: revokeInvitation
+      x-public: true
       tags: [People]
       summary: Revoke an invitation, at once
       responses:
@@ -1047,6 +1083,7 @@ paths:
   /v1/harnesses:
     get:
       operationId: listHarnesses
+      x-public: true
       tags: [Models]
       summary: The harnesses a session may run, and their models
       description: |
@@ -1073,6 +1110,7 @@ paths:
   /v1/providers:
     get:
       operationId: listProviders
+      x-public: true
       tags: [Models]
       summary: The providers, and whether each has a working credential
       description: |
@@ -1111,6 +1149,7 @@ paths:
       - $ref: "#/components/parameters/ProviderName"
     put:
       operationId: putProvider
+      x-public: true
       tags: [Models]
       summary: Make a provider of an API key, or replace one with it
       description: |
@@ -1147,6 +1186,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     patch:
       operationId: updateProvider
+      x-public: true
       tags: [Models]
       summary: Retitle a provider, say who may use it, or make it the default
       description: |
@@ -1172,6 +1212,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     delete:
       operationId: deleteProvider
+      x-public: true
       tags: [Models]
       summary: Remove a provider, and forget its credential
       description: |
@@ -1189,6 +1230,7 @@ paths:
       - $ref: "#/components/parameters/ProviderName"
     post:
       operationId: startProviderSignIn
+      x-public: true
       tags: [Models]
       summary: Start making a provider of a subscription, or replacing one with it
       description: |
@@ -1238,6 +1280,7 @@ paths:
         schema: {type: string}
     post:
       operationId: finishProviderSignIn
+      x-public: true
       tags: [Models]
       summary: Finish signing a subscription in
       description: |
@@ -1270,6 +1313,7 @@ paths:
       - $ref: "#/components/parameters/ProviderName"
     post:
       operationId: refreshProviderModels
+      x-public: true
       tags: [Models]
       summary: Read a provider's models again, now
       description: |
@@ -1289,6 +1333,7 @@ paths:
   /v1/usage:
     get:
       operationId: getUsage
+      x-public: true
       tags: [Usage]
       summary: What the sessions used, by hour or by day
       description: |
@@ -1337,6 +1382,7 @@ paths:
   /v1/costs:
     get:
       operationId: getWorkspaceCosts
+      x-public: true
       tags: [Costs]
       summary: What the workspace's infrastructure has cost
       description: |
@@ -1372,6 +1418,7 @@ paths:
   /v1/quota:
     get:
       operationId: getWorkspaceQuota
+      x-public: true
       tags: [Costs]
       summary: The workspace's quota, and what is held of it
       description: |
@@ -1406,6 +1453,7 @@ paths:
   /v1/available-runners:
     get:
       operationId: getAvailableRunners
+      x-public: true
       tags: [Sessions]
       summary: Whether a new session's sandbox has somewhere to run
       description: |
@@ -1429,6 +1477,7 @@ paths:
   /v1/settings:
     get:
       operationId: getWorkspaceSettings
+      x-public: true
       tags: [Meta]
       summary: The workspace's settings
       description: |
@@ -1446,6 +1495,7 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
     put:
       operationId: putWorkspaceSettings
+      x-public: true
       tags: [Meta]
       summary: Change the workspace's settings
       description: |
@@ -1470,6 +1520,7 @@ paths:
   /v1/profiles:
     get:
       operationId: listProfiles
+      x-public: true
       tags: [Profiles]
       summary: Every profile of the account
       parameters:
@@ -1489,6 +1540,7 @@ paths:
       - $ref: "#/components/parameters/ProfileId"
     put:
       operationId: putProfile
+      x-public: true
       tags: [Profiles]
       summary: Create a profile, or make a new version of it
       description: |
@@ -1521,6 +1573,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     get:
       operationId: getProfile
+      x-public: true
       tags: [Profiles]
       summary: A profile, at its latest version
       responses:
@@ -1533,6 +1586,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     delete:
       operationId: deleteProfile
+      x-public: true
       tags: [Profiles]
       summary: Delete a profile
       description: |
@@ -1550,6 +1604,7 @@ paths:
       - $ref: "#/components/parameters/ProfileId"
     put:
       operationId: putProfileUsers
+      x-public: true
       tags: [Profiles]
       summary: "Say who besides its owner may use a profile: who may start sessions from it"
       description: |
@@ -1574,6 +1629,7 @@ paths:
       - $ref: "#/components/parameters/ProfileId"
     get:
       operationId: listProfileVersions
+      x-public: true
       tags: [Profiles]
       summary: Every version of a profile, newest first
       description: |
@@ -1597,6 +1653,7 @@ paths:
         schema: {type: integer, minimum: 1}
     post:
       operationId: restoreProfileVersion
+      x-public: true
       tags: [Profiles]
       summary: Go back to a version
       description: |
@@ -1618,6 +1675,7 @@ paths:
       - $ref: "#/components/parameters/ProfileId"
     put:
       operationId: putProfileRecipe
+      x-public: true
       tags: [Profiles]
       summary: Change the recipe its sessions' sandboxes boot
       description: |
@@ -1653,6 +1711,7 @@ paths:
         schema: {type: integer, minimum: 1}
     get:
       operationId: getProfileVersion
+      x-public: true
       tags: [Profiles]
       summary: A profile as it was at one version
       responses:
@@ -1667,6 +1726,7 @@ paths:
   /v1/images:
     get:
       operationId: listImages
+      x-public: true
       tags: [Images]
       summary: The images the caller's profiles, sessions and deployments use
       description: |
@@ -1687,6 +1747,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     post:
       operationId: buildImage
+      x-public: true
       tags: [Images]
       summary: The image a recipe makes, built if it is not yet
       description: |
@@ -1740,6 +1801,7 @@ paths:
       - $ref: "#/components/parameters/ImageId"
     get:
       operationId: getImage
+      x-public: true
       tags: [Images]
       summary: An image, and where its build is
       responses:
@@ -1756,6 +1818,7 @@ paths:
       - $ref: "#/components/parameters/ImageId"
     put:
       operationId: putImageName
+      x-public: true
       tags: [Images]
       summary: Name an image, and say what it is for
       description: |
@@ -1783,6 +1846,7 @@ paths:
       - $ref: "#/components/parameters/ImageId"
     get:
       operationId: readImageLog
+      x-public: true
       tags: [Images]
       summary: What its build printed, from a byte offset
       description: |
@@ -1808,6 +1872,7 @@ paths:
   /v1/secrets:
     get:
       operationId: listSecrets
+      x-public: true
       tags: [Secrets]
       summary: The caller's person's secrets, by name
       description: |
@@ -1828,6 +1893,7 @@ paths:
       - $ref: "#/components/parameters/SecretName"
     put:
       operationId: putSecret
+      x-public: true
       tags: [Secrets]
       summary: Set one of the caller's secrets, or replace its value
       description: |
@@ -1856,6 +1922,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     delete:
       operationId: deleteSecret
+      x-public: true
       tags: [Secrets]
       summary: Forget one of the caller's secrets
       description: |
@@ -1871,6 +1938,7 @@ paths:
   /v1/deployment-approvals:
     get:
       operationId: listDeploymentApprovals
+      x-public: true
       tags: [Deployments]
       summary: Deployments the caller's sessions asked for, waiting or decided
       description: |
@@ -1887,6 +1955,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     post:
       operationId: requestDeployment
+      x-public: true
       tags: [Deployments]
       summary: Ask the caller's person to make a deployment
       description: |
@@ -1920,6 +1989,7 @@ paths:
       - $ref: "#/components/parameters/ApprovalId"
     get:
       operationId: getDeploymentApproval
+      x-public: true
       tags: [Deployments]
       summary: A deployment asked for, and what was decided
       responses:
@@ -1936,6 +2006,7 @@ paths:
       - $ref: "#/components/parameters/ApprovalId"
     post:
       operationId: approveDeployment
+      x-public: true
       tags: [Deployments]
       summary: Make the deployment a session asked for
       description: |
@@ -1961,6 +2032,7 @@ paths:
       - $ref: "#/components/parameters/ApprovalId"
     post:
       operationId: refuseDeployment
+      x-public: true
       tags: [Deployments]
       summary: Refuse the deployment a session asked for
       description: Its person's alone, as approving is.
@@ -1977,6 +2049,7 @@ paths:
   /v1/deployments:
     get:
       operationId: listDeployments
+      x-public: true
       tags: [Deployments]
       summary: The caller's deployments
       description: |
@@ -1994,6 +2067,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     post:
       operationId: createDeployment
+      x-public: true
       tags: [Deployments]
       summary: Boot a sealed sandbox from a built image
       description: |
@@ -2035,6 +2109,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     get:
       operationId: getDeployment
+      x-public: true
       tags: [Deployments]
       summary: A deployment
       responses:
@@ -2049,6 +2124,7 @@ paths:
         "502": {$ref: "#/components/responses/Upstream"}
     delete:
       operationId: deleteDeployment
+      x-public: true
       tags: [Deployments]
       summary: Delete a deployment, its sandbox, disk and tunnels
       responses:
@@ -2062,6 +2138,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     post:
       operationId: stopDeployment
+      x-public: true
       tags: [Deployments]
       summary: Switch it off, its disk kept
       responses:
@@ -2079,6 +2156,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     post:
       operationId: startDeployment
+      x-public: true
       tags: [Deployments]
       summary: Boot a stopped or expired deployment again
       description: |
@@ -2105,6 +2183,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     post:
       operationId: extendDeployment
+      x-public: true
       tags: [Deployments]
       summary: Move its expiry to ttlSeconds from now
       description: A week from now at most. It does not boot one that is stopped.
@@ -2129,6 +2208,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     post:
       operationId: unsealDeployment
+      x-public: true
       tags: [Deployments]
       summary: Let commands and a terminal into it
       description: |
@@ -2151,6 +2231,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     post:
       operationId: sealDeployment
+      x-public: true
       tags: [Deployments]
       summary: Refuse commands and terminals in it from now on
       description: |
@@ -2172,6 +2253,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     post:
       operationId: runDeploymentCommand
+      x-public: true
       tags: [Deployments]
       summary: Run a command in an unsealed deployment, and wait for it
       description: |
@@ -2199,6 +2281,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     get:
       operationId: readDeploymentLogs
+      x-public: true
       tags: [Deployments]
       summary: What it printed, from a byte offset
       description: |
@@ -2233,6 +2316,7 @@ paths:
       - $ref: "#/components/parameters/DeploymentId"
     get:
       operationId: listDeploymentTunnels
+      x-public: true
       tags: [Deployments]
       summary: Its tunnels
       responses:
@@ -2251,6 +2335,7 @@ paths:
       - $ref: "#/components/parameters/TunnelName"
     put:
       operationId: putDeploymentTunnel
+      x-public: true
       tags: [Deployments]
       summary: Publish one of its ports at an address
       description: |
@@ -2275,6 +2360,7 @@ paths:
         "502": {$ref: "#/components/responses/Upstream"}
     delete:
       operationId: deleteDeploymentTunnel
+      x-public: true
       tags: [Deployments]
       summary: Take a tunnel down
       responses:
@@ -2286,6 +2372,7 @@ paths:
   /v1/tunnels:
     get:
       operationId: listOwnTunnels
+      x-public: true
       tags: [Deployments]
       summary: Every tunnel of the caller's deployments and sessions
       description: |
@@ -2304,6 +2391,7 @@ paths:
   /v1/brokers:
     get:
       operationId: listBrokers
+      x-public: true
       tags: [Brokers]
       summary: Every broker a session may be given
       description: |
@@ -2328,6 +2416,7 @@ paths:
       - $ref: "#/components/parameters/BrokerName"
     put:
       operationId: putBroker
+      x-public: true
       tags: [Brokers]
       summary: Declare a broker, or change it
       description: |
@@ -2364,6 +2453,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     get:
       operationId: getBroker
+      x-public: true
       tags: [Brokers]
       summary: A broker
       description: A built-in broker the workspace's policy does not allow is `404`.
@@ -2378,6 +2468,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     delete:
       operationId: deleteBroker
+      x-public: true
       tags: [Brokers]
       summary: Remove a broker
       description: Sessions given it lose it at their next turn. The server's own are `409 in_use`.
@@ -2393,6 +2484,7 @@ paths:
       - $ref: "#/components/parameters/BrokerName"
     put:
       operationId: putBrokerUsers
+      x-public: true
       tags: [Brokers]
       summary: "Say who besides its owner may use a broker: whose sessions may be given it"
       description: |
@@ -2415,6 +2507,7 @@ paths:
   /v1/mcp-connectors:
     get:
       operationId: listMcpConnectors
+      x-public: true
       tags: [MCP connectors]
       summary: Every MCP connector a session may be given
       parameters:
@@ -2435,6 +2528,7 @@ paths:
       - $ref: "#/components/parameters/McpConnectorName"
     put:
       operationId: putMcpConnector
+      x-public: true
       tags: [MCP connectors]
       summary: Add an MCP connector, or change it
       description: |
@@ -2464,6 +2558,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     get:
       operationId: getMcpConnector
+      x-public: true
       tags: [MCP connectors]
       summary: An MCP connector, with its tools
       responses:
@@ -2477,6 +2572,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     delete:
       operationId: deleteMcpConnector
+      x-public: true
       tags: [MCP connectors]
       summary: Remove an MCP connector, and forget its credential
       responses:
@@ -2490,6 +2586,7 @@ paths:
       - $ref: "#/components/parameters/McpConnectorName"
     put:
       operationId: putMcpConnectorUsers
+      x-public: true
       tags: [MCP connectors]
       summary: "Say who besides its owner may use an MCP connector: whose sessions may be given it"
       description: |
@@ -2514,6 +2611,7 @@ paths:
       - $ref: "#/components/parameters/McpConnectorName"
     post:
       operationId: authorizeMcpConnector
+      x-public: true
       tags: [MCP connectors]
       summary: Start the OAuth flow of an MCP connector
       description: |
@@ -2549,6 +2647,7 @@ paths:
   /v1/sessions:
     get:
       operationId: listSessions
+      x-public: true
       tags: [Sessions]
       summary: The account's sessions, newest activity first
       description: |
@@ -2622,6 +2721,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     post:
       operationId: startSession
+      x-public: true
       tags: [Sessions]
       summary: Start a session
       description: |
@@ -2679,6 +2779,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     put:
       operationId: createSession
+      x-public: true
       deprecated: true
       tags: [Sessions]
       summary: Start a session under an id the caller chose
@@ -2750,6 +2851,7 @@ paths:
         "507": {$ref: "#/components/responses/DiskBudget"}
     get:
       operationId: getSession
+      x-public: true
       tags: [Sessions]
       summary: A session
       responses:
@@ -2763,6 +2865,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     patch:
       operationId: updateSession
+      x-public: true
       tags: [Sessions]
       summary: Retitle, relabel, or reconfigure a session
       description: |
@@ -2788,6 +2891,7 @@ paths:
         "409": {$ref: "#/components/responses/Conflict"}
     delete:
       operationId: deleteSession
+      x-public: true
       tags: [Sessions]
       summary: Delete a session, its sandbox, its disk and its transcript
       description: |
@@ -2818,6 +2922,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: archiveSession
+      x-public: true
       tags: [Sessions]
       summary: Archive a session
       description: |
@@ -2839,6 +2944,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: restoreSession
+      x-public: true
       tags: [Sessions]
       summary: Bring an archived session back
       responses:
@@ -2855,6 +2961,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: sleepSession
+      x-public: true
       tags: [Sessions]
       summary: Release a session's sandbox now, keeping its disk
       description: |
@@ -2877,6 +2984,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: wakeSession
+      x-public: true
       tags: [Sessions]
       summary: Give a sleeping session a sandbox again, without a turn
       description: A turn wakes a session by itself; this is for a caller about to open its terminal or files.
@@ -2896,6 +3004,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: forkSession
+      x-public: true
       tags: [Sessions]
       summary: Start a new session from this one's conversation, up to an event
       description: |
@@ -2958,6 +3067,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: getLineage
+      x-public: true
       tags: [Sessions]
       summary: The tree this session belongs to
       description: |
@@ -2979,6 +3089,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: getSessionShares
+      x-public: true
       tags: [Sessions]
       summary: Whom the session is shared with
       description: |
@@ -2995,6 +3106,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     put:
       operationId: putSessionShares
+      x-public: true
       tags: [Sessions]
       summary: Share the session with these people, and no others
       description: |
@@ -3019,6 +3131,7 @@ paths:
   /v1/search:
     get:
       operationId: searchSessions
+      x-public: true
       tags: [Sessions]
       summary: The sessions whose transcripts say something, newest activity first
       description: |
@@ -3053,6 +3166,7 @@ paths:
   /v1/uploads:
     post:
       operationId: createUpload
+      x-public: true
       tags: [Turns]
       summary: Keep a file for a message not sent yet
       description: |
@@ -3088,6 +3202,7 @@ paths:
       - $ref: "#/components/parameters/UploadId"
     delete:
       operationId: deleteUpload
+      x-public: true
       tags: [Turns]
       summary: Forget a file taken off a message before it was sent
       responses:
@@ -3103,6 +3218,7 @@ paths:
       - $ref: "#/components/parameters/UploadId"
     get:
       operationId: getAttachment
+      x-public: true
       tags: [Turns]
       summary: A file sent to the session with a turn, or an image a tool answered with
       description: |
@@ -3122,6 +3238,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: sendTurn
+      x-public: true
       tags: [Turns]
       summary: Say something to the session
       description: |
@@ -3167,6 +3284,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: interrupt
+      x-public: true
       tags: [Turns]
       summary: Stop what the session is generating
       description: |
@@ -3194,6 +3312,7 @@ paths:
       - $ref: "#/components/parameters/QueuedTurnId"
     delete:
       operationId: cancelQueuedTurn
+      x-public: true
       tags: [Turns]
       summary: Take back a turn still waiting in the session's queue
       description: |
@@ -3213,6 +3332,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     patch:
       operationId: editQueuedTurn
+      x-public: true
       tags: [Turns]
       summary: Change what a turn still waiting in the session's queue says
       description: |
@@ -3244,6 +3364,7 @@ paths:
       - $ref: "#/components/parameters/QueuedTurnId"
     put:
       operationId: holdQueuedTurn
+      x-public: true
       tags: [Turns]
       summary: Keep a turn waiting while somebody edits it
       description: |
@@ -3269,6 +3390,7 @@ paths:
         "409": {$ref: "#/components/responses/Conflict"}
     delete:
       operationId: releaseQueuedTurn
+      x-public: true
       tags: [Turns]
       summary: Let go of a turn held while somebody edited it
       description: |
@@ -3291,6 +3413,7 @@ paths:
       - $ref: "#/components/parameters/QueuedTurnId"
     post:
       operationId: interruptWithQueuedTurn
+      x-public: true
       tags: [Turns]
       summary: Give a waiting turn now, interrupting what the session is generating
       description: |
@@ -3314,6 +3437,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: compact
+      x-public: true
       tags: [Turns]
       summary: Summarise the conversation so far into a smaller context
       description: Answered on the stream with a `compaction` event. `409` while generating.
@@ -3341,6 +3465,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: retitle
+      x-public: true
       tags: [Sessions]
       summary: Title the session from its conversation now
       description: |
@@ -3373,6 +3498,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     post:
       operationId: rewind
+      x-public: true
       tags: [Turns]
       summary: Take the conversation back to before a turn, to edit or retry it
       description: |
@@ -3414,6 +3540,7 @@ paths:
         schema: {type: string, minLength: 1, maxLength: 128}
     get:
       operationId: getInfrastructureItem
+      x-public: true
       tags: [Costs]
       summary: One thing of the workspace's sandboxes server, and what it costs
       description: |
@@ -3446,6 +3573,7 @@ paths:
               schema: {$ref: "#/components/schemas/Error"}
     delete:
       operationId: deleteInfrastructureItem
+      x-public: true
       tags: [Costs]
       summary: Let it go, and what it costs with it
       description: |
@@ -3484,6 +3612,7 @@ paths:
         schema: {type: string, minLength: 1, maxLength: 128}
     post:
       operationId: stopInfrastructureSandbox
+      x-public: true
       tags: [Costs]
       summary: Stop a sandbox, which then costs only its disk
       description: |
@@ -3506,6 +3635,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: getSessionCosts
+      x-public: true
       tags: [Costs]
       summary: What one session has cost, its infrastructure and its tokens
       description: |
@@ -3550,6 +3680,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: streamEvents
+      x-public: true
       tags: [Events]
       summary: The session's transcript, from an event on, and as it happens
       description: |
@@ -3612,6 +3743,7 @@ paths:
   /v1/changes:
     get:
       operationId: streamChanges
+      x-public: true
       tags: [Events]
       summary: Every change to the account's sessions, from a point on, and as it happens
       description: |
@@ -3639,6 +3771,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listExchanges
+      x-public: true
       tags: [Sessions]
       summary: The calls the session's harness made to the model, newest first
       description: |
@@ -3685,6 +3818,7 @@ paths:
         schema: {type: string}
     get:
       operationId: getExchange
+      x-public: true
       tags: [Sessions]
       summary: One call the session's harness made to the model, whole
       description: |
@@ -3714,6 +3848,7 @@ paths:
   /v1/activity:
     get:
       operationId: listActivity
+      x-public: true
       tags: [Sessions]
       summary: What sessions did through their brokers, newest first
       description: |
@@ -3773,6 +3908,7 @@ paths:
         schema: {type: string}
     get:
       operationId: getActivity
+      x-public: true
       tags: [Sessions]
       summary: One request a session sent through a broker, and its answer, whole
       description: |
@@ -3801,6 +3937,7 @@ paths:
         schema: {type: string}
     get:
       operationId: getActivityBody
+      x-public: true
       tags: [Sessions]
       summary: An entry's bodies, fetched from the runner that keeps them
       description: |
@@ -3839,6 +3976,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: getSessionHarness
+      x-public: true
       tags: [Work]
       summary: What the session's harness was given, as it last started
       description: |
@@ -3861,6 +3999,7 @@ paths:
       - $ref: "#/components/parameters/SkillName"
     get:
       operationId: readSessionSkill
+      x-public: true
       tags: [Work]
       summary: The SKILL.md of a skill the session has
       description: |
@@ -3888,6 +4027,7 @@ paths:
       - $ref: "#/components/parameters/SkillName"
     get:
       operationId: listSessionSkillFiles
+      x-public: true
       tags: [Work]
       summary: The files of a skill the session has
       description: |
@@ -3909,6 +4049,7 @@ paths:
       - $ref: "#/components/parameters/SkillName"
     get:
       operationId: readSessionSkillFile
+      x-public: true
       tags: [Work]
       summary: One file of a skill the session has
       description: |
@@ -3934,6 +4075,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listSubagents
+      x-public: true
       tags: [Work]
       summary: The sub-agents the session's harness started, running first
       description: |
@@ -3970,6 +4112,7 @@ paths:
         schema: {type: string}
     get:
       operationId: getSubagent
+      x-public: true
       tags: [Work]
       summary: A sub-agent
       responses:
@@ -3986,6 +4129,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listBackgroundTasks
+      x-public: true
       tags: [Work]
       summary: What the session left running, and what ended lately
       description: |
@@ -4021,6 +4165,7 @@ paths:
         schema: {type: string}
     post:
       operationId: stopBackgroundTask
+      x-public: true
       tags: [Work]
       summary: Stop a background task
       description: |
@@ -4039,6 +4184,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listAlarms
+      x-public: true
       tags: [Work]
       summary: What the session asked to be woken for, and what it was
       description: |
@@ -4076,6 +4222,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listSessionTasks
+      x-public: true
       tags: [Work]
       summary: The session's task list
       description: |
@@ -4100,6 +4247,7 @@ paths:
   /v1/tasks:
     get:
       operationId: listTasks
+      x-public: true
       tags: [Work]
       summary: The tasks of every session, for one board
       description: Each with its session. Archived sessions' are left out.
@@ -4132,6 +4280,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listFiles
+      x-public: true
       tags: [Sandbox]
       summary: A directory of the session's disk
       description: 'Read through its machine, so a sleeping session is `409`; wake it first.'
@@ -4161,6 +4310,7 @@ paths:
       - $ref: "#/components/parameters/FilePath"
     get:
       operationId: readFile
+      x-public: true
       tags: [Sandbox]
       summary: A file's bytes
       responses:
@@ -4177,6 +4327,7 @@ paths:
         "413": {$ref: "#/components/responses/TooLarge"}
     put:
       operationId: writeFile
+      x-public: true
       tags: [Sandbox]
       summary: Write a file, making its directories
       description: How an attachment gets to the session — written here, then named in a turn.
@@ -4199,6 +4350,7 @@ paths:
         "413": {$ref: "#/components/responses/TooLarge"}
     delete:
       operationId: deleteFile
+      x-public: true
       tags: [Sandbox]
       summary: Delete a file, or an empty directory
       responses:
@@ -4214,6 +4366,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listTunnels
+      x-public: true
       tags: [Sandbox]
       summary: The ports the session published, and their addresses
       responses:
@@ -4237,6 +4390,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: getSandboxUsage
+      x-public: true
       tags: [Sandbox]
       summary: What the session's machine is using now
       description: |
@@ -4258,6 +4412,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: getSandboxUsageHistory
+      x-public: true
       tags: [Sandbox]
       summary: What the session's machine has been using, and what it was given
       description: |
@@ -4287,6 +4442,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listSandboxProcesses
+      x-public: true
       tags: [Sandbox]
       summary: What is running in the session's machine
       description: |
@@ -4311,6 +4467,7 @@ paths:
       - $ref: "#/components/parameters/SessionId"
     get:
       operationId: listEgressRules
+      x-public: true
       tags: [Sandbox]
       summary: What the session's sandbox may reach
       description: |
@@ -4344,6 +4501,7 @@ paths:
         schema: {type: string, minLength: 1, maxLength: 63}
     delete:
       operationId: dropEgressRule
+      x-public: true
       tags: [Sandbox]
       summary: Take a rule off the session's sandbox, at once
       description: |
@@ -4360,6 +4518,7 @@ paths:
   /v1/triggers:
     get:
       operationId: listTriggers
+      x-public: true
       tags: [Triggers]
       summary: The triggers the caller owns — every one, for an admin
       parameters:
@@ -4379,6 +4538,7 @@ paths:
       - $ref: "#/components/parameters/TriggerId"
     put:
       operationId: putTrigger
+      x-public: true
       tags: [Triggers]
       summary: Create a trigger, or change it
       description: |
@@ -4413,6 +4573,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     get:
       operationId: getTrigger
+      x-public: true
       tags: [Triggers]
       summary: A trigger
       responses:
@@ -4425,6 +4586,7 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
     delete:
       operationId: deleteTrigger
+      x-public: true
       tags: [Triggers]
       summary: Delete a trigger
       description: Its sessions go on, their lineage naming a trigger that is gone.
@@ -4439,6 +4601,7 @@ paths:
       - $ref: "#/components/parameters/TriggerId"
     post:
       operationId: fireTrigger
+      x-public: true
       tags: [Triggers]
       summary: Fire a trigger from code
       description: |
@@ -4474,6 +4637,7 @@ paths:
       - $ref: "#/components/parameters/TriggerId"
     get:
       operationId: listFirings
+      x-public: true
       tags: [Triggers]
       summary: A trigger's firings, newest first
       parameters:
@@ -4493,6 +4657,7 @@ paths:
       - $ref: "#/components/parameters/TriggerId"
     post:
       operationId: receiveHook
+      x-public: true
       tags: [Triggers]
       summary: A webhook trigger's address
       description: |

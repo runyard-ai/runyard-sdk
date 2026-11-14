@@ -113,6 +113,40 @@ A stream that is refused throws the `APIError` already. A `409` with the
 code `gapped` says what was asked for is no longer kept: read from where the
 server says it starts.
 
+## The relay
+
+`@runyard-ai/runyard-sdk/relay` is runyard-agents' API served by your own
+backend to your own front end, each person reaching only their own sessions.
+The key stays on the backend. `createRelay` is a fetch handler,
+`(Request) => Promise<Response>`, for Next.js, Hono, Bun or Deno.
+`toNodeHandler` makes it a handler for node:http or Express:
+
+```ts
+import { RelayError, createRelay, toNodeHandler } from '@runyard-ai/runyard-sdk/relay';
+
+const relay = createRelay({
+  url: 'https://agents.example.com',
+  key: process.env.RUNYARD_AGENTS_KEY!, // sessions.read, sessions.write, sessions.person
+  prefix: '/agents',
+  person: async (req) => ({ email: await emailOf(req) }), // throw: 401
+  scope: (_req, p) => ({ owner: p.email, labels: { 'acme.user': p.email } }),
+  start: (_req, p, spec) => {
+    spec.profileId = 'chat';
+    spec.provider = `claude-${p.email}`;
+  },
+  turn: (_req, p, turn) => {
+    turn.provider = `claude-${p.email}`;
+  },
+  started: async (_req, p, session) => record(p, session.id),
+});
+app.use('/agents', toNodeHandler(relay));
+```
+
+A hook that throws a `RelayError(status, code, message)` has the relay answer
+with it. One that throws anything else is a 500, told to `log`. What it
+serves, and what it lets the browser say, is in
+[the repository's README](../README.md#a-conversation-in-your-own-product-the-relay).
+
 ## Reference
 
 [`docs/`](docs) has a page for every operation and every type, as

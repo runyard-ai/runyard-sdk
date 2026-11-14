@@ -17,5 +17,9 @@ with what it cannot do on its own beside it:
 
 The [repository's README](../README.md) has an example.
 
+Package [`relay`](relay) is runyard-agents' API served by your own backend to
+your own front end, each person reaching only their own sessions: see
+[the repository's README](../README.md#a-conversation-in-your-own-product-the-relay).
+
 `go test -tags conformance ./...`, with `RUNYARD_AGENTS_URL` and
 `RUNYARD_AGENTS_KEY` set, runs the conformance suite against that server.

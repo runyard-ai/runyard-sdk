@@ -26,6 +26,7 @@ paths:
       - $ref: "#/components/parameters/Shared"
     get:
       operationId: listThings
+      x-public: true
       tags: [Kept]
       responses:
         "200":
@@ -35,7 +36,6 @@ paths:
     post:
       operationId: watchThings
       tags: [Gone]
-      x-sdk-excluded: "A WebSocket."
       responses:
         "101": {description: switched}
   /console:
@@ -44,7 +44,6 @@ paths:
     get:
       operationId: consoleThing
       tags: [Gone]
-      x-sdk-excluded: "The console's own."
       responses:
         "200":
           content:
@@ -90,7 +89,7 @@ func TestFilter(t *testing.T) {
 	}
 	got := string(out)
 	for _, gone := range []string{
-		"watchThings", "consoleThing", "/console:", "x-sdk-excluded",
+		"watchThings", "consoleThing", "/console:",
 		"ConsoleThing", "ConsolePart", "ConsoleOnly", "Orphan", "name: Gone", "name: Unused",
 	} {
 		if strings.Contains(got, gone) {
@@ -101,7 +100,7 @@ func TestFilter(t *testing.T) {
 	// parameters, a $ref of a $ref, a cycle, a discriminator's mapping — and
 	// every security scheme, which is named rather than referred to.
 	for _, kept := range []string{
-		"listThings", "/things:", "Shared:", "Things:", "Thing:", "Round:", "Square:",
+		"listThings", "x-public: true", "/things:", "Shared:", "Things:", "Thing:", "Round:", "Square:",
 		"key: {type: http, scheme: bearer}", "unused: {type: http, scheme: bearer}", "name: Kept",
 	} {
 		if !strings.Contains(got, kept) {
@@ -135,6 +134,7 @@ paths:
   /a:
     get:
       operationId: a
+      x-public: true
       responses:
         "200":
           content:
@@ -167,8 +167,9 @@ func TestWhatIsNotADocumentItCanFilter(t *testing.T) {
 		"no paths":          "openapi: 3.0.3\n",
 		"paths of nothing":  "paths: [a]\n",
 		"a path of nothing": "paths:\n  /a: [get]\n",
-		"no reason":         "paths:\n  /a:\n    get:\n      x-sdk-excluded: \"  \"\n",
-		"a reason of parts": "paths:\n  /a:\n    get:\n      x-sdk-excluded: {why: x}\n",
+		"public, no":        "paths:\n  /a:\n    get:\n      x-public: false\n",
+		"public, a word":    "paths:\n  /a:\n    get:\n      x-public: yes please\n",
+		"public, of parts":  "paths:\n  /a:\n    get:\n      x-public: {why: x}\n",
 	} {
 		if out, err := filter([]byte(src)); err == nil {
 			t.Errorf("%s: %s", name, out)
