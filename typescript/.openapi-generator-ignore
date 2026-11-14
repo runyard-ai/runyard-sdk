@@ -1,0 +1,12 @@
+# What openapi-generator does not write: the files of sdk/typescript, written
+# over what it makes, and what it would make that this package does not use
+# (a CommonJS build beside the ES module one, an .npmignore that "files" in
+# package.json makes moot). It writes src/apis, src/models, src/runtime.ts
+# and docs.
+README.md
+package.json
+tsconfig.json
+tsconfig.esm.json
+.gitignore
+.npmignore
+src/index.ts
