@@ -19,7 +19,7 @@
 //   // A fetch handler (Next.js, Hono, Bun, Deno): relay(request).
 //   // node:http or Express: app.use('/agents', toNodeHandler(relay)).
 
-import type { ErrorCode, ProviderSignIn, Session, SessionSpec, Turn } from './models/index.js';
+import type { Attachment, ErrorCode, ProviderSignIn, Session, SessionSpec, Turn } from './models/index.js';
 import { SessionFromJSON } from './models/index.js';
 
 /** Whom a request is for: a person of the workspace, whom the key speaks for. */
@@ -140,9 +140,35 @@ type Owned = (call: Call, session: { id: string; raw: string }) => Promise<Respo
 // ---------------------------------------------------------------- the body
 
 /** What a field of the browser's body may be. */
-type Shape = 'string' | 'boolean' | 'number' | { [field: string]: Shape };
+type Shape = 'string' | 'boolean' | 'number' | readonly [Shape] | { [field: string]: Shape };
 
-const TURN: Shape = { turnId: 'string', text: 'string', mode: 'string' };
+/**
+ * What the browser may attach to a turn, of what it may say of each: a file
+ * on the session's own disk, a file it uploaded, a context — text it could
+ * have written in the turn itself — and another session, or a quote of one,
+ * of the caller's scope. The key reaches every session, and the caller only
+ * theirs: a session of anybody else's is not found, as it is on every route.
+ * An upload is the caller's because runyard-agents keeps it for them (POST
+ * /v1/uploads), and names it only in a session of theirs.
+ */
+const ATTACHMENT: Shape = {
+  kind: 'string',
+  path: 'string',
+  name: 'string',
+  text: 'string',
+  uploadId: 'string',
+  sessionId: 'string',
+  seq: 'number',
+};
+const RELAYED: Record<string, readonly string[]> = {
+  file: ['kind', 'path'],
+  context: ['kind', 'name', 'text', 'path'],
+  upload: ['kind', 'uploadId'],
+  session: ['kind', 'sessionId'],
+  quote: ['kind', 'text', 'sessionId', 'seq'],
+};
+
+const TURN: Shape = { turnId: 'string', text: 'string', mode: 'string', attachments: [ATTACHMENT] };
 
 class Refused extends Error {}
 
@@ -152,6 +178,13 @@ function shaped(v: unknown, shape: Shape, at: string): void {
     if (typeof v !== shape) {
       throw new Refused(`${at || 'the body'} is not a ${shape}`);
     }
+    return;
+  }
+  if (isList(shape)) {
+    if (!Array.isArray(v)) {
+      throw new Refused(`${at} is not a list`);
+    }
+    v.forEach((item, i) => shaped(item, shape[0], `${at}[${i}]`));
     return;
   }
   if (typeof v !== 'object' || v === null || Array.isArray(v)) {
@@ -166,6 +199,33 @@ function shaped(v: unknown, shape: Shape, at: string): void {
       shaped(field, want, at ? `${at}.${k}` : k);
     }
   }
+}
+
+function isList(shape: Shape): shape is readonly [Shape] {
+  return Array.isArray(shape);
+}
+
+/** What the browser attached, held to what each kind may say; refused when it says more. */
+function attachmentsOf(said: readonly Record<string, unknown>[] | undefined): Attachment[] | undefined {
+  if (said === undefined || said.length === 0) {
+    return undefined;
+  }
+  return said.map((a, i) => {
+    const fields = RELAYED[String(a['kind'])];
+    if (fields === undefined) {
+      throw new Refused(`attachment ${i}: there is no "${String(a['kind'])}" attachment`);
+    }
+    const extra = Object.keys(a).find((k) => !fields.includes(k));
+    if (extra !== undefined) {
+      throw new Refused(`attachment ${i}: a ${String(a['kind'])} attachment says only what is its own`);
+    }
+    return a as unknown as Attachment;
+  });
+}
+
+/** A body sent as the bytes it is, not as JSON: a file. */
+class Octets {
+  constructor(readonly body: ReadableStream<Uint8Array> | null) {}
 }
 
 /** The browser's body, held to shape; an empty one is {}. */
@@ -324,19 +384,22 @@ export function createRelay(config: RelayConfig): Relay {
     const qs = query && [...query.keys()].length > 0 ? `?${query.toString()}` : '';
     const headers: Record<string, string> = { Authorization: `Bearer ${config.key}` };
     if (value !== undefined) {
-      headers['Content-Type'] = 'application/json';
+      headers['Content-Type'] = value instanceof Octets ? 'application/octet-stream' : 'application/json';
     }
     const idempotency = call.req.headers.get('Idempotency-Key');
     if (idempotency && method === 'POST') {
       headers['Idempotency-Key'] = idempotency;
     }
     try {
-      return await doFetch(upstreamBase + path + qs, {
-        method,
-        headers,
-        body: value === undefined ? undefined : JSON.stringify(value),
-        signal: call.req.signal,
-      });
+      const init: RequestInit & { duplex?: 'half' } = { method, headers, signal: call.req.signal };
+      if (value instanceof Octets) {
+        // Passed on as it comes, never read here: how big a file may be is runyard-agents' to say.
+        init.body = value.body;
+        init.duplex = 'half';
+      } else if (value !== undefined) {
+        init.body = JSON.stringify(value);
+      }
+      return await doFetch(upstreamBase + path + qs, init);
     } catch (err) {
       if (!call.req.signal.aborted) {
         log?.warn('relay: runyard-agents is not answering', { path, err: String(err) });
@@ -424,11 +487,42 @@ export function createRelay(config: RelayConfig): Relay {
     return json(200, { ...got, items: (got['items'] as unknown[]).filter(keep) });
   }
 
+  /** Whether session id is one of the caller's scope: false when it is not, or is not there. */
+  async function reaches(call: Call, id: string): Promise<boolean> {
+    const res = await send(call, 'GET', sessionPath(id));
+    if (res.status === 404) {
+      await res.body?.cancel();
+      return false;
+    }
+    let s: unknown;
+    try {
+      if (res.status !== 200) {
+        throw new Error(`reading session ${id}: ${res.status}`);
+      }
+      s = await res.json();
+    } catch (err) {
+      if (!call.req.signal.aborted) {
+        log?.error('relay: a session a turn names could not be read', { path: call.path, err: String(err) });
+      }
+      throw new Unreadable();
+    }
+    return typeof s === 'object' && s !== null && holds(call.scope, s as Held);
+  }
+
   /** The turn the browser said, as config.turn makes it. */
   async function turnOf(call: Call, said: Partial<Turn>): Promise<Turn> {
     const turn: Turn = { turnId: said.turnId || newId(), text: said.text ?? '' };
     if (said.mode !== undefined) {
       turn.mode = said.mode;
+    }
+    const attachments = attachmentsOf(said.attachments as Record<string, unknown>[] | undefined);
+    if (attachments !== undefined) {
+      for (const [i, a] of attachments.entries()) {
+        if (a.sessionId !== undefined && !(await reaches(call, a.sessionId))) {
+          throw new Refused(`attachment ${i}: no such session`);
+        }
+      }
+      turn.attachments = attachments;
     }
     await config.turn?.(call.req, call.person, turn);
     return turn;
@@ -600,6 +694,16 @@ export function createRelay(config: RelayConfig): Relay {
     ['DELETE', '/v1/sessions/:sessionId/queue/:turnId/hold', owned(forward())],
     ['POST', '/v1/sessions/:sessionId/queue/:turnId/interrupt', owned(forward())],
     ['GET', '/v1/sessions/:sessionId/attachments/:uploadId', owned(forward())],
+    // Kept for the caller's scope's owner, so a turn names it only in a session of theirs.
+    ['POST', '/v1/uploads', async (call) => {
+      const q = allowed(new URL(call.req.url).searchParams, 'name');
+      q.set('owner', call.scope.owner);
+      return pass(call, await send(call, 'POST', '/v1/uploads', q, new Octets(call.req.body)));
+    }],
+    ['DELETE', '/v1/uploads/:uploadId', async (call) => {
+      const q = new URLSearchParams({ owner: call.scope.owner });
+      return pass(call, await send(call, 'DELETE', `/v1/uploads/${encodeURIComponent(call.params['uploadId'] ?? '')}`, q));
+    }],
     ['GET', '/v1/sessions/:sessionId/files', owned(forward('path'))],
     ['GET', '/v1/sessions/:sessionId/files/content', owned(forward('path'))],
     ['GET', '/v1/sessions/:sessionId/subagents', owned(forward())],
@@ -705,6 +809,9 @@ export function createRelay(config: RelayConfig): Relay {
       if (err instanceof Unanswered) {
         return error(502, 'upstream_error', 'runyard-agents is not answering');
       }
+      if (err instanceof Unreadable) {
+        return error(502, 'upstream_error', 'runyard-agents could not say whose a session the turn names is');
+      }
       return refused(at, 'a hook', err);
     }
   };
@@ -712,6 +819,9 @@ export function createRelay(config: RelayConfig): Relay {
 
 /** runyard-agents unanswering: said by send, answered by the relay. */
 class Unanswered extends Error {}
+
+/** A session a turn names that runyard-agents could not say whose it is. */
+class Unreadable extends Error {}
 
 // ---------------------------------------------------------------- node:http
 

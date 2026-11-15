@@ -177,6 +177,39 @@ func TestConformance(t *testing.T) {
 		}
 	}
 
+	// A file she attaches is kept for her: hers to take off, not Alan's.
+	kept, err := asGrace.CreateUploadWithBodyWithResponse(ctx, &runyard.CreateUploadParams{Name: "notes.txt"}, "application/octet-stream", strings.NewReader("hello"))
+	if err := runyard.Checked(kept, err); err != nil || kept.JSON201 == nil || kept.JSON201.Size != 5 {
+		t.Fatalf("an upload: %v %s", err, kept.Body)
+	}
+	upload := kept.JSON201.Id
+	taken, err := asAlan.DeleteUploadWithResponse(ctx, upload, nil)
+	if err := runyard.Checked(taken, err); !runyard.IsCode(err, runyard.ErrorCodeNotFound) {
+		t.Errorf("Alan taking off Grace's file: %v", err)
+	}
+	// Nor is her session his to name in a turn of his own.
+	alansOwn, err := asAlan.StartSessionWithResponse(ctx, nil, runyard.SessionSpec{})
+	if err := runyard.Checked(alansOwn, err); err != nil {
+		t.Fatal(err)
+	}
+	mine := alansOwn.JSON201
+	if mine == nil {
+		mine = alansOwn.JSON200
+	}
+	naming := []runyard.Attachment{{Kind: runyard.AttachmentKindSession, SessionId: &id}}
+	sent, err := asAlan.SendTurnWithResponse(ctx, mine.Id, runyard.Turn{TurnId: "naming-graces", Text: "read hers", Attachments: &naming})
+	if err := runyard.Checked(sent, err); !runyard.IsCode(err, runyard.ErrorCodeBadRequest) {
+		t.Errorf("Alan naming Grace's session: %v", err)
+	}
+	removed, err := asAlan.DeleteSessionWithResponse(ctx, mine.Id)
+	if err := runyard.Checked(removed, err); err != nil {
+		t.Errorf("Alan deleting his own: %v", err)
+	}
+	dropped, err := asGrace.DeleteUploadWithResponse(ctx, upload, nil)
+	if err := runyard.Checked(dropped, err); err != nil {
+		t.Errorf("Grace taking off her file: %v", err)
+	}
+
 	// Renamed, and deleted, by her.
 	renamed := "Renamed"
 	updated, err := asGrace.UpdateSessionWithResponse(ctx, id, runyard.SessionUpdate{Title: &renamed})

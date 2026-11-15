@@ -430,6 +430,7 @@ test('a session of the scope is relayed', async (t) => {
 test('what the browser may not say of a session is refused', async (t) => {
   const u = await upstream(t);
   u.session('s1', ada);
+  u.session('graces', grace);
   const relay = relayOf(u, {
     turn() {
       throw new RelayError(429, 'quota_exceeded', 'slow down');
@@ -440,7 +441,17 @@ test('what the browser may not say of a session is refused', async (t) => {
     ['PATCH', '/v1/sessions/s1', '{"brokers":["all"]}'],
     ['PATCH', '/v1/sessions/s1', '{"pinned":"yes"}'],
     ['POST', '/v1/sessions/s1/turns', '{"text":"x","provider":"theirs"}'],
-    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"session","sessionId":"s2"}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"session","sessionId":"graces"}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"quote","text":"x","sessionId":"graces"}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"upload","uploadId":"u1","name":"b"}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"session","sessionId":"s1","name":"b"}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"quote","text":"x","uploadId":"u1"}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"file","path":"a","name":"b"}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"context","name":"a","text":"b","seq":1}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[{"kind":"picture"}]}'],
+    ['POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":{"kind":"file"}}'],
+    ['POST', '/v1/sessions', '{"firstTurn":{"text":"x","attachments":[{"kind":"session","sessionId":"graces"}]}}'],
     ['POST', '/v1/sessions/s1/interrupt', '{"why":1}'],
     ['POST', '/v1/sessions/s1/rewind', '{"toSeq":"last"}'],
     ['POST', '/v1/sessions/s1/rewind', '{"toSeq":1,"andFork":true}'],
@@ -450,6 +461,75 @@ test('what the browser may not say of a session is refused', async (t) => {
   }
   assert.equal((await call(relay, ada, 'POST', '/v1/sessions/s1/turns', '{"text":"x"}')).status, 429);
   assert.equal(u.last('POST', '/v1/sessions/s1/turns'), undefined);
+});
+
+test('a turn naming a session the relay cannot read is a bad gateway', async (t) => {
+  const u = await upstream(t);
+  u.session('s1', ada);
+  u.on('GET /v1/sessions/broken', (_req, res) => answer(res, 500, '{"error":{"code":"internal","message":"x"}}'));
+  u.on('GET /v1/sessions/garbled', (_req, res) => answer(res, 200, '{"owner":'));
+  const relay = relayOf(u);
+  for (const id of ['broken', 'garbled']) {
+    const got = await call(relay, ada, 'POST', '/v1/sessions/s1/turns', `{"text":"x","attachments":[{"kind":"session","sessionId":"${id}"}]}`);
+    assert.equal(got.status, 502, id);
+    assert.equal(code(got.body), 'upstream_error');
+  }
+  assert.equal(u.last('POST', '/v1/sessions/s1/turns'), undefined);
+});
+
+test('an upload is kept for the caller’s scope', async (t) => {
+  const u = await upstream(t);
+  u.on('POST /v1/uploads', (_req, res) =>
+    answer(res, 201, '{"id":"0123456789abcdef0123456789abcdef","name":"a.txt","size":5,"expiresAt":"2026-11-15T00:00:00Z"}'),
+  );
+  u.on('DELETE /v1/uploads/0123456789abcdef0123456789abcdef', (_req, res) => {
+    res.writeHead(204);
+    res.end();
+  });
+  const shared = (): Scope => ({ owner: 'app@example.com', noStart: true });
+  for (const [scope, owner] of [
+    [undefined, ada],
+    [shared, 'app@example.com'],
+  ] as const) {
+    const relay = relayOf(u, scope ? { scope } : {});
+    const got = await call(relay, ada, 'POST', '/v1/uploads?name=a.txt&owner=grace%40example.com&other=1', 'hello');
+    assert.equal(got.status, 201, got.body);
+    assert.match(got.body, /"name":"a.txt"/);
+    const asked = u.last('POST', '/v1/uploads')!;
+    assert.equal(asked.body, 'hello');
+    assert.equal(asked.headers['content-type'], 'application/octet-stream');
+    assert.equal(asked.headers['authorization'], `Bearer ${key}`);
+    assert.deepEqual([...asked.query], [['name', 'a.txt'], ['owner', owner]]);
+    const dropped = await call(relay, ada, 'DELETE', '/v1/uploads/0123456789abcdef0123456789abcdef?owner=grace%40example.com');
+    assert.equal(dropped.status, 204);
+    assert.deepEqual([...u.last('DELETE', '/v1/uploads/0123456789abcdef0123456789abcdef')!.query], [['owner', owner]]);
+  }
+  // Nobody's: nobody keeps a file through it.
+  assert.equal((await call(relayOf(u), '', 'POST', '/v1/uploads?name=a.txt', 'x')).status, 401);
+});
+
+test('a turn carries what it attaches', async (t) => {
+  const u = await upstream(t);
+  u.session('s1', ada);
+  u.session('s2', ada);
+  u.on('POST /v1/sessions', (_req, res) => answer(res, 201, '{"id":"new"}'));
+  const relay = relayOf(u);
+  const said = [
+    { kind: 'file', path: 'src/a.go' },
+    { kind: 'context', name: 'Rate limiting', text: 'Read it first.' },
+    { kind: 'upload', uploadId: 'u1' },
+    { kind: 'session', sessionId: 's2' },
+    { kind: 'quote', text: 'q', sessionId: 's2', seq: 4 },
+    { kind: 'quote', text: 'r' },
+  ];
+  const turned = JSON.stringify({ text: 'x', attachments: said });
+  assert.equal((await call(relay, ada, 'POST', '/v1/sessions/s1/turns', turned)).status, 200);
+  assert.deepEqual(JSON.parse(u.last('POST', '/v1/sessions/s1/turns')!.body).attachments, said);
+  assert.equal((await call(relay, ada, 'POST', '/v1/sessions', `{"firstTurn":${turned}}`)).status, 201);
+  assert.deepEqual(JSON.parse(u.last('POST', '/v1/sessions')!.body).firstTurn.attachments, said);
+  // None is none, not an empty list.
+  await call(relay, ada, 'POST', '/v1/sessions/s1/turns', '{"text":"x","attachments":[]}');
+  assert.equal(JSON.parse(u.last('POST', '/v1/sessions/s1/turns')!.body).attachments, undefined);
 });
 
 test('a turn with no id is given one', async (t) => {

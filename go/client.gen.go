@@ -107,6 +107,7 @@ const (
 
 // Defines values for AttachmentKind.
 const (
+	AttachmentKindContext AttachmentKind = "context"
 	AttachmentKindFile    AttachmentKind = "file"
 	AttachmentKindQuote   AttachmentKind = "quote"
 	AttachmentKindSession AttachmentKind = "session"
@@ -1021,6 +1022,7 @@ type AlarmEventType string
 // | `upload` | a file uploaded for the turn, `uploadId`; once the turn is taken, its `name` is said too — while it waits in the queue as well — and once the session is given it, the `path` it was put at |
 // | `quote` | `text` quoted from a session's event, `sessionId` and `seq` |
 // | `session` | another session, `sessionId`, referenced for the session to read through the `sessions` broker, and from then on its to read; its title is said as `name`, the server's to say. One the caller cannot read is refused |
+// | `context` | `text` the caller gives the session beside the message — what it is about, how to go about it — under a `name` a person knows it by, one line of at most 255 characters. Up to 8192 bytes, the session is given the text in its turn; longer, up to 200000 characters, it is put on the session's disk and the session is told the `path` to read it at, the server's to say. The transcript keeps the text either way |
 type Attachment struct {
 	Kind AttachmentKind `json:"kind"`
 	Name *string        `json:"name,omitempty"`
@@ -5128,6 +5130,9 @@ type TriggerId = Id
 // UploadId defines model for UploadId.
 type UploadId = string
 
+// UploadOwner defines model for UploadOwner.
+type UploadOwner = openapi_types.Email
+
 // UserEmail defines model for UserEmail.
 type UserEmail = openapi_types.Email
 
@@ -5487,6 +5492,19 @@ type ListFiringsParams struct {
 type CreateUploadParams struct {
 	// Name The file's name, without a slash. Where it goes on the session's disk.
 	Name string `form:"name" json:"name"`
+
+	// Owner The person it is kept for, of the workspace, or it is `400`: only a
+	// key with `sessions.person` names one, and it is `403` otherwise.
+	// Absent, it is the caller's own.
+	Owner *UploadOwner `form:"owner,omitempty" json:"owner,omitempty"`
+}
+
+// DeleteUploadParams defines parameters for DeleteUpload.
+type DeleteUploadParams struct {
+	// Owner The person it is kept for, of the workspace, or it is `400`: only a
+	// key with `sessions.person` names one, and it is `403` otherwise.
+	// Absent, it is the caller's own.
+	Owner *UploadOwner `form:"owner,omitempty" json:"owner,omitempty"`
 }
 
 // GetUsageParams defines parameters for GetUsage.
@@ -6972,7 +6990,7 @@ type ClientInterface interface {
 	CreateUploadWithBody(ctx context.Context, params *CreateUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteUpload request
-	DeleteUpload(ctx context.Context, uploadId UploadId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteUpload(ctx context.Context, uploadId UploadId, params *DeleteUploadParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetUsage request
 	GetUsage(ctx context.Context, params *GetUsageParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -9394,8 +9412,8 @@ func (c *Client) CreateUploadWithBody(ctx context.Context, params *CreateUploadP
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteUpload(ctx context.Context, uploadId UploadId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteUploadRequest(c.Server, uploadId)
+func (c *Client) DeleteUpload(ctx context.Context, uploadId UploadId, params *DeleteUploadParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteUploadRequest(c.Server, uploadId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16373,6 +16391,22 @@ func NewCreateUploadRequestWithBody(server string, params *CreateUploadParams, c
 			}
 		}
 
+		if params.Owner != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "owner", runtime.ParamLocationQuery, *params.Owner); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -16387,7 +16421,7 @@ func NewCreateUploadRequestWithBody(server string, params *CreateUploadParams, c
 }
 
 // NewDeleteUploadRequest generates requests for DeleteUpload
-func NewDeleteUploadRequest(server string, uploadId UploadId) (*http.Request, error) {
+func NewDeleteUploadRequest(server string, uploadId UploadId, params *DeleteUploadParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -16410,6 +16444,28 @@ func NewDeleteUploadRequest(server string, uploadId UploadId) (*http.Request, er
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Owner != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "owner", runtime.ParamLocationQuery, *params.Owner); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
@@ -17293,7 +17349,7 @@ type ClientWithResponsesInterface interface {
 	CreateUploadWithBodyWithResponse(ctx context.Context, params *CreateUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUploadResponse, error)
 
 	// DeleteUploadWithResponse request
-	DeleteUploadWithResponse(ctx context.Context, uploadId UploadId, reqEditors ...RequestEditorFn) (*DeleteUploadResponse, error)
+	DeleteUploadWithResponse(ctx context.Context, uploadId UploadId, params *DeleteUploadParams, reqEditors ...RequestEditorFn) (*DeleteUploadResponse, error)
 
 	// GetUsageWithResponse request
 	GetUsageWithResponse(ctx context.Context, params *GetUsageParams, reqEditors ...RequestEditorFn) (*GetUsageResponse, error)
@@ -21328,6 +21384,7 @@ func (r CreateUploadResponse) StatusCode() int {
 type DeleteUploadResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
@@ -23237,8 +23294,8 @@ func (c *ClientWithResponses) CreateUploadWithBodyWithResponse(ctx context.Conte
 }
 
 // DeleteUploadWithResponse request returning *DeleteUploadResponse
-func (c *ClientWithResponses) DeleteUploadWithResponse(ctx context.Context, uploadId UploadId, reqEditors ...RequestEditorFn) (*DeleteUploadResponse, error) {
-	rsp, err := c.DeleteUpload(ctx, uploadId, reqEditors...)
+func (c *ClientWithResponses) DeleteUploadWithResponse(ctx context.Context, uploadId UploadId, params *DeleteUploadParams, reqEditors ...RequestEditorFn) (*DeleteUploadResponse, error) {
+	rsp, err := c.DeleteUpload(ctx, uploadId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31409,6 +31466,13 @@ func ParseDeleteUploadResponse(rsp *http.Response) (*DeleteUploadResponse, error
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

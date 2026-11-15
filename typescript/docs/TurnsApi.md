@@ -185,11 +185,11 @@ example().catch(console.error);
 
 ## createUpload
 
-> Upload createUpload(name, body)
+> Upload createUpload(name, body, owner)
 
 Keep a file for a message not sent yet
 
-The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\&#39;s session\&#39;s. Nothing runs in a sandbox for it: the file is put on the session\&#39;s disk when the session is given the turn. One no turn names within &#x60;limits.uploadTtlSeconds&#x60; is evicted. 
+The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\&#39;s session\&#39;s. Nothing runs in a sandbox for it: the file is put on the session\&#39;s disk when the session is given the turn. One no turn names within &#x60;limits.uploadTtlSeconds&#x60; is evicted.  It is the caller\&#39;s: only a turn the caller sends names it. A key with &#x60;sessions.person&#x60; keeps one for a person it speaks for (&#x60;owner&#x60;), and a turn of that key names it only in a session of theirs: a front end with one key for everybody keeps each person\&#39;s files from the others\&#39;. 
 
 ### Example
 
@@ -217,6 +217,8 @@ async function example() {
     name: name_example,
     // Blob
     body: BINARY_DATA_HERE,
+    // string | The person it is kept for, of the workspace, or it is `400`: only a key with `sessions.person` names one, and it is `403` otherwise. Absent, it is the caller\'s own.  (optional)
+    owner: owner_example,
   } satisfies CreateUploadRequest;
 
   try {
@@ -238,6 +240,7 @@ example().catch(console.error);
 |------------- | ------------- | ------------- | -------------|
 | **name** | `string` | The file\&#39;s name, without a slash. Where it goes on the session\&#39;s disk. | [Defaults to `undefined`] |
 | **body** | `Blob` |  | |
+| **owner** | `string` | The person it is kept for, of the workspace, or it is &#x60;400&#x60;: only a key with &#x60;sessions.person&#x60; names one, and it is &#x60;403&#x60; otherwise. Absent, it is the caller\&#39;s own.  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 
@@ -268,7 +271,7 @@ example().catch(console.error);
 
 ## deleteUpload
 
-> deleteUpload(uploadId)
+> deleteUpload(uploadId, owner)
 
 Forget a file taken off a message before it was sent
 
@@ -296,6 +299,8 @@ async function example() {
   const body = {
     // string
     uploadId: uploadId_example,
+    // string | The person it is kept for, of the workspace, or it is `400`: only a key with `sessions.person` names one, and it is `403` otherwise. Absent, it is the caller\'s own.  (optional)
+    owner: owner_example,
   } satisfies DeleteUploadRequest;
 
   try {
@@ -316,6 +321,7 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **uploadId** | `string` |  | [Defaults to `undefined`] |
+| **owner** | `string` | The person it is kept for, of the workspace, or it is &#x60;400&#x60;: only a key with &#x60;sessions.person&#x60; names one, and it is &#x60;403&#x60; otherwise. Absent, it is the caller\&#39;s own.  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 
@@ -335,6 +341,7 @@ example().catch(console.error);
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | Gone. |  -  |
+| **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 | **404** | Nothing by that id. |  -  |

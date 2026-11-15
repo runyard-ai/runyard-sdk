@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -612,6 +613,7 @@ func equalValues(a, b url.Values) bool {
 func TestWhatTheBrowserMayNotSayOfASessionIsRefused(t *testing.T) {
 	u := newUpstream(t)
 	u.session("s1", ada, nil)
+	u.session("graces", grace, nil)
 	s := relayOf(t, u, Config{Turn: func(_ *http.Request, _ Person, _ *runyard.Turn) error {
 		return Refuse(http.StatusTooManyRequests, runyard.ErrorCodeQuotaExceeded, "slow down")
 	}})
@@ -619,7 +621,16 @@ func TestWhatTheBrowserMayNotSayOfASessionIsRefused(t *testing.T) {
 		{http.MethodPatch, "/v1/sessions/s1", `{"labels":{"app.user":"x"}}`},
 		{http.MethodPatch, "/v1/sessions/s1", `{"brokers":["all"]}`},
 		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","provider":"theirs"}`},
-		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"session","sessionId":"s2"}]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"session","sessionId":"graces"}]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"quote","text":"x","sessionId":"graces"}]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"upload","uploadId":"u1","name":"b"}]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"session","sessionId":"s1","name":"b"}]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"quote","text":"x","uploadId":"u1"}]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"file","path":"a","name":"b"}]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"context","name":"a","text":"b","seq":1}]}`},
+		{http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"picture"}]}`},
+		{http.MethodPost, "/v1/sessions", `{"firstTurn":{"text":"x","attachments":[{"kind":"session","sessionId":"graces"}]}}`},
 		{http.MethodPost, "/v1/sessions/s1/interrupt", `{"why":1}`},
 		{http.MethodPost, "/v1/sessions/s1/rewind", `{"toSeq":"last"}`},
 		{http.MethodPost, "/v1/sessions/s1/rewind", `{"toSeq":1,"andFork":true}`},
@@ -650,6 +661,110 @@ func TestATurnIsToldTheSessionItIsSentIn(t *testing.T) {
 	do(t, s, ada, http.MethodPost, "/v1/sessions", `{"firstTurn":{"text":"x"}}`)
 	if !slices.Equal(in, []string{"s1", ""}) {
 		t.Errorf("%q", in)
+	}
+}
+
+func TestATurnNamingASessionTheRelayCannotReadIsABadGateway(t *testing.T) {
+	u := newUpstream(t)
+	u.session("s1", ada, nil)
+	u.on("GET /v1/sessions/broken", func(w http.ResponseWriter, _ *http.Request) {
+		answer(w, http.StatusInternalServerError, `{"error":{"code":"internal","message":"x"}}`)
+	})
+	u.on("GET /v1/sessions/garbled", func(w http.ResponseWriter, _ *http.Request) { answer(w, http.StatusOK, `{"owner":`) })
+	s := relayOf(t, u, Config{})
+	for _, id := range []string{"broken", "garbled"} {
+		status, _, body := do(t, s, ada, http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[{"kind":"session","sessionId":"`+id+`"}]}`)
+		if status != http.StatusBadGateway || code(t, body) != runyard.ErrorCodeUpstreamError {
+			t.Errorf("%s: %d %s", id, status, body)
+		}
+	}
+	if _, ok := u.last(http.MethodPost, "/v1/sessions/s1/turns"); ok {
+		t.Error("a turn was sent")
+	}
+}
+
+func TestAnUploadIsKeptForTheCallersScope(t *testing.T) {
+	u := newUpstream(t)
+	u.on("POST /v1/uploads", func(w http.ResponseWriter, _ *http.Request) {
+		answer(w, http.StatusCreated, `{"id":"0123456789abcdef0123456789abcdef","name":"a.txt","size":5,"expiresAt":"2026-11-15T00:00:00Z"}`)
+	})
+	u.on("DELETE /v1/uploads/0123456789abcdef0123456789abcdef", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	shared := func(_ *http.Request, _ Person) (Scope, error) {
+		return Scope{Owner: "app@example.com", NoStart: true}, nil
+	}
+	for _, c := range []struct {
+		name  string
+		scope func(*http.Request, Person) (Scope, error)
+		owner string
+	}{
+		{"a person's own", nil, ada},
+		{"a scope of the program's", shared, "app@example.com"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			s := relayOf(t, u, Config{Scope: c.scope})
+			status, h, body := do(t, s, ada, http.MethodPost, "/v1/uploads?name=a.txt&owner=grace%40example.com&other=1", "hello")
+			if status != http.StatusCreated || h.Get("Content-Type") != "application/json" || !strings.Contains(body, `"name":"a.txt"`) {
+				t.Fatalf("%d %v %s", status, h, body)
+			}
+			a, _ := u.last(http.MethodPost, "/v1/uploads")
+			if a.Body != "hello" || a.Header.Get("Content-Type") != "application/octet-stream" || a.Header.Get("Authorization") != "Bearer "+key ||
+				!equalValues(a.Query, url.Values{"name": {"a.txt"}, "owner": {c.owner}}) {
+				t.Errorf("asked %+v", a)
+			}
+			if status, _, body := do(t, s, ada, http.MethodDelete, "/v1/uploads/0123456789abcdef0123456789abcdef?owner=grace%40example.com", ""); status != http.StatusNoContent {
+				t.Errorf("deleted: %d %s", status, body)
+			}
+			a, _ = u.last(http.MethodDelete, "/v1/uploads/0123456789abcdef0123456789abcdef")
+			if !equalValues(a.Query, url.Values{"owner": {c.owner}}) {
+				t.Errorf("asked %+v", a)
+			}
+		})
+	}
+	// Nobody's: nobody keeps a file through it.
+	s := relayOf(t, u, Config{})
+	if status, _, _ := do(t, s, "", http.MethodPost, "/v1/uploads?name=a.txt", "x"); status != http.StatusUnauthorized {
+		t.Errorf("%d", status)
+	}
+}
+
+func TestATurnCarriesWhatItAttaches(t *testing.T) {
+	u := newUpstream(t)
+	u.session("s1", ada, nil)
+	u.on("POST /v1/sessions", func(w http.ResponseWriter, _ *http.Request) { answer(w, http.StatusCreated, `{"id":"new"}`) })
+	s := relayOf(t, u, Config{})
+	u.session("s2", ada, nil)
+	said := `[{"kind":"file","path":"src/a.go"},{"kind":"context","name":"Rate limiting","text":"Read it first."},` +
+		`{"kind":"upload","uploadId":"u1"},{"kind":"session","sessionId":"s2"},{"kind":"quote","text":"q","sessionId":"s2","seq":4},{"kind":"quote","text":"r"}]`
+	want := []runyard.Attachment{
+		{Kind: runyard.AttachmentKindFile, Path: new("src/a.go")},
+		{Kind: runyard.AttachmentKindContext, Name: new("Rate limiting"), Text: new("Read it first.")},
+		{Kind: runyard.AttachmentKindUpload, UploadId: new("u1")},
+		{Kind: runyard.AttachmentKindSession, SessionId: new("s2")},
+		{Kind: runyard.AttachmentKindQuote, Text: new("q"), SessionId: new("s2"), Seq: new(int64(4))},
+		{Kind: runyard.AttachmentKindQuote, Text: new("r")},
+	}
+	if status, _, body := do(t, s, ada, http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":`+said+`}`); status != 200 {
+		t.Fatalf("%d %s", status, body)
+	}
+	a, _ := u.last(http.MethodPost, "/v1/sessions/s1/turns")
+	var turn runyard.Turn
+	if err := json.Unmarshal([]byte(a.Body), &turn); err != nil || turn.Attachments == nil || !reflect.DeepEqual(*turn.Attachments, want) {
+		t.Errorf("sent %s %v", a.Body, err)
+	}
+	if status, _, body := do(t, s, ada, http.MethodPost, "/v1/sessions", `{"firstTurn":{"text":"x","attachments":`+said+`}}`); status != 201 {
+		t.Fatalf("%d %s", status, body)
+	}
+	a, _ = u.last(http.MethodPost, "/v1/sessions")
+	var spec runyard.SessionSpec
+	if err := json.Unmarshal([]byte(a.Body), &spec); err != nil || spec.FirstTurn == nil || spec.FirstTurn.Attachments == nil || !reflect.DeepEqual(*spec.FirstTurn.Attachments, want) {
+		t.Errorf("started with %s %v", a.Body, err)
+	}
+	// None is none, not an empty list.
+	do(t, s, ada, http.MethodPost, "/v1/sessions/s1/turns", `{"text":"x","attachments":[]}`)
+	if a, _ := u.last(http.MethodPost, "/v1/sessions/s1/turns"); strings.Contains(a.Body, "attachments") {
+		t.Errorf("sent %s", a.Body)
 	}
 }
 

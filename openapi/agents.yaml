@@ -3175,12 +3175,19 @@ paths:
         Nothing runs in a sandbox for it: the file is put on the session's
         disk when the session is given the turn. One no turn names within
         `limits.uploadTtlSeconds` is evicted.
+
+        It is the caller's: only a turn the caller sends names it. A key
+        with `sessions.person` keeps one for a person it speaks for
+        (`owner`), and a turn of that key names it only in a session of
+        theirs: a front end with one key for everybody keeps each person's
+        files from the others'.
       parameters:
         - name: name
           in: query
           required: true
           description: The file's name, without a slash. Where it goes on the session's disk.
           schema: {type: string, minLength: 1, maxLength: 255}
+        - $ref: "#/components/parameters/UploadOwner"
       requestBody:
         required: true
         content:
@@ -3205,9 +3212,12 @@ paths:
       x-public: true
       tags: [Turns]
       summary: Forget a file taken off a message before it was sent
+      parameters:
+        - $ref: "#/components/parameters/UploadOwner"
       responses:
         "204":
           description: Gone.
+        "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
@@ -4787,6 +4797,14 @@ components:
       in: path
       required: true
       schema: {type: string, minLength: 1}
+    UploadOwner:
+      name: owner
+      in: query
+      description: |
+        The person it is kept for, of the workspace, or it is `400`: only a
+        key with `sessions.person` names one, and it is `403` otherwise.
+        Absent, it is the caller's own.
+      schema: {type: string, format: email}
     UploadId:
       name: uploadId
       in: path
@@ -8470,10 +8488,11 @@ components:
         | `upload` | a file uploaded for the turn, `uploadId`; once the turn is taken, its `name` is said too — while it waits in the queue as well — and once the session is given it, the `path` it was put at |
         | `quote` | `text` quoted from a session's event, `sessionId` and `seq` |
         | `session` | another session, `sessionId`, referenced for the session to read through the `sessions` broker, and from then on its to read; its title is said as `name`, the server's to say. One the caller cannot read is refused |
+        | `context` | `text` the caller gives the session beside the message — what it is about, how to go about it — under a `name` a person knows it by, one line of at most 255 characters. Up to 8192 bytes, the session is given the text in its turn; longer, up to 200000 characters, it is put on the session's disk and the session is told the `path` to read it at, the server's to say. The transcript keeps the text either way |
       properties:
         kind:
           type: string
-          enum: [file, upload, quote, session]
+          enum: [file, upload, quote, session, context]
         path: {type: string}
         uploadId: {type: string, pattern: "^[0-9a-f]{32}$"}
         name: {type: string}

@@ -25,6 +25,8 @@
 //     changes to the caller's sessions (changes);
 //   - its turns: sent, interrupted, taken back (rewind), and those queued
 //     edited, held, cancelled;
+//   - the files the caller attaches to a message, kept for them alone
+//     (uploads);
 //   - what the transcript shows: its attachments, its files, its sub-agents;
 //   - with Config.SignIn, the caller signing their own provider in.
 //
@@ -112,8 +114,8 @@ type Config struct {
 	// labels: its profile, its provider, its brokers. An error refuses it.
 	// Labels it adds are kept; the scope's are the scope's whatever it does.
 	Start func(r *http.Request, p Person, spec *runyard.SessionSpec) error
-	// Turn is what a turn is sent with, besides its text and mode: its
-	// provider, its model. An error refuses it. r.PathValue("sessionId") is
+	// Turn is what a turn is sent with, besides its text, its mode and its
+	// attachments: its provider, its model. An error refuses it. r.PathValue("sessionId") is
 	// the session it is sent in, one of the caller's scope; it is empty for a
 	// session's first turn, sent with it, which is told here too.
 	Turn func(r *http.Request, p Person, turn *runyard.Turn) error
@@ -230,6 +232,8 @@ func New(cfg Config) (http.Handler, error) {
 	owned("DELETE /v1/sessions/{sessionId}/queue/{turnId}/hold", r.forward())
 	owned("POST /v1/sessions/{sessionId}/queue/{turnId}/interrupt", r.forward())
 	owned("GET /v1/sessions/{sessionId}/attachments/{uploadId}", r.forward())
+	handle("POST /v1/uploads", r.upload)
+	handle("DELETE /v1/uploads/{uploadId}", r.dropUpload)
 	owned("GET /v1/sessions/{sessionId}/files", r.forward("path"))
 	owned("GET /v1/sessions/{sessionId}/files/content", r.forward("path"))
 	owned("GET /v1/sessions/{sessionId}/subagents", r.forward())
@@ -336,6 +340,9 @@ func (r *relay) owned(h func(*call, *held)) func(*call) {
 
 func sessionPath(id string) string { return "/v1/sessions/" + url.PathEscape(id) }
 
+// octets is a body sent as the bytes it is, not as JSON: a file.
+type octets struct{ io.Reader }
+
 // send is the request to runyard-agents, with the key, and false when it
 // went unanswered — said to the browser already.
 func (r *relay) send(c *call, method, path string, query url.Values, body any) (*http.Response, bool) {
@@ -344,7 +351,10 @@ func (r *relay) send(c *call, method, path string, query url.Values, body any) (
 		u += "?" + query.Encode()
 	}
 	var reader io.Reader
-	if body != nil {
+	contentType := "application/json"
+	if file, ok := body.(octets); ok {
+		reader, contentType = file.Reader, "application/octet-stream"
+	} else if body != nil {
 		raw, err := json.Marshal(body)
 		if err != nil {
 			r.refused(c.w, c.r, "encoding", err)
@@ -359,7 +369,7 @@ func (r *relay) send(c *call, method, path string, query url.Values, body any) (
 	}
 	req.Header.Set("Authorization", "Bearer "+r.cfg.Key)
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", contentType)
 	}
 	if key := c.r.Header.Get("Idempotency-Key"); key != "" && method == http.MethodPost {
 		req.Header.Set("Idempotency-Key", key)
@@ -519,14 +529,123 @@ func (r *relay) page(c *call, path string, q url.Values, keep func(json.RawMessa
 
 // turnBody is what the browser says of a turn.
 type turnBody struct {
-	TurnID string            `json:"turnId"`
-	Text   string            `json:"text"`
-	Mode   *runyard.TurnMode `json:"mode,omitempty"`
+	TurnID      string            `json:"turnId"`
+	Text        string            `json:"text"`
+	Mode        *runyard.TurnMode `json:"mode,omitempty"`
+	Attachments []attachment      `json:"attachments,omitempty"`
+}
+
+// attachment is what the browser may attach to a turn, of what it may say
+// of each: a file on the session's own disk, a file it uploaded, a context
+// — text it could have written in the turn itself — and another session, or
+// a quote of one, of the caller's scope. The key reaches every session, and
+// the caller only theirs: a session of anybody else's is not found, as it is
+// on every route. An upload is the caller's because runyard-agents keeps it
+// for them (POST /v1/uploads), and names it only in a session of theirs.
+type attachment struct {
+	Kind      runyard.AttachmentKind `json:"kind"`
+	Path      *string                `json:"path,omitempty"`
+	Name      *string                `json:"name,omitempty"`
+	Text      *string                `json:"text,omitempty"`
+	UploadID  *string                `json:"uploadId,omitempty"`
+	SessionID *string                `json:"sessionId,omitempty"`
+	Seq       *int64                 `json:"seq,omitempty"`
+}
+
+// errNoSession is an attachment naming a session the caller does not reach.
+var errNoSession = errors.New("no such session")
+
+// attachmentsOf is what the browser attached, as runyard-agents is sent it,
+// or why it is not relayed: an *Error for what the browser may not say, and
+// any other error for a session the relay could not read.
+func (r *relay) attachmentsOf(c *call, said []attachment) (*[]runyard.Attachment, error) {
+	if len(said) == 0 {
+		return nil, nil
+	}
+	bad := func(i int, why string) error {
+		return Refuse(http.StatusBadRequest, runyard.ErrorCodeBadRequest, fmt.Sprintf("attachment %d: %s", i, why))
+	}
+	out := make([]runyard.Attachment, len(said))
+	for i, a := range said {
+		var extra bool
+		switch a.Kind {
+		case runyard.AttachmentKindFile:
+			extra = a.Name != nil || a.Text != nil || a.UploadID != nil || a.SessionID != nil || a.Seq != nil
+			out[i] = runyard.Attachment{Kind: a.Kind, Path: a.Path}
+		case runyard.AttachmentKindContext:
+			extra = a.UploadID != nil || a.SessionID != nil || a.Seq != nil
+			out[i] = runyard.Attachment{Kind: a.Kind, Name: a.Name, Text: a.Text, Path: a.Path}
+		case runyard.AttachmentKindUpload:
+			extra = a.Path != nil || a.Name != nil || a.Text != nil || a.SessionID != nil || a.Seq != nil
+			out[i] = runyard.Attachment{Kind: a.Kind, UploadId: a.UploadID}
+		case runyard.AttachmentKindSession:
+			extra = a.Path != nil || a.Name != nil || a.Text != nil || a.UploadID != nil || a.Seq != nil
+			out[i] = runyard.Attachment{Kind: a.Kind, SessionId: a.SessionID}
+		case runyard.AttachmentKindQuote:
+			extra = a.Path != nil || a.Name != nil || a.UploadID != nil
+			out[i] = runyard.Attachment{Kind: a.Kind, Text: a.Text, SessionId: a.SessionID, Seq: a.Seq}
+		default:
+			return nil, bad(i, fmt.Sprintf("there is no %q attachment", a.Kind))
+		}
+		if extra {
+			return nil, bad(i, fmt.Sprintf("a %s attachment says only what is its own", a.Kind))
+		}
+		if a.SessionID != nil {
+			if err := r.reaches(c, *a.SessionID); errors.Is(err, errNoSession) {
+				return nil, bad(i, errNoSession.Error())
+			} else if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return &out, nil
+}
+
+// reaches is nil when session id is one of the caller's scope, errNoSession
+// when it is not — or is not there — and why it could not be read otherwise.
+func (r *relay) reaches(c *call, id string) error {
+	req, err := http.NewRequestWithContext(c.r.Context(), http.MethodGet, r.base+sessionPath(id), http.NoBody)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+r.cfg.Key)
+	res, err := r.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer closeBody(res)
+	switch res.StatusCode {
+	case http.StatusOK:
+	case http.StatusNotFound:
+		return errNoSession
+	default:
+		return fmt.Errorf("reading session %s: %s", id, res.Status)
+	}
+	var s held
+	if err := json.NewDecoder(io.LimitReader(res.Body, maxBody)).Decode(&s); err != nil {
+		return err
+	}
+	if !c.scope.holds(s.Owner, s.Labels) {
+		return errNoSession
+	}
+	return nil
 }
 
 // turnOf is the turn the browser said, as Config.Turn makes it.
 func (r *relay) turnOf(c *call, b turnBody) (*runyard.Turn, bool) {
-	t := &runyard.Turn{TurnId: b.TurnID, Text: b.Text, Mode: b.Mode}
+	attachments, err := r.attachmentsOf(c, b.Attachments)
+	if e, ok := errors.AsType[*Error](err); ok {
+		writeError(c.w, e.Status, e.Code, e.Message)
+		return nil, false
+	}
+	if err != nil {
+		if c.r.Context().Err() == nil {
+			r.cfg.Log.Error("relay: a session a turn names could not be read", "path", c.r.URL.Path, "err", err)
+		}
+		writeError(c.w, http.StatusBadGateway, runyard.ErrorCodeUpstreamError, "runyard-agents could not say whose a session the turn names is")
+		return nil, false
+	}
+	t := &runyard.Turn{TurnId: b.TurnID, Text: b.Text, Mode: b.Mode, Attachments: attachments}
 	if t.TurnId == "" {
 		t.TurnId = r.cfg.NewID()
 	}
@@ -924,4 +1043,31 @@ func randomID() string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+// ----------------------------------------------------------------- uploads
+
+// upload keeps a file the caller attaches to a message, as runyard-agents
+// keeps one: for the caller's scope's owner, so a turn names it only in a
+// session of theirs. Its bytes are passed on as they come, never read here:
+// how big one may be is runyard-agents' to say.
+func (r *relay) upload(c *call) {
+	q := allowed(c.r.URL.Query(), "name")
+	q.Set("owner", c.scope.Owner)
+	res, ok := r.send(c, http.MethodPost, "/v1/uploads", q, octets{c.r.Body})
+	if ok {
+		defer closeBody(res)
+		r.pass(c, res)
+	}
+}
+
+// dropUpload forgets a file the caller took off a message: one kept for
+// them, and no other.
+func (r *relay) dropUpload(c *call) {
+	q := url.Values{"owner": {c.scope.Owner}}
+	res, ok := r.send(c, http.MethodDelete, "/v1/uploads/"+url.PathEscape(c.r.PathValue("uploadId")), q, nil)
+	if ok {
+		defer closeBody(res)
+		r.pass(c, res)
+	}
 }

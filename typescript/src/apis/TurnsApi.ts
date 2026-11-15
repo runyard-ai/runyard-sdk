@@ -85,6 +85,13 @@ export interface CreateUploadRequest {
      * 
      */
     body: Blob;
+    /**
+     * The person it is kept for, of the workspace, or it is `400`: only a
+     * key with `sessions.person` names one, and it is `403` otherwise.
+     * Absent, it is the caller's own.
+     * 
+     */
+    owner?: string;
 }
 
 export interface DeleteUploadRequest {
@@ -92,6 +99,13 @@ export interface DeleteUploadRequest {
      * 
      */
     uploadId: string;
+    /**
+     * The person it is kept for, of the workspace, or it is `400`: only a
+     * key with `sessions.person` names one, and it is `403` otherwise.
+     * Absent, it is the caller's own.
+     * 
+     */
+    owner?: string;
 }
 
 export interface EditQueuedTurnRequest {
@@ -249,16 +263,18 @@ export interface TurnsApiInterface {
      * Creates request options for createUpload without sending the request
      * @param {string} name The file\&#39;s name, without a slash. Where it goes on the session\&#39;s disk.
      * @param {Blob} body 
+     * @param {string} [owner] The person it is kept for, of the workspace, or it is &#x60;400&#x60;: only a key with &#x60;sessions.person&#x60; names one, and it is &#x60;403&#x60; otherwise. Absent, it is the caller\&#39;s own. 
      * @throws {RequiredError}
      * @memberof TurnsApiInterface
      */
     createUploadRequestOpts(requestParameters: CreateUploadRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\'s session\'s. Nothing runs in a sandbox for it: the file is put on the session\'s disk when the session is given the turn. One no turn names within `limits.uploadTtlSeconds` is evicted. 
+     * The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\'s session\'s. Nothing runs in a sandbox for it: the file is put on the session\'s disk when the session is given the turn. One no turn names within `limits.uploadTtlSeconds` is evicted.  It is the caller\'s: only a turn the caller sends names it. A key with `sessions.person` keeps one for a person it speaks for (`owner`), and a turn of that key names it only in a session of theirs: a front end with one key for everybody keeps each person\'s files from the others\'. 
      * @summary Keep a file for a message not sent yet
      * @param {string} name The file\&#39;s name, without a slash. Where it goes on the session\&#39;s disk.
      * @param {Blob} body 
+     * @param {string} [owner] The person it is kept for, of the workspace, or it is &#x60;400&#x60;: only a key with &#x60;sessions.person&#x60; names one, and it is &#x60;403&#x60; otherwise. Absent, it is the caller\&#39;s own. 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof TurnsApiInterface
@@ -266,7 +282,7 @@ export interface TurnsApiInterface {
     createUploadRaw(requestParameters: CreateUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Upload>>;
 
     /**
-     * The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\'s session\'s. Nothing runs in a sandbox for it: the file is put on the session\'s disk when the session is given the turn. One no turn names within `limits.uploadTtlSeconds` is evicted. 
+     * The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\'s session\'s. Nothing runs in a sandbox for it: the file is put on the session\'s disk when the session is given the turn. One no turn names within `limits.uploadTtlSeconds` is evicted.  It is the caller\'s: only a turn the caller sends names it. A key with `sessions.person` keeps one for a person it speaks for (`owner`), and a turn of that key names it only in a session of theirs: a front end with one key for everybody keeps each person\'s files from the others\'. 
      * Keep a file for a message not sent yet
      */
     createUpload(requestParameters: CreateUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Upload>;
@@ -274,6 +290,7 @@ export interface TurnsApiInterface {
     /**
      * Creates request options for deleteUpload without sending the request
      * @param {string} uploadId 
+     * @param {string} [owner] The person it is kept for, of the workspace, or it is &#x60;400&#x60;: only a key with &#x60;sessions.person&#x60; names one, and it is &#x60;403&#x60; otherwise. Absent, it is the caller\&#39;s own. 
      * @throws {RequiredError}
      * @memberof TurnsApiInterface
      */
@@ -283,6 +300,7 @@ export interface TurnsApiInterface {
      * 
      * @summary Forget a file taken off a message before it was sent
      * @param {string} uploadId 
+     * @param {string} [owner] The person it is kept for, of the workspace, or it is &#x60;400&#x60;: only a key with &#x60;sessions.person&#x60; names one, and it is &#x60;403&#x60; otherwise. Absent, it is the caller\&#39;s own. 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof TurnsApiInterface
@@ -671,6 +689,10 @@ export class TurnsApi extends runtime.BaseAPI implements TurnsApiInterface {
             queryParameters['name'] = requestParameters['name'];
         }
 
+        if (requestParameters['owner'] != null) {
+            queryParameters['owner'] = requestParameters['owner'];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         headerParameters['Content-Type'] = 'application/octet-stream';
@@ -704,7 +726,7 @@ export class TurnsApi extends runtime.BaseAPI implements TurnsApiInterface {
     }
 
     /**
-     * The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\'s session\'s. Nothing runs in a sandbox for it: the file is put on the session\'s disk when the session is given the turn. One no turn names within `limits.uploadTtlSeconds` is evicted. 
+     * The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\'s session\'s. Nothing runs in a sandbox for it: the file is put on the session\'s disk when the session is given the turn. One no turn names within `limits.uploadTtlSeconds` is evicted.  It is the caller\'s: only a turn the caller sends names it. A key with `sessions.person` keeps one for a person it speaks for (`owner`), and a turn of that key names it only in a session of theirs: a front end with one key for everybody keeps each person\'s files from the others\'. 
      * Keep a file for a message not sent yet
      */
     async createUploadRaw(requestParameters: CreateUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Upload>> {
@@ -715,7 +737,7 @@ export class TurnsApi extends runtime.BaseAPI implements TurnsApiInterface {
     }
 
     /**
-     * The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\'s session\'s. Nothing runs in a sandbox for it: the file is put on the session\'s disk when the session is given the turn. One no turn names within `limits.uploadTtlSeconds` is evicted. 
+     * The bytes are kept as they are — never opened for what they say — until a turn names the upload, which makes it that turn\'s session\'s. Nothing runs in a sandbox for it: the file is put on the session\'s disk when the session is given the turn. One no turn names within `limits.uploadTtlSeconds` is evicted.  It is the caller\'s: only a turn the caller sends names it. A key with `sessions.person` keeps one for a person it speaks for (`owner`), and a turn of that key names it only in a session of theirs: a front end with one key for everybody keeps each person\'s files from the others\'. 
      * Keep a file for a message not sent yet
      */
     async createUpload(requestParameters: CreateUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Upload> {
@@ -735,6 +757,10 @@ export class TurnsApi extends runtime.BaseAPI implements TurnsApiInterface {
         }
 
         const queryParameters: any = {};
+
+        if (requestParameters['owner'] != null) {
+            queryParameters['owner'] = requestParameters['owner'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 

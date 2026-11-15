@@ -14,7 +14,19 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { test } from 'node:test';
 
-import { Configuration, ErrorCode, PeopleApi, Role, SessionState, SessionsApi, errorCode, readChanges, readEvents } from '../src/index.js';
+import {
+  AttachmentKindEnum,
+  Configuration,
+  ErrorCode,
+  PeopleApi,
+  Role,
+  SessionState,
+  SessionsApi,
+  TurnsApi,
+  errorCode,
+  readChanges,
+  readEvents,
+} from '../src/index.js';
 import { createRelay, toNodeHandler } from '../src/relay.js';
 
 /** What promise threw: it is an error for it not to. */
@@ -103,6 +115,20 @@ test('relay conformance', async (t) => {
     }
     assert.equal(ids.includes(id), email === grace, `${email}'s changes: ${ids}`);
   }
+
+  // A file she attaches is kept for her: hers to take off, not Alan's.
+  const kept = await new TurnsApi(asGrace).createUpload({ name: 'notes.txt', body: new Blob(['hello']) });
+  assert.equal(kept.size, 5);
+  assert.equal(await errorCode(await failure(new TurnsApi(asAlan).deleteUpload({ uploadId: kept.id }))), ErrorCode.NotFound);
+  // Nor is her session his to name in a turn of his own.
+  const alansOwn = await new SessionsApi(asAlan).startSession({ sessionSpec: {} });
+  const naming = new TurnsApi(asAlan).sendTurn({
+    sessionId: alansOwn.id,
+    turn: { turnId: 'naming-graces', text: 'read hers', attachments: [{ kind: AttachmentKindEnum.Session, sessionId: id }] },
+  });
+  assert.equal(await errorCode(await failure(naming)), ErrorCode.BadRequest);
+  await new SessionsApi(asAlan).deleteSession({ sessionId: alansOwn.id });
+  await new TurnsApi(asGrace).deleteUpload({ uploadId: kept.id });
 
   // Renamed, and deleted, by her.
   const renamed = await new SessionsApi(asGrace).updateSession({ sessionId: id, sessionUpdate: { title: 'Renamed' } });

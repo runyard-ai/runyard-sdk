@@ -1,7 +1,7 @@
 
 # Attachment
 
-| kind | what it is | |---|---| | `file` | a file on the session\'s disk, at `path` | | `upload` | a file uploaded for the turn, `uploadId`; once the turn is taken, its `name` is said too — while it waits in the queue as well — and once the session is given it, the `path` it was put at | | `quote` | `text` quoted from a session\'s event, `sessionId` and `seq` | | `session` | another session, `sessionId`, referenced for the session to read through the `sessions` broker, and from then on its to read; its title is said as `name`, the server\'s to say. One the caller cannot read is refused | 
+| kind | what it is | |---|---| | `file` | a file on the session\'s disk, at `path` | | `upload` | a file uploaded for the turn, `uploadId`; once the turn is taken, its `name` is said too — while it waits in the queue as well — and once the session is given it, the `path` it was put at | | `quote` | `text` quoted from a session\'s event, `sessionId` and `seq` | | `session` | another session, `sessionId`, referenced for the session to read through the `sessions` broker, and from then on its to read; its title is said as `name`, the server\'s to say. One the caller cannot read is refused | | `context` | `text` the caller gives the session beside the message — what it is about, how to go about it — under a `name` a person knows it by, one line of at most 255 characters. Up to 8192 bytes, the session is given the text in its turn; longer, up to 200000 characters, it is put on the session\'s disk and the session is told the `path` to read it at, the server\'s to say. The transcript keeps the text either way | 
 
 ## Properties
 
