@@ -295,7 +295,7 @@ This endpoint does not need any parameter.
 
 The key, person, session or platform calling
 
-Who the caller is: a person signed in, a key, a session\&#39;s harness calling through its brokers, or the Runyard platform with a platform token (&#x60;-platform-issuer&#x60;) — with its role in the workspace and the scopes it holds. The platform has no role and no address: it answers &#x60;{kind: platform, name: \&quot;Runyard platform\&quot;, scopes}&#x60;, which is how the platform finds out a workspace takes its tokens. 
+Who the caller is: a person signed in, a key, a session\&#39;s harness calling through its brokers, or the Runyard platform with a platform token (&#x60;--platform-issuer&#x60;) — with its role in the workspace and the scopes it holds. The platform has no role and no address: it answers &#x60;{kind: platform, name: \&quot;Runyard platform\&quot;, scopes}&#x60;, which is how the platform finds out a workspace takes its tokens. 
 
 ### Example
 
@@ -363,7 +363,7 @@ This endpoint does not need any parameter.
 
 The orgs and workspaces the caller\&#39;s person may reach
 
-What the platform (&#x60;-home-url&#x60;) last said the caller\&#39;s person may reach — their orgs and the workspaces they may open — for the UIs\&#39; top bar. The server asks the platform (&#x60;GET &lt;issuer&gt;/api/me&#x60;, with the person\&#39;s access token) server to server right after each sign-in with the OpenID provider and each refresh of it, only when the provider is the platform: the &#x60;-oidc-issuer&#x60;\&#39;s origin is the &#x60;-home-url&#x60;\&#39;s. A failure keeps what was last said. A person never asked about has empty lists and no &#x60;fetchedAt&#x60;. &#x60;404&#x60; when the server has no &#x60;-home-url&#x60;. 
+What the platform (&#x60;--home-url&#x60;) last said the caller\&#39;s person may reach — their orgs and the workspaces they may open — for the UIs\&#39; top bar. The server asks the platform (&#x60;GET &lt;issuer&gt;/api/me&#x60;, with the person\&#39;s access token) server to server right after each sign-in with the OpenID provider and each refresh of it, only when the provider is the platform: the &#x60;--oidc-issuer&#x60;\&#39;s origin is the &#x60;--home-url&#x60;\&#39;s. A failure keeps what was last said. A person never asked about has empty lists and no &#x60;fetchedAt&#x60;. &#x60;404&#x60; when the server has no &#x60;--home-url&#x60;. 
 
 ### Example
 

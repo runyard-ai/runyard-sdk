@@ -13,6 +13,7 @@ Name | Type
 `attachments` | [Array&lt;Attachment&gt;](Attachment.md)
 `source` | [UserEventSource](UserEventSource.md)
 `keyId` | string
+`compact` | boolean
 
 ## Example
 
@@ -27,6 +28,7 @@ const example = {
   "attachments": null,
   "source": null,
   "keyId": null,
+  "compact": null,
 } satisfies UserEvent
 
 console.log(example)

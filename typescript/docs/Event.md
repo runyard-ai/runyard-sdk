@@ -23,6 +23,7 @@ Name | Type
 `attachments` | [Array&lt;Attachment&gt;](Attachment.md)
 `source` | [UserEventSource](UserEventSource.md)
 `keyId` | string
+`compact` | boolean
 `parentToolId` | string
 `toolId` | string
 `name` | string
@@ -75,6 +76,7 @@ const example = {
   "attachments": null,
   "source": null,
   "keyId": null,
+  "compact": null,
   "parentToolId": null,
   "toolId": null,
   "name": Bash,

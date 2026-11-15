@@ -1,7 +1,7 @@
 
 # Caller
 
-A key — sent as a bearer, or the one a UI was signed in with — a person signed in with a password or Google, who holds their role\'s scopes, a session\'s harness calling through its brokers, or the Runyard platform calling with a platform token.  The platform is nobody: no person, not the workspace\'s owner. It has no `email` and no `role`, and holds the scopes its token names of those the server was started to grant it (`-platform-scopes`), over the workspace — and nothing else.  A session is no key: nobody made one for it, and none is kept. The server knows it by the broker the call came through, and it acts as its owner — reading and starting sessions and firing triggers, in its own tree alone. 
+A key — sent as a bearer, or the one a UI was signed in with — a person signed in with a password or Google, who holds their role\'s scopes, a session\'s harness calling through its brokers, or the Runyard platform calling with a platform token.  The platform is nobody: no person, not the workspace\'s owner. It has no `email` and no `role`, and holds the scopes its token names of those the server was started to grant it (`--platform-scopes`), over the workspace — and nothing else.  A session is no key: nobody made one for it, and none is kept. The server knows it by the broker the call came through, and it acts as its owner — reading and starting sessions and firing triggers, in its own tree alone. 
 
 ## Properties
 

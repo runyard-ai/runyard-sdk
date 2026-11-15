@@ -266,7 +266,7 @@ example().catch(console.error);
 
 The applications that may connect to the workspace
 
-Every application the workspace knows: those its release names (&#x60;-apps-file&#x60;, &#x60;source: release&#x60;), which are changed only by a new release, and those an admin registered here (&#x60;source: console&#x60;). Never a secret, nor its hash. An admin\&#39;s, with &#x60;keys.admin&#x60;. 
+Every application the workspace knows: those its release names (&#x60;--apps-file&#x60;, &#x60;source: release&#x60;), which are changed only by a new release, and those an admin registered here (&#x60;source: console&#x60;). Never a secret, nor its hash. An admin\&#39;s, with &#x60;keys.admin&#x60;. 
 
 ### Example
 

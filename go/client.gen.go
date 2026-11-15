@@ -1280,7 +1280,7 @@ type BuiltInBroker string
 //
 // The platform is nobody: no person, not the workspace's owner. It
 // has no `email` and no `role`, and holds the scopes its token names
-// of those the server was started to grant it (`-platform-scopes`),
+// of those the server was started to grant it (`--platform-scopes`),
 // over the workspace — and nothing else.
 //
 // A session is no key: nobody made one for it, and none is kept. The
@@ -1396,7 +1396,7 @@ type ConnectApp struct {
 	// Scopes What its keys hold, of what their approver does. Unsaid, it is `sessions.read sessions.write sessions.delete sessions.person profiles.write brokers.write providers.write users.admin`: what an application needs to run sessions for its own users.
 	Scopes []Scope `json:"scopes"`
 
-	// Source `release`: named by the release (`-apps-file`), and changed only by another; `console`: registered by an admin, here.
+	// Source `release`: named by the release (`--apps-file`), and changed only by another; `console`: registered by an admin, here.
 	Source ConnectAppSource `json:"source"`
 }
 
@@ -1415,7 +1415,7 @@ type ConnectAppRef struct {
 	Name string       `json:"name"`
 }
 
-// ConnectAppSource `release`: named by the release (`-apps-file`), and changed only by another; `console`: registered by an admin, here.
+// ConnectAppSource `release`: named by the release (`--apps-file`), and changed only by another; `console`: registered by an admin, here.
 type ConnectAppSource string
 
 // ConnectConsent defines model for ConnectConsent.
@@ -1457,11 +1457,11 @@ type ConnectGrant struct {
 		// PublicUrl The same, for a browser — the chat and the console.
 		PublicUrl string `json:"publicUrl"`
 
-		// Url The workspace's API, at its public address (`-url`).
+		// Url The workspace's API, at its public address (`--url`).
 		Url string `json:"url"`
 	} `json:"sessions"`
 	Workspace struct {
-		// Id The platform's id of the workspace, when its release says one (`-platform-workspace-id`); its name otherwise.
+		// Id The platform's id of the workspace, when its release says one (`--platform-workspace-id`); its name otherwise.
 		Id string `json:"id"`
 
 		// Name Small letters, digits and dashes, a letter first.
@@ -2264,8 +2264,8 @@ type Id = string
 // Identity Where a person's role comes from, and how the server learns they
 // have left.
 //
-//   - `claims` (`-signin-roles-claim`): from a claim of the identity
-//     tokens of the OpenID provider (`-oidc-issuer`), at every sign-in
+//   - `claims` (`--signin-roles-claim`): from a claim of the identity
+//     tokens of the OpenID provider (`--oidc-issuer`), at every sign-in
 //     and every refresh. People are not added, changed or invited here:
 //     the provider decides. The server keeps each person's refresh token
 //     and asks the provider about them every `refreshSeconds`; one it
@@ -2276,7 +2276,7 @@ type Id = string
 //     answer changes nothing for `unreachableGraceSeconds`; after that,
 //     keys are suspended until it answers again.
 //   - `local`: from the people the workspace keeps, managed here, as
-//     with a password file (`-htpasswd`) or a provider that says no role
+//     with a password file (`--htpasswd`) or a provider that says no role
 //     (Google). Removing a person revokes their keys.
 type Identity struct {
 	// Claim For `claims`, the claim roles are read from (`groups`, `runyard_role`).
@@ -2284,16 +2284,16 @@ type Identity struct {
 
 	// KeyLifetimeSeconds For `claims` with a provider that gives no refresh tokens: a key
 	// stops working this long after its person last signed in, and
-	// works again when they sign in (`-signin-key-lifetime`). It is how
+	// works again when they sign in (`--signin-key-lifetime`). It is how
 	// long offboarding can take there.
 	KeyLifetimeSeconds *int         `json:"keyLifetimeSeconds,omitempty"`
 	Mode               IdentityMode `json:"mode"`
 
-	// RefreshSeconds For `claims`, how often each person is asked about at the provider (`-signin-refresh`).
+	// RefreshSeconds For `claims`, how often each person is asked about at the provider (`--signin-refresh`).
 	RefreshSeconds *int `json:"refreshSeconds,omitempty"`
 
 	// UnreachableGraceSeconds For `claims`, how long a provider may not answer before keys are
-	// suspended (`-signin-unreachable-grace`).
+	// suspended (`--signin-unreachable-grace`).
 	UnreachableGraceSeconds *int `json:"unreachableGraceSeconds,omitempty"`
 }
 
@@ -2380,7 +2380,7 @@ type Info struct {
 	// Defaults What a session gets when it names nothing. Its model, which depends on the providers, is its harness's `defaultModel`.
 	Defaults Defaults `json:"defaults"`
 
-	// HomeUrl The platform in front of this server (`-home-url`), when there
+	// HomeUrl The platform in front of this server (`--home-url`), when there
 	// is one: where the top bar's org, billing and workspace links go
 	// (`<homeUrl>/home`, `<homeUrl>/new`, `<homeUrl>/<org>/settings`).
 	HomeUrl *string `json:"homeUrl,omitempty"`
@@ -2388,8 +2388,8 @@ type Info struct {
 	// Identity Where a person's role comes from, and how the server learns they
 	// have left.
 	//
-	// - `claims` (`-signin-roles-claim`): from a claim of the identity
-	//   tokens of the OpenID provider (`-oidc-issuer`), at every sign-in
+	// - `claims` (`--signin-roles-claim`): from a claim of the identity
+	//   tokens of the OpenID provider (`--oidc-issuer`), at every sign-in
 	//   and every refresh. People are not added, changed or invited here:
 	//   the provider decides. The server keeps each person's refresh token
 	//   and asks the provider about them every `refreshSeconds`; one it
@@ -2400,7 +2400,7 @@ type Info struct {
 	//   answer changes nothing for `unreachableGraceSeconds`; after that,
 	//   keys are suspended until it answers again.
 	// - `local`: from the people the workspace keeps, managed here, as
-	//   with a password file (`-htpasswd`) or a provider that says no role
+	//   with a password file (`--htpasswd`) or a provider that says no role
 	//   (Google). Removing a person revokes their keys.
 	Identity *Identity `json:"identity,omitempty"`
 
@@ -2552,7 +2552,7 @@ type Key struct {
 	Link *bool  `json:"link,omitempty"`
 	Name string `json:"name"`
 
-	// Owner The person it is of — who made it; the workspace's owner for the one the server keeps from `-owner-key-file`.
+	// Owner The person it is of — who made it; the workspace's owner for the one the server keeps from `--owner-key-file`.
 	Owner  openapi_types.Email `json:"owner"`
 	Scopes []Scope             `json:"scopes"`
 
@@ -2834,7 +2834,7 @@ type MintedKey struct {
 	Link *bool  `json:"link,omitempty"`
 	Name string `json:"name"`
 
-	// Owner The person it is of — who made it; the workspace's owner for the one the server keeps from `-owner-key-file`.
+	// Owner The person it is of — who made it; the workspace's owner for the one the server keeps from `--owner-key-file`.
 	Owner  openapi_types.Email `json:"owner"`
 	Scopes []Scope             `json:"scopes"`
 
@@ -3319,6 +3319,9 @@ type ProviderUsage struct {
 type QueuedTurn struct {
 	Attachments *[]Attachment `json:"attachments,omitempty"`
 
+	// Compact A compaction asked for, waiting, as `UserEvent`'s `compact` says. Absent for any other turn.
+	Compact *bool `json:"compact,omitempty"`
+
 	// HeldUntil While somebody edits it (`PUT …/hold`): until when the session
 	// is given neither it nor any turn behind it, unless the edit is
 	// saved or let go of first. Absent when it is not held.
@@ -3415,7 +3418,7 @@ type RegisteredConnectApp struct {
 	// Secret What the application authenticates with, as the password of HTTP Basic at `POST /v1/connect/token`. In this answer and nowhere else.
 	Secret string `json:"secret"`
 
-	// Source `release`: named by the release (`-apps-file`), and changed only by another; `console`: registered by an admin, here.
+	// Source `release`: named by the release (`--apps-file`), and changed only by another; `console`: registered by an admin, here.
 	Source ConnectAppSource `json:"source"`
 }
 
@@ -3631,7 +3634,7 @@ type Schedule struct {
 // an admin holds every scope, over everything in the workspace. A key
 // holds what it was given of what its person holds now. The platform,
 // calling with a platform token, holds what the token names of
-// `-platform-scopes`, and never `keys.admin`, `users.admin` or
+// `--platform-scopes`, and never `keys.admin`, `users.admin` or
 // `sessions.person`.
 type Scope string
 
@@ -3659,14 +3662,14 @@ type SecretValue struct {
 // SelfDirectory What the platform last said the caller's person may reach, as its `GET /api/me` lists it.
 type SelfDirectory struct {
 	Current struct {
-		// Workspace This server's workspace by its name (`-workspace`), which is its slug at the platform.
+		// Workspace This server's workspace by its name (`--workspace`), which is its slug at the platform.
 		Workspace string `json:"workspace"`
 	} `json:"current"`
 
 	// FetchedAt When the platform last answered about them; absent when it never has.
 	FetchedAt *time.Time `json:"fetchedAt,omitempty"`
 
-	// HomeUrl The platform (`-home-url`).
+	// HomeUrl The platform (`--home-url`).
 	HomeUrl string `json:"homeUrl"`
 
 	// Orgs Their orgs, personal first, then by name.
@@ -4931,7 +4934,7 @@ type User struct {
 	// delete it. Absent once they sign in with a role again.
 	OffboardedAt *time.Time `json:"offboardedAt,omitempty"`
 
-	// Owner The workspace's owner (`-owner`), always an admin, and never removed.
+	// Owner The workspace's owner (`--owner`), always an admin, and never removed.
 	Owner bool `json:"owner"`
 
 	// Role A person's in the workspace. An admin sees and changes everything in it; a member has the chat, over what is theirs.
@@ -4941,7 +4944,13 @@ type User struct {
 // UserEvent A turn, as the session was given it.
 type UserEvent struct {
 	Attachments *[]Attachment `json:"attachments,omitempty"`
-	KeyId       *string       `json:"keyId,omitempty"`
+
+	// Compact A compaction asked for (`POST …/compact`) rather than words: its
+	// `text` is the command the harness was given. The turn's
+	// `compaction` event, before its `turn_ended`, says what it did.
+	// Absent for any other turn.
+	Compact *bool   `json:"compact,omitempty"`
+	KeyId   *string `json:"keyId,omitempty"`
 
 	// Source Who sent it, from the key that did — `user` for a person, signed in or spoken for by a key with `sessions.person`; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
 	Source UserEventSource `json:"source"`
@@ -4993,14 +5002,14 @@ type Workspace struct {
 	// Deprecated:
 	Namespace string `json:"namespace"`
 
-	// Owner Its owner (`-owner`), always an admin of it.
+	// Owner Its owner (`--owner`), always an admin of it.
 	Owner openapi_types.Email `json:"owner"`
 
-	// Policy What the operator lets it have (`-policy-file`). Absent, there
+	// Policy What the operator lets it have (`--policy-file`). Absent, there
 	// is none: its sessions are given what their config names.
 	Policy *WorkspacePolicy `json:"policy,omitempty"`
 
-	// Title What it is called (`-workspace-title`); its name when nobody said.
+	// Title What it is called (`--workspace-title`); its name when nobody said.
 	Title string `json:"title"`
 }
 
@@ -5008,7 +5017,7 @@ type Workspace struct {
 type WorkspaceName = string
 
 // WorkspacePolicy What the operator lets the workspace's sessions have: the file
-// `-policy-file` names, read when the server starts, and shown here
+// `--policy-file` names, read when the server starts, and shown here
 // read-only. A change is a restart, and reaches each session as it next
 // wakes.
 type WorkspacePolicy struct {

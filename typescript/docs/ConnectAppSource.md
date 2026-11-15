@@ -1,7 +1,7 @@
 
 # ConnectAppSource
 
-`release`: named by the release (`-apps-file`), and changed only by another; `console`: registered by an admin, here.
+`release`: named by the release (`--apps-file`), and changed only by another; `console`: registered by an admin, here.
 
 ## Properties
 

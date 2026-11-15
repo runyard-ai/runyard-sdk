@@ -1,7 +1,7 @@
 
 # WorkspacePolicy
 
-What the operator lets the workspace\'s sessions have: the file `-policy-file` names, read when the server starts, and shown here read-only. A change is a restart, and reaches each session as it next wakes. 
+What the operator lets the workspace\'s sessions have: the file `--policy-file` names, read when the server starts, and shown here read-only. A change is a restart, and reaches each session as it next wakes. 
 
 ## Properties
 

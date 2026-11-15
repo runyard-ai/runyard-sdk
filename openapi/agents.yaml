@@ -112,10 +112,10 @@ info:
     images, deployments, providers, brokers, MCP connectors, people, keys,
     usage and activity. What the workspace itself is comes from how the
     server is started, never from this API: its name and title
-    (`-workspace`, `-workspace-title`), the runyard-sandboxes server it works
-    on — the workspace's own (`-sandboxes`), reached with a key that reaches
-    every sandbox there (`-sandboxes-key-file`, read at every start) — its
-    owner (`-owner`) and its policy (`-policy-file`). `GET /v1/info` says
+    (`--workspace`, `--workspace-title`), the runyard-sandboxes server it works
+    on — the workspace's own (`--sandboxes`), reached with a key that reaches
+    every sandbox there (`--sandboxes-key-file`, read at every start) — its
+    owner (`--owner`) and its policy (`--policy-file`). `GET /v1/info` says
     them, but the key.
 
     ### People, and what is whose
@@ -139,7 +139,7 @@ info:
     with Google or the OpenID provider, or by being put in it by address
     (`PUT /v1/users/{userEmail}`), and signs in with Google, the OpenID
     provider or the password the password file holds for their address.
-    The workspace's owner (`-owner`) is an admin of it from the start, always,
+    The workspace's owner (`--owner`) is an admin of it from the start, always,
     and is never removed.
 
     ### The UIs, and this reference
@@ -256,7 +256,7 @@ paths:
       description: |
         Who the caller is: a person signed in, a key, a session's harness
         calling through its brokers, or the Runyard platform with a
-        platform token (`-platform-issuer`) — with its role in the workspace
+        platform token (`--platform-issuer`) — with its role in the workspace
         and the scopes it holds. The platform has no role and no address:
         it answers `{kind: platform, name: "Runyard platform", scopes}`,
         which is how the platform finds out a workspace takes its tokens.
@@ -332,15 +332,15 @@ paths:
       tags: [Meta]
       summary: The orgs and workspaces the caller's person may reach
       description: |
-        What the platform (`-home-url`) last said the caller's person may
+        What the platform (`--home-url`) last said the caller's person may
         reach — their orgs and the workspaces they may open — for the UIs'
         top bar. The server asks the platform (`GET <issuer>/api/me`, with
         the person's access token) server to server right after each
         sign-in with the OpenID provider and each refresh of it, only when
-        the provider is the platform: the `-oidc-issuer`'s origin is the
-        `-home-url`'s. A failure keeps what was last said. A person never
+        the provider is the platform: the `--oidc-issuer`'s origin is the
+        `--home-url`'s. A failure keeps what was last said. A person never
         asked about has empty lists and no `fetchedAt`. `404` when the
-        server has no `-home-url`.
+        server has no `--home-url`.
       responses:
         "200":
           description: The directory.
@@ -651,7 +651,7 @@ paths:
       summary: The applications that may connect to the workspace
       description: |
         Every application the workspace knows: those its release names
-        (`-apps-file`, `source: release`), which are changed only by a new
+        (`--apps-file`, `source: release`), which are changed only by a new
         release, and those an admin registered here (`source: console`).
         Never a secret, nor its hash. An admin's, with `keys.admin`.
       responses:
@@ -3787,7 +3787,7 @@ paths:
       description: |
         The record of what the harness sent: every call the session's `llm`
         broker carried to the provider and back — an *exchange* — kept for
-        a while (`-exchanges-kept`, a week by default) and then forgotten,
+        a while (`--exchanges-kept`, a week by default) and then forgotten,
         and with the session when it is deleted. Calls that count tokens
         and that list the models are kept too, told apart by `path`.
 
@@ -3867,7 +3867,7 @@ paths:
         connector's tool called, a `git push` and the refs it moved, a
         request through an http broker, a host opened through `egress`, a
         tunnel, a session or an image asked for. Kept a while
-        (`-activity-kept`, a week by default) and then forgotten; kept
+        (`--activity-kept`, a week by default) and then forgotten; kept
         after its session is deleted, until then.
 
         Where the sandboxes daemon keeps a record of every brokered request
@@ -4717,13 +4717,13 @@ components:
       bearerFormat: JWT
       description: |
         `Authorization: Bearer <JWT>`, signed by the platform in front of
-        this server (`-platform-issuer`) with the key it signs identity
+        this server (`--platform-issuer`) with the key it signs identity
         tokens with, published in its key set. Taken only when the server
-        was started with `-platform-issuer`; otherwise it is any other
+        was started with `--platform-issuer`; otherwise it is any other
         bearer that is not a key: `401`.
 
         Its header's `typ` is `runyard-platform+jwt`, and `alg` `RS256`.
-        Its claims: `iss` the issuer, `aud` this server's public URL (`-url`,
+        Its claims: `iss` the issuer, `aud` this server's public URL (`--url`,
         without a trailing slash) — so a token for one workspace is refused
         by every other — `sub` `platform`, `scope` the scopes it asks for,
         space-separated, `iat`, `exp` at most 300 seconds after `iat`, and a
@@ -4732,7 +4732,7 @@ components:
         on times. Every refusal is the same `401`.
 
         The caller is the platform (`Caller.kind: platform`), holding the
-        token's scopes that `-platform-scopes` grants — never the owner,
+        token's scopes that `--platform-scopes` grants — never the owner,
         never a person. It reaches `GET /v1/self`, `GET /v1/info`, and what
         its scopes are for, and nothing else; each of its calls is in the
         activity, by `actor: platform`.
@@ -5303,7 +5303,7 @@ components:
         an admin holds every scope, over everything in the workspace. A key
         holds what it was given of what its person holds now. The platform,
         calling with a platform token, holds what the token names of
-        `-platform-scopes`, and never `keys.admin`, `users.admin` or
+        `--platform-scopes`, and never `keys.admin`, `users.admin` or
         `sessions.person`.
     Owned:
       type: object
@@ -5367,7 +5367,7 @@ components:
         homeUrl:
           type: string
           format: uri
-          description: The platform (`-home-url`).
+          description: The platform (`--home-url`).
         orgs:
           type: array
           description: Their orgs, personal first, then by name.
@@ -5382,7 +5382,7 @@ components:
           properties:
             workspace:
               type: string
-              description: This server's workspace by its name (`-workspace`), which is its slug at the platform.
+              description: This server's workspace by its name (`--workspace`), which is its slug at the platform.
         fetchedAt:
           type: string
           format: date-time
@@ -5428,7 +5428,7 @@ components:
           type: string
           format: uri
           description: |
-            The platform in front of this server (`-home-url`), when there
+            The platform in front of this server (`--home-url`), when there
             is one: where the top bar's org, billing and workspace links go
             (`<homeUrl>/home`, `<homeUrl>/new`, `<homeUrl>/<org>/settings`).
         image:
@@ -5461,8 +5461,8 @@ components:
         Where a person's role comes from, and how the server learns they
         have left.
 
-        - `claims` (`-signin-roles-claim`): from a claim of the identity
-          tokens of the OpenID provider (`-oidc-issuer`), at every sign-in
+        - `claims` (`--signin-roles-claim`): from a claim of the identity
+          tokens of the OpenID provider (`--oidc-issuer`), at every sign-in
           and every refresh. People are not added, changed or invited here:
           the provider decides. The server keeps each person's refresh token
           and asks the provider about them every `refreshSeconds`; one it
@@ -5473,7 +5473,7 @@ components:
           answer changes nothing for `unreachableGraceSeconds`; after that,
           keys are suspended until it answers again.
         - `local`: from the people the workspace keeps, managed here, as
-          with a password file (`-htpasswd`) or a provider that says no role
+          with a password file (`--htpasswd`) or a provider that says no role
           (Google). Removing a person revokes their keys.
       properties:
         mode:
@@ -5484,18 +5484,18 @@ components:
           description: For `claims`, the claim roles are read from (`groups`, `runyard_role`).
         refreshSeconds:
           type: integer
-          description: For `claims`, how often each person is asked about at the provider (`-signin-refresh`).
+          description: For `claims`, how often each person is asked about at the provider (`--signin-refresh`).
         unreachableGraceSeconds:
           type: integer
           description: |
             For `claims`, how long a provider may not answer before keys are
-            suspended (`-signin-unreachable-grace`).
+            suspended (`--signin-unreachable-grace`).
         keyLifetimeSeconds:
           type: integer
           description: |
             For `claims` with a provider that gives no refresh tokens: a key
             stops working this long after its person last signed in, and
-            works again when they sign in (`-signin-key-lifetime`). It is how
+            works again when they sign in (`--signin-key-lifetime`). It is how
             long offboarding can take there.
     Caller:
       type: object
@@ -5508,7 +5508,7 @@ components:
 
         The platform is nobody: no person, not the workspace's owner. It
         has no `email` and no `role`, and holds the scopes its token names
-        of those the server was started to grant it (`-platform-scopes`),
+        of those the server was started to grant it (`--platform-scopes`),
         over the workspace — and nothing else.
 
         A session is no key: nobody made one for it, and none is kept. The
@@ -5683,7 +5683,7 @@ components:
       enum: [release, console]
       x-enum-varnames: [AppFromRelease, AppFromConsole]
       description: >-
-        `release`: named by the release (`-apps-file`), and changed only by another; `console`: registered by an admin, here.
+        `release`: named by the release (`--apps-file`), and changed only by another; `console`: registered by an admin, here.
     ConnectAppList:
       type: object
       required: [items]
@@ -5780,7 +5780,7 @@ components:
           properties:
             id:
               type: string
-              description: The platform's id of the workspace, when its release says one (`-platform-workspace-id`); its name otherwise.
+              description: The platform's id of the workspace, when its release says one (`--platform-workspace-id`); its name otherwise.
             name: {$ref: "#/components/schemas/WorkspaceName"}
             title: {type: string}
             namespace:
@@ -5802,7 +5802,7 @@ components:
             url:
               type: string
               format: uri
-              description: The workspace's API, at its public address (`-url`).
+              description: The workspace's API, at its public address (`--url`).
             publicUrl:
               type: string
               format: uri
@@ -5890,7 +5890,7 @@ components:
         owner:
           type: string
           format: email
-          description: The person it is of — who made it; the workspace's owner for the one the server keeps from `-owner-key-file`.
+          description: The person it is of — who made it; the workspace's owner for the one the server keeps from `--owner-key-file`.
         scopes:
           type: array
           items: {$ref: "#/components/schemas/Scope"}
@@ -6299,7 +6299,7 @@ components:
         name: {$ref: "#/components/schemas/WorkspaceName"}
         title:
           type: string
-          description: What it is called (`-workspace-title`); its name when nobody said.
+          description: What it is called (`--workspace-title`); its name when nobody said.
         namespace:
           type: string
           deprecated: true
@@ -6311,11 +6311,11 @@ components:
         owner:
           type: string
           format: email
-          description: Its owner (`-owner`), always an admin of it.
+          description: Its owner (`--owner`), always an admin of it.
         policy:
           allOf: [{$ref: "#/components/schemas/WorkspacePolicy"}]
           description: |
-            What the operator lets it have (`-policy-file`). Absent, there
+            What the operator lets it have (`--policy-file`). Absent, there
             is none: its sessions are given what their config names.
     BuiltInBroker:
       type: string
@@ -6326,7 +6326,7 @@ components:
       type: object
       description: |
         What the operator lets the workspace's sessions have: the file
-        `-policy-file` names, read when the server starts, and shown here
+        `--policy-file` names, read when the server starts, and shown here
         read-only. A change is a restart, and reaches each session as it next
         wakes.
       properties:
@@ -6372,7 +6372,7 @@ components:
         role: {$ref: "#/components/schemas/Role"}
         owner:
           type: boolean
-          description: The workspace's owner (`-owner`), always an admin, and never removed.
+          description: The workspace's owner (`--owner`), always an admin, and never removed.
         invitedBy:
           type: string
           format: email
@@ -8923,6 +8923,13 @@ components:
           items: {$ref: "#/components/schemas/Attachment"}
         source: {$ref: "#/components/schemas/UserEventSource"}
         keyId: {type: string}
+        compact:
+          type: boolean
+          description: |
+            A compaction asked for (`POST …/compact`) rather than words: its
+            `text` is the command the harness was given. The turn's
+            `compaction` event, before its `turn_ended`, says what it did.
+            Absent for any other turn.
     UserEventSource:
       type: string
       enum: [user, api, session, trigger, system, alarm]
@@ -8938,6 +8945,9 @@ components:
           type: array
           items: {$ref: "#/components/schemas/Attachment"}
         source: {$ref: "#/components/schemas/UserEventSource"}
+        compact:
+          type: boolean
+          description: A compaction asked for, waiting, as `UserEvent`'s `compact` says. Absent for any other turn.
         heldUntil:
           type: string
           format: date-time
