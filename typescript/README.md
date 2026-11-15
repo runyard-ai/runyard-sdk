@@ -145,7 +145,7 @@ app.use('/agents', toNodeHandler(relay));
 A hook that throws a `RelayError(status, code, message)` has the relay answer
 with it. One that throws anything else is a 500, told to `log`. What it
 serves, and what it lets the browser say, is in
-[the repository's README](../README.md#a-conversation-in-your-own-product-the-relay).
+[the examples' README](../examples/README.md#what-the-relay-holds-to).
 
 ## Reference
 

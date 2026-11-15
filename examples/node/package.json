@@ -1,0 +1,12 @@
+{
+  "name": "acme-chat-node",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@runyard-ai/runyard-sdk": "0.52.0",
+    "express": "^5.1.0"
+  }
+}
