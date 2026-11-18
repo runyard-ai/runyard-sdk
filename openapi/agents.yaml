@@ -2428,8 +2428,10 @@ paths:
         what the session's environment and git are given to reach it, and
         the MCP server it serves, at `/.well-known/runyard-broker`, and its
         skills, at
-        `/.well-known/agent-skills`. Its credentials, and what it lets
-        through, are the broker's.
+        `/.well-known/agent-skills`. What it answers at both is the same
+        for every sandbox of the workspace, and kept as long as its
+        `Cache-Control: max-age` says (`BrokerSpec`). Its credentials, and
+        what it lets through, are the broker's.
       requestBody:
         required: true
         content:
@@ -7169,6 +7171,17 @@ components:
         given instead. Its `path` starts with `/`, is at most 256
         characters, and has no `..`, query or fragment — nor a space, a
         control character or a backslash, which no address has.
+
+        What a broker answers at `/.well-known/runyard-broker` and
+        `/.well-known/agent-skills` is the same for every sandbox of the
+        workspace, whichever presents its certificate: what one session's
+        start is answered is given to the next. `Cache-Control: max-age` on
+        either says how long that holds, taken for at most a day; once it
+        has passed, a start is given what was kept while the broker is
+        asked again beside it. Without it, or with `no-store` or
+        `no-cache`, the broker is asked at every start. The files of its
+        skills are kept by the SHA-256 its manifest names, whatever it
+        says: a start fetches only those of a hash it does not have.
       properties:
         title: {type: string, minLength: 1, maxLength: 200}
         url:

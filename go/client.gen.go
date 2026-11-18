@@ -1222,6 +1222,17 @@ type BrokerPage struct {
 // given instead. Its `path` starts with `/`, is at most 256
 // characters, and has no `..`, query or fragment — nor a space, a
 // control character or a backslash, which no address has.
+//
+// What a broker answers at `/.well-known/runyard-broker` and
+// `/.well-known/agent-skills` is the same for every sandbox of the
+// workspace, whichever presents its certificate: what one session's
+// start is answered is given to the next. `Cache-Control: max-age` on
+// either says how long that holds, taken for at most a day; once it
+// has passed, a start is given what was kept while the broker is
+// asked again beside it. Without it, or with `no-store` or
+// `no-cache`, the broker is asked at every start. The files of its
+// skills are kept by the SHA-256 its manifest names, whatever it
+// says: a start fetches only those of a hash it does not have.
 type BrokerSpec struct {
 	// Auth How the sandboxes daemon proves to a declared broker which sandbox
 	// calls. Absent is `certificate`.

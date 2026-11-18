@@ -172,7 +172,7 @@ export interface BrokersApiInterface {
     putBrokerRequestOpts(requestParameters: PutBrokerRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * `llm`, `egress`, `tunnels`, `sessions` and `images` are the server\'s own: they always exist and are not changed here (`409 in_use`). Any other is a `shared` broker: one the sandboxes daemon declares under the same name, and dials with the machine\'s certificate. A session\'s machine is given it, and the broker says the rest itself: what the session\'s environment and git are given to reach it, and the MCP server it serves, at `/.well-known/runyard-broker`, and its skills, at `/.well-known/agent-skills`. Its credentials, and what it lets through, are the broker\'s. 
+     * `llm`, `egress`, `tunnels`, `sessions` and `images` are the server\'s own: they always exist and are not changed here (`409 in_use`). Any other is a `shared` broker: one the sandboxes daemon declares under the same name, and dials with the machine\'s certificate. A session\'s machine is given it, and the broker says the rest itself: what the session\'s environment and git are given to reach it, and the MCP server it serves, at `/.well-known/runyard-broker`, and its skills, at `/.well-known/agent-skills`. What it answers at both is the same for every sandbox of the workspace, and kept as long as its `Cache-Control: max-age` says (`BrokerSpec`). Its credentials, and what it lets through, are the broker\'s. 
      * @summary Declare a broker, or change it
      * @param {string} brokerName 
      * @param {BrokerSpec} brokerSpec 
@@ -183,7 +183,7 @@ export interface BrokersApiInterface {
     putBrokerRaw(requestParameters: PutBrokerRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Broker>>;
 
     /**
-     * `llm`, `egress`, `tunnels`, `sessions` and `images` are the server\'s own: they always exist and are not changed here (`409 in_use`). Any other is a `shared` broker: one the sandboxes daemon declares under the same name, and dials with the machine\'s certificate. A session\'s machine is given it, and the broker says the rest itself: what the session\'s environment and git are given to reach it, and the MCP server it serves, at `/.well-known/runyard-broker`, and its skills, at `/.well-known/agent-skills`. Its credentials, and what it lets through, are the broker\'s. 
+     * `llm`, `egress`, `tunnels`, `sessions` and `images` are the server\'s own: they always exist and are not changed here (`409 in_use`). Any other is a `shared` broker: one the sandboxes daemon declares under the same name, and dials with the machine\'s certificate. A session\'s machine is given it, and the broker says the rest itself: what the session\'s environment and git are given to reach it, and the MCP server it serves, at `/.well-known/runyard-broker`, and its skills, at `/.well-known/agent-skills`. What it answers at both is the same for every sandbox of the workspace, and kept as long as its `Cache-Control: max-age` says (`BrokerSpec`). Its credentials, and what it lets through, are the broker\'s. 
      * Declare a broker, or change it
      */
     putBroker(requestParameters: PutBrokerRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Broker>;
@@ -463,7 +463,7 @@ export class BrokersApi extends runtime.BaseAPI implements BrokersApiInterface {
     }
 
     /**
-     * `llm`, `egress`, `tunnels`, `sessions` and `images` are the server\'s own: they always exist and are not changed here (`409 in_use`). Any other is a `shared` broker: one the sandboxes daemon declares under the same name, and dials with the machine\'s certificate. A session\'s machine is given it, and the broker says the rest itself: what the session\'s environment and git are given to reach it, and the MCP server it serves, at `/.well-known/runyard-broker`, and its skills, at `/.well-known/agent-skills`. Its credentials, and what it lets through, are the broker\'s. 
+     * `llm`, `egress`, `tunnels`, `sessions` and `images` are the server\'s own: they always exist and are not changed here (`409 in_use`). Any other is a `shared` broker: one the sandboxes daemon declares under the same name, and dials with the machine\'s certificate. A session\'s machine is given it, and the broker says the rest itself: what the session\'s environment and git are given to reach it, and the MCP server it serves, at `/.well-known/runyard-broker`, and its skills, at `/.well-known/agent-skills`. What it answers at both is the same for every sandbox of the workspace, and kept as long as its `Cache-Control: max-age` says (`BrokerSpec`). Its credentials, and what it lets through, are the broker\'s. 
      * Declare a broker, or change it
      */
     async putBrokerRaw(requestParameters: PutBrokerRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Broker>> {
@@ -474,7 +474,7 @@ export class BrokersApi extends runtime.BaseAPI implements BrokersApiInterface {
     }
 
     /**
-     * `llm`, `egress`, `tunnels`, `sessions` and `images` are the server\'s own: they always exist and are not changed here (`409 in_use`). Any other is a `shared` broker: one the sandboxes daemon declares under the same name, and dials with the machine\'s certificate. A session\'s machine is given it, and the broker says the rest itself: what the session\'s environment and git are given to reach it, and the MCP server it serves, at `/.well-known/runyard-broker`, and its skills, at `/.well-known/agent-skills`. Its credentials, and what it lets through, are the broker\'s. 
+     * `llm`, `egress`, `tunnels`, `sessions` and `images` are the server\'s own: they always exist and are not changed here (`409 in_use`). Any other is a `shared` broker: one the sandboxes daemon declares under the same name, and dials with the machine\'s certificate. A session\'s machine is given it, and the broker says the rest itself: what the session\'s environment and git are given to reach it, and the MCP server it serves, at `/.well-known/runyard-broker`, and its skills, at `/.well-known/agent-skills`. What it answers at both is the same for every sandbox of the workspace, and kept as long as its `Cache-Control: max-age` says (`BrokerSpec`). Its credentials, and what it lets through, are the broker\'s. 
      * Declare a broker, or change it
      */
     async putBroker(requestParameters: PutBrokerRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Broker> {
