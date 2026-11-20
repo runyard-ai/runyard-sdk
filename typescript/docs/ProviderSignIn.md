@@ -9,7 +9,6 @@ Name | Type
 `type` | [ProviderType](ProviderType.md)
 `method` | [SignInMethod](SignInMethod.md)
 `title` | string
-`owner` | string
 `endUser` | [EndUser](EndUser.md)
 
 ## Example
@@ -22,7 +21,6 @@ const example = {
   "type": null,
   "method": null,
   "title": null,
-  "owner": null,
   "endUser": null,
 } satisfies ProviderSignIn
 

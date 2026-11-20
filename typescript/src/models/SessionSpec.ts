@@ -116,15 +116,6 @@ export interface SessionSpec {
      */
     autoTitle?: boolean;
     /**
-     * Whom the session is for: a person of the workspace, or it is
-     * `400`. Only a key with `sessions.person` names one — the
-     * person it speaks for. Absent, the caller's person: who is
-     * signed in, whose key it is, or for a session calling through
-     * its brokers, its owner.
-     * 
-     */
-    owner?: string;
-    /**
      * Whom an application's session is for. Only an application
      * names one, and it is `403` otherwise; absent, the session is
      * the application's own. A session a session starts is for its
@@ -179,7 +170,6 @@ export function SessionSpecFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'profileVersion': json['profileVersion'] == null ? undefined : json['profileVersion'],
         'title': json['title'] == null ? undefined : json['title'],
         'autoTitle': json['autoTitle'] == null ? undefined : json['autoTitle'],
-        'owner': json['owner'] == null ? undefined : json['owner'],
         'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'parentId': json['parentId'] == null ? undefined : json['parentId'],
         'labels': json['labels'] == null ? undefined : json['labels'],
@@ -211,7 +201,6 @@ export function SessionSpecToJSONTyped(value?: SessionSpec | null, ignoreDiscrim
         'profileVersion': value['profileVersion'],
         'title': value['title'],
         'autoTitle': value['autoTitle'],
-        'owner': value['owner'],
         'endUser': EndUserToJSON(value['endUser']),
         'parentId': value['parentId'],
         'labels': value['labels'],

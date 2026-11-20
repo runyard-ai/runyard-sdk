@@ -57,15 +57,6 @@ export interface ProviderSignIn {
      */
     title?: string;
     /**
-     * Whose subscription it is: a person of the workspace, or it is
-     * `400`. Only a key with `sessions.person` names one — the person
-     * it speaks for — and it is `403` otherwise. Absent, the caller's
-     * person. Its owner removed from the workspace, it is deleted with
-     * them (`DELETE /v1/users/{userEmail}`).
-     * 
-     */
-    owner?: string;
-    /**
      * For an application's provider, the end user whose own
      * subscription it is: their turns run on it (`Turn.endUser`). Only
      * an application names one, and it is `403` otherwise.
@@ -97,7 +88,6 @@ export function ProviderSignInFromJSONTyped(json: any, ignoreDiscriminator: bool
         'type': ProviderTypeFromJSON(json['type']),
         'method': json['method'] == null ? undefined : SignInMethodFromJSON(json['method']),
         'title': json['title'] == null ? undefined : json['title'],
-        'owner': json['owner'] == null ? undefined : json['owner'],
         'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
     };
 }
@@ -116,7 +106,6 @@ export function ProviderSignInToJSONTyped(value?: ProviderSignIn | null, ignoreD
         'type': ProviderTypeToJSON(value['type']),
         'method': SignInMethodToJSON(value['method']),
         'title': value['title'],
-        'owner': value['owner'],
         'endUser': EndUserToJSON(value['endUser']),
     };
 }

@@ -116,8 +116,5 @@ for {
 }
 ```
 
-Package [`relay`](relay) is deprecated, and is being removed: session
-tokens do what it did.
-
 `go test -tags conformance ./...`, with `RUNYARD_AGENTS_URL` and
 `RUNYARD_AGENTS_KEY` set, runs the conformance suite against that server.

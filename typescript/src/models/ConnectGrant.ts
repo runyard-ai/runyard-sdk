@@ -47,7 +47,7 @@ export interface ConnectGrant {
      */
     sessions: ConnectGrantSessions;
     /**
-     * The admin who approved, whose key it is.
+     * The admin who approved it. The key is the application's own (`app:<id>`), and outlives them.
      */
     approvedBy: string;
 }

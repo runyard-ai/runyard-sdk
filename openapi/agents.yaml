@@ -813,13 +813,12 @@ paths:
         authenticates with HTTP Basic, `client_id:secret`, checked against
         the SHA-256 kept.
 
-        **The key is minted now**, as the admin who approved — bound to
-        them as every key a person approves for a program is (`Key.link`):
-        it holds no more than they do, is suspended while they are, and
-        ends, with the link, when they are offboarded. It is named after the
-        application (`<name>: <context>`), lasts a year, and holds the
-        application's scopes of those its approver holds. The link is
-        recorded: listed and revoked at `/v1/connect/links`.
+        **The key is minted now**, as the application's (`app:<id>`), not
+        the admin's who approved: it outlives them, and offboarding them
+        does not touch it. It is named after the application
+        (`<name>: <context>`), lasts a year, and holds what of the scopes
+        approved an application may hold. The link is recorded, with who
+        approved it: listed and revoked at `/v1/connect/links`.
 
         `workspace.sandboxesCa` is the certificate authority of the
         workspace's runyard-sandboxes server, read from it now with the
@@ -877,8 +876,8 @@ paths:
         Each link an admin approved and its application exchanged: the
         application, who approved it, and the key it holds. A link ends
         when its key is revoked — here, at `DELETE /v1/keys/{keyId}`, or by
-        the application handing it back — and when its approver is
-        offboarded or removed. An admin's, with `keys.admin`.
+        the application handing it back — and when its application is
+        removed. An admin's, with `keys.admin`.
       responses:
         "200":
           description: The links, newest first.
@@ -3271,18 +3270,15 @@ paths:
         disk when the session is given the turn. One no turn names within
         `limits.uploadTtlSeconds` is evicted.
 
-        It is the caller's: only a turn the caller sends names it. A key
-        with `sessions.person` keeps one for a person it speaks for
-        (`owner`), and a turn of that key names it only in a session of
-        theirs: a front end with one key for everybody keeps each person's
-        files from the others'.
+        It is the caller's: only a turn the caller sends names it. A
+        session token's is its session's end user's, so that a page that
+        renews its token sends with the new what it uploaded with the old.
       parameters:
         - name: name
           in: query
           required: true
           description: The file's name, without a slash. Where it goes on the session's disk.
           schema: {type: string, minLength: 1, maxLength: 255}
-        - $ref: "#/components/parameters/UploadOwner"
       requestBody:
         required: true
         content:
@@ -3307,8 +3303,6 @@ paths:
       x-public: true
       tags: [Turns]
       summary: Forget a file taken off a message before it was sent
-      parameters:
-        - $ref: "#/components/parameters/UploadOwner"
       responses:
         "204":
           description: Gone.
@@ -4892,14 +4886,6 @@ components:
       in: path
       required: true
       schema: {type: string, minLength: 1}
-    UploadOwner:
-      name: owner
-      in: query
-      description: |
-        The person it is kept for, of the workspace, or it is `400`: only a
-        key with `sessions.person` names one, and it is `403` otherwise.
-        Absent, it is the caller's own.
-      schema: {type: string, format: email}
     UploadId:
       name: uploadId
       in: path
@@ -5372,7 +5358,6 @@ components:
       enum:
         - sessions.read
         - sessions.write
-        - sessions.person
         - sessions.delete
         - sandbox
         - profiles.write
@@ -5389,7 +5374,6 @@ components:
         |---|---|
         | `sessions.read` | read sessions, their events, work and files, and usage |
         | `sessions.write` | start sessions, send turns, steer them, write files, share them |
-        | `sessions.person` | have the sessions it starts and the turns it sends recorded as a person's (`source: user`) rather than its own (`api`): the key of a front end that signs its people in itself and speaks for them |
         | `sessions.delete` | delete sessions |
         | `sandbox` | open a session's terminal |
         | `profiles.write` | change profiles |
@@ -5407,8 +5391,7 @@ components:
         an admin holds every scope, over everything in the workspace. A key
         holds what it was given of what its person holds now. The platform,
         calling with a platform token, holds what the token names of
-        `--platform-scopes`, and never `keys.admin`, `users.admin` or
-        `sessions.person`.
+        `--platform-scopes`, and never `keys.admin` or `users.admin`.
     Owner:
       type: string
       pattern: "^(app:[a-z][a-z0-9-]{0,62}|[^@\\s]+@[^@\\s]+)$"
@@ -5889,7 +5872,7 @@ components:
           minItems: 1
           items: {$ref: "#/components/schemas/Scope"}
           description: >-
-            What its keys hold, of what their approver does. Unsaid, it is `sessions.read sessions.write sessions.delete sessions.person profiles.write brokers.write providers.write users.admin`: what an application needs to run sessions for its own users.
+            What its keys may hold, over what is the application's own. Of `sessions.read sessions.write sessions.delete profiles.write providers.write brokers.write triggers.write triggers.fire`, and all of them unsaid. Its keys are minted by connect, of what their approver holds too, or by an admin (`POST /v1/keys` with `app`).
         source: {$ref: "#/components/schemas/ConnectAppSource"}
         createdAt:
           type: string
@@ -6029,7 +6012,7 @@ components:
         approvedBy:
           type: string
           format: email
-          description: The admin who approved, whose key it is.
+          description: The admin who approved it. The key is the application's own (`app:<id>`), and outlives them.
     OAuthError:
       type: object
       required: [error]
@@ -6108,8 +6091,8 @@ components:
           description: |
             Whose it is, and whom it acts as: the person who made it — the
             workspace's owner for the one the server keeps from
-            `--owner-key-file` — or the application an admin minted it for
-            (`app:<id>`).
+            `--owner-key-file` — or the application connect or an admin minted
+            it for (`app:<id>`).
         scopes:
           type: array
           items: {$ref: "#/components/schemas/Scope"}
@@ -6477,15 +6460,6 @@ components:
           minLength: 1
           maxLength: 200
           description: Its name when absent.
-        owner:
-          type: string
-          format: email
-          description: |
-            Whose subscription it is: a person of the workspace, or it is
-            `400`. Only a key with `sessions.person` names one — the person
-            it speaks for — and it is `403` otherwise. Absent, the caller's
-            person. Its owner removed from the workspace, it is deleted with
-            them (`DELETE /v1/users/{userEmail}`).
         endUser:
           allOf: [{$ref: "#/components/schemas/EndUser"}]
           description: |
@@ -7717,7 +7691,7 @@ components:
       description: |
         | source | started by |
         |---|---|
-        | `user` | a person, in the chat UI or console, or through a key with `sessions.person` |
+        | `user` | a person, in the chat UI or console, or a session token in their browser |
         | `api` | a caller with a key |
         | `session` | another session's harness — `parentId` |
         | `fork` | forking another session — `branchedFrom` |
@@ -7743,15 +7717,6 @@ components:
                 Title the session from its conversation once its first answer
                 has begun (`autoTitle`). Absent, its owner's preference
                 (`/v1/self/preferences`).
-            owner:
-              type: string
-              format: email
-              description: |
-                Whom the session is for: a person of the workspace, or it is
-                `400`. Only a key with `sessions.person` names one — the
-                person it speaks for. Absent, the caller's person: who is
-                signed in, whose key it is, or for a session calling through
-                its brokers, its owner.
             endUser:
               allOf: [{$ref: "#/components/schemas/EndUser"}]
               description: |
@@ -9225,7 +9190,7 @@ components:
     UserEventSource:
       type: string
       enum: [user, api, session, trigger, system, alarm]
-      description: Who sent it, from the key that did — `user` for a person, signed in or spoken for by a key with `sessions.person`; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
+      description: Who sent it, from the key that did — `user` for a person signed in, or a session token in a browser; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
     QueuedTurn:
       type: object
       description: A turn waiting for the session's harness, as it was sent.

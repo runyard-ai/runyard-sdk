@@ -47,7 +47,7 @@ export interface RegisteredConnectApp {
      */
     redirectUris: Array<string>;
     /**
-     * What its keys hold, of what their approver does. Unsaid, it is `sessions.read sessions.write sessions.delete sessions.person profiles.write brokers.write providers.write users.admin`: what an application needs to run sessions for its own users.
+     * What its keys may hold, over what is the application's own. Of `sessions.read sessions.write sessions.delete profiles.write providers.write brokers.write triggers.write triggers.fire`, and all of them unsaid. Its keys are minted by connect, of what their approver holds too, or by an admin (`POST /v1/keys` with `app`).
      */
     scopes: Array<Scope>;
     /**

@@ -64,8 +64,6 @@ it connects — or, in a browser, a session token.
 - [Go SDK](go/README.md) and [TypeScript SDK](typescript/README.md): `ry`,
   and the client generated from the API beneath it, for everything else
 - The API: [`openapi/agents.yaml`](openapi/agents.yaml)
-- The relay (`go/relay`, `@runyard-ai/runyard-sdk/relay`) is deprecated, and
-  is being removed: session tokens do what it did.
 
 SDK `vX.Y.Z` is the client of server `vX.Y.Z`. This repository is generated
 from runyard-agents at each release. Report issues here.

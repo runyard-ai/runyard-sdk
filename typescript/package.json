@@ -1,6 +1,6 @@
 {
   "name": "@runyard-ai/runyard-sdk",
-  "version": "0.56.0",
+  "version": "0.57.0",
   "description": "The TypeScript client of runyard-agents",
   "repository": {
     "type": "git",
@@ -16,10 +16,6 @@
     "./ry": {
       "types": "./dist/ry.d.ts",
       "default": "./dist/ry.js"
-    },
-    "./relay": {
-      "types": "./dist/relay.d.ts",
-      "default": "./dist/relay.js"
     }
   },
   "main": "./dist/index.js",
@@ -34,8 +30,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare": "tsc -p tsconfig.json",
-    "test": "tsc -p tsconfig.test.json && node --test build/test/errors.test.js build/test/streams.test.js build/test/ry.test.js build/test/relay.test.js",
-    "conformance": "tsc -p tsconfig.test.json && node --test build/test/conformance.test.js build/test/ry.conformance.test.js build/test/relay.conformance.test.js"
+    "test": "tsc -p tsconfig.test.json && node --test build/test/errors.test.js build/test/streams.test.js build/test/ry.test.js",
+    "conformance": "tsc -p tsconfig.test.json && node --test build/test/conformance.test.js build/test/ry.conformance.test.js"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

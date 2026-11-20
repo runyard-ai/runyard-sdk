@@ -478,7 +478,6 @@ const (
 	ProvidersWrite Scope = "providers.write"
 	Sandbox        Scope = "sandbox"
 	SessionsDelete Scope = "sessions.delete"
-	SessionsPerson Scope = "sessions.person"
 	SessionsRead   Scope = "sessions.read"
 	SessionsWrite  Scope = "sessions.write"
 	SettingsWrite  Scope = "settings.write"
@@ -1414,7 +1413,7 @@ type ConnectApp struct {
 	// RedirectUris None for one an admin mints its keys for, which never connects. Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
 	RedirectUris []string `json:"redirectUris"`
 
-	// Scopes What its keys hold, of what their approver does. Unsaid, it is `sessions.read sessions.write sessions.delete sessions.person profiles.write brokers.write providers.write users.admin`: what an application needs to run sessions for its own users.
+	// Scopes What its keys may hold, over what is the application's own. Of `sessions.read sessions.write sessions.delete profiles.write providers.write brokers.write triggers.write triggers.fire`, and all of them unsaid. Its keys are minted by connect, of what their approver holds too, or by an admin (`POST /v1/keys` with `app`).
 	Scopes []Scope `json:"scopes"`
 
 	// Source `release`: named by the release (`--apps-file`), and changed only by another; `console`: registered by an admin, here.
@@ -1466,7 +1465,7 @@ type ConnectDecisionCodeChallengeMethod string
 
 // ConnectGrant defines model for ConnectGrant.
 type ConnectGrant struct {
-	// ApprovedBy The admin who approved, whose key it is.
+	// ApprovedBy The admin who approved it. The key is the application's own (`app:<id>`), and outlives them.
 	ApprovedBy openapi_types.Email `json:"approvedBy"`
 
 	// Link The link's id, as `GET /v1/connect/links` lists it.
@@ -2597,8 +2596,8 @@ type Key struct {
 
 	// Owner Whose it is, and whom it acts as: the person who made it — the
 	// workspace's owner for the one the server keeps from
-	// `--owner-key-file` — or the application an admin minted it for
-	// (`app:<id>`).
+	// `--owner-key-file` — or the application connect or an admin minted
+	// it for (`app:<id>`).
 	Owner  Owner   `json:"owner"`
 	Scopes []Scope `json:"scopes"`
 
@@ -2728,7 +2727,7 @@ type LineageNode struct {
 
 	// Source | source | started by |
 	// |---|---|
-	// | `user` | a person, in the chat UI or console, or through a key with `sessions.person` |
+	// | `user` | a person, in the chat UI or console, or a session token in their browser |
 	// | `api` | a caller with a key |
 	// | `session` | another session's harness — `parentId` |
 	// | `fork` | forking another session — `branchedFrom` |
@@ -2882,8 +2881,8 @@ type MintedKey struct {
 
 	// Owner Whose it is, and whom it acts as: the person who made it — the
 	// workspace's owner for the one the server keeps from
-	// `--owner-key-file` — or the application an admin minted it for
-	// (`app:<id>`).
+	// `--owner-key-file` — or the application connect or an admin minted
+	// it for (`app:<id>`).
 	Owner  Owner   `json:"owner"`
 	Scopes []Scope `json:"scopes"`
 
@@ -3333,13 +3332,6 @@ type ProviderSignIn struct {
 	// is `400`.
 	Method *SignInMethod `json:"method,omitempty"`
 
-	// Owner Whose subscription it is: a person of the workspace, or it is
-	// `400`. Only a key with `sessions.person` names one — the person
-	// it speaks for — and it is `403` otherwise. Absent, the caller's
-	// person. Its owner removed from the workspace, it is deleted with
-	// them (`DELETE /v1/users/{userEmail}`).
-	Owner *openapi_types.Email `json:"owner,omitempty"`
-
 	// Title Its name when absent.
 	Title *string `json:"title,omitempty"`
 
@@ -3398,7 +3390,7 @@ type QueuedTurn struct {
 	// saved or let go of first. Absent when it is not held.
 	HeldUntil *time.Time `json:"heldUntil,omitempty"`
 
-	// Source Who sent it, from the key that did — `user` for a person, signed in or spoken for by a key with `sessions.person`; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
+	// Source Who sent it, from the key that did — `user` for a person signed in, or a session token in a browser; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
 	Source UserEventSource `json:"source"`
 	Text   string          `json:"text"`
 	TurnId string          `json:"turnId"`
@@ -3483,7 +3475,7 @@ type RegisteredConnectApp struct {
 	// RedirectUris None for one an admin mints its keys for, which never connects. Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
 	RedirectUris []string `json:"redirectUris"`
 
-	// Scopes What its keys hold, of what their approver does. Unsaid, it is `sessions.read sessions.write sessions.delete sessions.person profiles.write brokers.write providers.write users.admin`: what an application needs to run sessions for its own users.
+	// Scopes What its keys may hold, over what is the application's own. Of `sessions.read sessions.write sessions.delete profiles.write providers.write brokers.write triggers.write triggers.fire`, and all of them unsaid. Its keys are minted by connect, of what their approver holds too, or by an admin (`POST /v1/keys` with `app`).
 	Scopes []Scope `json:"scopes"`
 
 	// Secret What the application authenticates with, as the password of HTTP Basic at `POST /v1/connect/token`. In this answer and nowhere else.
@@ -3705,7 +3697,6 @@ type Schedule struct {
 // |---|---|
 // | `sessions.read` | read sessions, their events, work and files, and usage |
 // | `sessions.write` | start sessions, send turns, steer them, write files, share them |
-// | `sessions.person` | have the sessions it starts and the turns it sends recorded as a person's (`source: user`) rather than its own (`api`): the key of a front end that signs its people in itself and speaks for them |
 // | `sessions.delete` | delete sessions |
 // | `sandbox` | open a session's terminal |
 // | `profiles.write` | change profiles |
@@ -3723,8 +3714,7 @@ type Schedule struct {
 // an admin holds every scope, over everything in the workspace. A key
 // holds what it was given of what its person holds now. The platform,
 // calling with a platform token, holds what the token names of
-// `--platform-scopes`, and never `keys.admin`, `users.admin` or
-// `sessions.person`.
+// `--platform-scopes`, and never `keys.admin` or `users.admin`.
 type Scope string
 
 // Secret A secret, never its value.
@@ -4046,7 +4036,7 @@ type SessionLineage struct {
 
 	// Source | source | started by |
 	// |---|---|
-	// | `user` | a person, in the chat UI or console, or through a key with `sessions.person` |
+	// | `user` | a person, in the chat UI or console, or a session token in their browser |
 	// | `api` | a caller with a key |
 	// | `session` | another session's harness — `parentId` |
 	// | `fork` | forking another session — `branchedFrom` |
@@ -4203,7 +4193,7 @@ type SessionSkill struct {
 
 // SessionSource | source | started by |
 // |---|---|
-// | `user` | a person, in the chat UI or console, or through a key with `sessions.person` |
+// | `user` | a person, in the chat UI or console, or a session token in their browser |
 // | `api` | a caller with a key |
 // | `session` | another session's harness — `parentId` |
 // | `fork` | forking another session — `branchedFrom` |
@@ -4247,13 +4237,6 @@ type SessionSpec struct {
 	// listed is not refused here — the provider is the judge, at the
 	// turn.
 	Model *string `json:"model,omitempty"`
-
-	// Owner Whom the session is for: a person of the workspace, or it is
-	// `400`. Only a key with `sessions.person` names one — the
-	// person it speaks for. Absent, the caller's person: who is
-	// signed in, whose key it is, or for a session calling through
-	// its brokers, its owner.
-	Owner *openapi_types.Email `json:"owner,omitempty"`
 
 	// ParentId The session that started this one. Only a session calling
 	// through its brokers may name it — itself — so lineage cannot
@@ -5125,7 +5108,7 @@ type UserEvent struct {
 	EndUser *EndUser `json:"endUser,omitempty"`
 	KeyId   *string  `json:"keyId,omitempty"`
 
-	// Source Who sent it, from the key that did — `user` for a person, signed in or spoken for by a key with `sessions.person`; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
+	// Source Who sent it, from the key that did — `user` for a person signed in, or a session token in a browser; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
 	Source UserEventSource `json:"source"`
 	Text   string          `json:"text"`
 	TurnId string          `json:"turnId"`
@@ -5135,7 +5118,7 @@ type UserEvent struct {
 // UserEventType defines model for UserEvent.Type.
 type UserEventType string
 
-// UserEventSource Who sent it, from the key that did — `user` for a person, signed in or spoken for by a key with `sessions.person`; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
+// UserEventSource Who sent it, from the key that did — `user` for a person signed in, or a session token in a browser; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
 type UserEventSource string
 
 // UserUpdate defines model for UserUpdate.
@@ -5311,9 +5294,6 @@ type TriggerId = Id
 
 // UploadId defines model for UploadId.
 type UploadId = string
-
-// UploadOwner defines model for UploadOwner.
-type UploadOwner = openapi_types.Email
 
 // UserEmail defines model for UserEmail.
 type UserEmail = openapi_types.Email
@@ -5683,19 +5663,6 @@ type ListFiringsParams struct {
 type CreateUploadParams struct {
 	// Name The file's name, without a slash. Where it goes on the session's disk.
 	Name string `form:"name" json:"name"`
-
-	// Owner The person it is kept for, of the workspace, or it is `400`: only a
-	// key with `sessions.person` names one, and it is `403` otherwise.
-	// Absent, it is the caller's own.
-	Owner *UploadOwner `form:"owner,omitempty" json:"owner,omitempty"`
-}
-
-// DeleteUploadParams defines parameters for DeleteUpload.
-type DeleteUploadParams struct {
-	// Owner The person it is kept for, of the workspace, or it is `400`: only a
-	// key with `sessions.person` names one, and it is `403` otherwise.
-	// Absent, it is the caller's own.
-	Owner *UploadOwner `form:"owner,omitempty" json:"owner,omitempty"`
 }
 
 // GetUsageParams defines parameters for GetUsage.
@@ -7197,7 +7164,7 @@ type ClientInterface interface {
 	CreateUploadWithBody(ctx context.Context, params *CreateUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteUpload request
-	DeleteUpload(ctx context.Context, uploadId UploadId, params *DeleteUploadParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteUpload(ctx context.Context, uploadId UploadId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetUsage request
 	GetUsage(ctx context.Context, params *GetUsageParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -9667,8 +9634,8 @@ func (c *Client) CreateUploadWithBody(ctx context.Context, params *CreateUploadP
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteUpload(ctx context.Context, uploadId UploadId, params *DeleteUploadParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteUploadRequest(c.Server, uploadId, params)
+func (c *Client) DeleteUpload(ctx context.Context, uploadId UploadId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteUploadRequest(c.Server, uploadId)
 	if err != nil {
 		return nil, err
 	}
@@ -16771,22 +16738,6 @@ func NewCreateUploadRequestWithBody(server string, params *CreateUploadParams, c
 			}
 		}
 
-		if params.Owner != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "owner", runtime.ParamLocationQuery, *params.Owner); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
 		queryURL.RawQuery = queryValues.Encode()
 	}
 
@@ -16801,7 +16752,7 @@ func NewCreateUploadRequestWithBody(server string, params *CreateUploadParams, c
 }
 
 // NewDeleteUploadRequest generates requests for DeleteUpload
-func NewDeleteUploadRequest(server string, uploadId UploadId, params *DeleteUploadParams) (*http.Request, error) {
+func NewDeleteUploadRequest(server string, uploadId UploadId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -16824,28 +16775,6 @@ func NewDeleteUploadRequest(server string, uploadId UploadId, params *DeleteUplo
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Owner != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "owner", runtime.ParamLocationQuery, *params.Owner); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
@@ -17739,7 +17668,7 @@ type ClientWithResponsesInterface interface {
 	CreateUploadWithBodyWithResponse(ctx context.Context, params *CreateUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUploadResponse, error)
 
 	// DeleteUploadWithResponse request
-	DeleteUploadWithResponse(ctx context.Context, uploadId UploadId, params *DeleteUploadParams, reqEditors ...RequestEditorFn) (*DeleteUploadResponse, error)
+	DeleteUploadWithResponse(ctx context.Context, uploadId UploadId, reqEditors ...RequestEditorFn) (*DeleteUploadResponse, error)
 
 	// GetUsageWithResponse request
 	GetUsageWithResponse(ctx context.Context, params *GetUsageParams, reqEditors ...RequestEditorFn) (*GetUsageResponse, error)
@@ -23771,8 +23700,8 @@ func (c *ClientWithResponses) CreateUploadWithBodyWithResponse(ctx context.Conte
 }
 
 // DeleteUploadWithResponse request returning *DeleteUploadResponse
-func (c *ClientWithResponses) DeleteUploadWithResponse(ctx context.Context, uploadId UploadId, params *DeleteUploadParams, reqEditors ...RequestEditorFn) (*DeleteUploadResponse, error) {
-	rsp, err := c.DeleteUpload(ctx, uploadId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteUploadWithResponse(ctx context.Context, uploadId UploadId, reqEditors ...RequestEditorFn) (*DeleteUploadResponse, error) {
+	rsp, err := c.DeleteUpload(ctx, uploadId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

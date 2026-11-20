@@ -45,8 +45,8 @@ export interface MintedKey {
     /**
      * Whose it is, and whom it acts as: the person who made it — the
      * workspace's owner for the one the server keeps from
-     * `--owner-key-file` — or the application an admin minted it for
-     * (`app:<id>`).
+     * `--owner-key-file` — or the application connect or an admin minted
+     * it for (`app:<id>`).
      * 
      */
     owner: string;

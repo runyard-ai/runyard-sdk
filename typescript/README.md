@@ -165,12 +165,6 @@ A stream that is refused throws the `APIError` already. A `409` with the
 code `gapped` says what was asked for is no longer kept: read from where the
 server says it starts.
 
-## The relay
-
-`@runyard-ai/runyard-sdk/relay` is deprecated, and is being removed: a
-session token (`ry`'s `token()`) lets a browser talk to its session
-directly, which is what the relay was for.
-
 ## Reference
 
 [`docs/`](docs) has a page for every operation and every type, as

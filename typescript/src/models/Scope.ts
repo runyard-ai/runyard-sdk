@@ -18,7 +18,6 @@
  * |---|---|
  * | `sessions.read` | read sessions, their events, work and files, and usage |
  * | `sessions.write` | start sessions, send turns, steer them, write files, share them |
- * | `sessions.person` | have the sessions it starts and the turns it sends recorded as a person's (`source: user`) rather than its own (`api`): the key of a front end that signs its people in itself and speaks for them |
  * | `sessions.delete` | delete sessions |
  * | `sandbox` | open a session's terminal |
  * | `profiles.write` | change profiles |
@@ -36,15 +35,13 @@
  * an admin holds every scope, over everything in the workspace. A key
  * holds what it was given of what its person holds now. The platform,
  * calling with a platform token, holds what the token names of
- * `--platform-scopes`, and never `keys.admin`, `users.admin` or
- * `sessions.person`.
+ * `--platform-scopes`, and never `keys.admin` or `users.admin`.
  * 
  * @export
  */
 export const Scope = {
     SessionsRead: 'sessions.read',
     SessionsWrite: 'sessions.write',
-    SessionsPerson: 'sessions.person',
     SessionsDelete: 'sessions.delete',
     Sandbox: 'sandbox',
     ProfilesWrite: 'profiles.write',

@@ -14,7 +14,7 @@
 
 
 /**
- * Who sent it, from the key that did — `user` for a person, signed in or spoken for by a key with `sessions.person`; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
+ * Who sent it, from the key that did — `user` for a person signed in, or a session token in a browser; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
  * @export
  */
 export const UserEventSource = {

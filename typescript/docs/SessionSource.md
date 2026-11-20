@@ -1,7 +1,7 @@
 
 # SessionSource
 
-| source | started by | |---|---| | `user` | a person, in the chat UI or console, or through a key with `sessions.person` | | `api` | a caller with a key | | `session` | another session\'s harness — `parentId` | | `fork` | forking another session — `branchedFrom` | | `trigger` | a trigger\'s firing — `trigger` | 
+| source | started by | |---|---| | `user` | a person, in the chat UI or console, or a session token in their browser | | `api` | a caller with a key | | `session` | another session\'s harness — `parentId` | | `fork` | forking another session — `branchedFrom` | | `trigger` | a trigger\'s firing — `trigger` | 
 
 ## Properties
 

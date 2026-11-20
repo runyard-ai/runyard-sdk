@@ -19,7 +19,6 @@ Name | Type
 `profileVersion` | number
 `title` | string
 `autoTitle` | boolean
-`owner` | string
 `endUser` | [EndUser](EndUser.md)
 `parentId` | string
 `labels` | { [key: string]: string; }
@@ -45,7 +44,6 @@ const example = {
   "profileVersion": null,
   "title": null,
   "autoTitle": null,
-  "owner": null,
   "endUser": null,
   "parentId": 0192f6a4-3c1e-7b2a-9d4e-5f6a7b8c9d0e,
   "labels": null,

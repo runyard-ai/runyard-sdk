@@ -61,6 +61,3 @@ Vite serves the page and sends `/chat` to the backend.
   Anything else is refused.
 - **One user:** its turns are sent for the end user it was minted for.
 - **A while:** an hour unless the backend says otherwise, a day at most.
-
-The relay these examples used before (`go/relay`,
-`@runyard-ai/runyard-sdk/relay`) is deprecated, and is being removed.
