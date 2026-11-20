@@ -50,6 +50,17 @@ export interface Harness {
      */
     title: string;
     /**
+     * The image its sessions' harness is mounted from, beside whatever
+     * image they boot: the harness and the tools it shells out to,
+     * pinned by digest. What each session woke on is its
+     * `sandbox.bundle`; one that differs from this is moved onto it by
+     * its next wake. Absent for a harness this server runs from its own
+     * image alone, whose sessions boot that image or a recipe `FROM
+     * harness/<name>`.
+     * 
+     */
+    bundle?: string;
+    /**
      * The types of provider it runs on.
      */
     providerTypes: Array<ProviderType>;
@@ -131,6 +142,7 @@ export function HarnessFromJSONTyped(json: any, ignoreDiscriminator: boolean): H
         
         'name': json['name'],
         'title': json['title'],
+        'bundle': json['bundle'] == null ? undefined : json['bundle'],
         'providerTypes': ((json['providerTypes'] as Array<any>).map(ProviderTypeFromJSON)),
         'models': ((json['models'] as Array<any>).map(HarnessModelFromJSON)),
         'defaultProvider': json['defaultProvider'] == null ? undefined : json['defaultProvider'],
@@ -152,6 +164,7 @@ export function HarnessToJSONTyped(value?: Harness | null, ignoreDiscriminator: 
         
         'name': value['name'],
         'title': value['title'],
+        'bundle': value['bundle'],
         'providerTypes': ((value['providerTypes'] as Array<any>).map(ProviderTypeToJSON)),
         'models': ((value['models'] as Array<any>).map(HarnessModelToJSON)),
         'defaultProvider': value['defaultProvider'],

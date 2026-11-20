@@ -13,6 +13,7 @@ Name | Type
 `errorCode` | [ErrorCode](ErrorCode.md)
 `runner` | [SessionSandboxRunner](SessionSandboxRunner.md)
 `image` | string
+`bundle` | string
 
 ## Example
 
@@ -28,6 +29,7 @@ const example = {
   "errorCode": null,
   "runner": null,
   "image": null,
+  "bundle": null,
 } satisfies SessionSandbox
 
 console.log(example)

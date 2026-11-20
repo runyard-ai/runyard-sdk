@@ -8,6 +8,7 @@ Name | Type
 ------------ | -------------
 `name` | string
 `title` | string
+`bundle` | string
 `providerTypes` | [Array&lt;ProviderType&gt;](ProviderType.md)
 `models` | [Array&lt;HarnessModel&gt;](HarnessModel.md)
 `defaultProvider` | string
@@ -23,6 +24,7 @@ import type { Harness } from '@runyard-ai/runyard-sdk'
 const example = {
   "name": claude-code,
   "title": Claude Code,
+  "bundle": releases.runyard.ai/runyard-public/bundle-claude@sha256:9b1c…,
   "providerTypes": null,
   "models": null,
   "defaultProvider": github,

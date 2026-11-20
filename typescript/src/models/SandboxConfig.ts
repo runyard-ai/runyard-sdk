@@ -66,15 +66,35 @@ export interface SandboxConfig {
      */
     placement?: Placement;
     /**
-     * What the sandbox boots, as a recipe starting `FROM
-     * harness/<name>`, the image of the harness the session runs
-     * (`POST /v1/images` says how one is written):
-     * a config naming no harness runs the recipe's, and one naming
-     * another is refused. Absent, the harness's image itself. A
-     * session's disk is laid over the image it first woke on, so a
-     * session keeps that image: a profile's recipe changed later is for
-     * the sessions started after. Saved, it is built, and its image named
-     * after the profile, or the session, unless someone named it.
+     * What the sandbox boots, as an OCI reference: any image, built
+     * from any recipe its owner already has. The harness is not in it:
+     * it is mounted beside it, from its bundle (`GET /v1/harnesses`,
+     * `bundle`), with the tools it shells out to, for an image that has
+     * none of its own. Pin it by digest: a session's disk is laid over
+     * the image it first woke on, and keeps it. Refused beside a
+     * `recipe`, and for a harness this server runs from its own image
+     * alone (one with no `bundle`).
+     * 
+     */
+    image?: string;
+    /**
+     * What the sandbox boots, as a recipe built on any image (`POST
+     * /v1/images` says how one is written). The harness is not in it:
+     * it is mounted beside it from its bundle, as for `image`.
+     * 
+     * A recipe starting `FROM harness/<name>` is built on that
+     * harness's own image, which holds it: a config naming no harness
+     * runs the recipe's, and one naming another is refused. **That is
+     * deprecated, and goes in a release soon**: start from any image
+     * instead. It is still what a harness with no `bundle` takes, and
+     * the only one.
+     * 
+     * Absent, and with no `image`, the server's base image, or for a
+     * harness with no bundle, its own image. A session's disk is laid
+     * over the image it first woke on, so a session keeps that image:
+     * a profile's recipe changed later is for the sessions started
+     * after. Saved, it is built, and its image named after the profile,
+     * or the session, unless someone named it.
      * 
      */
     recipe?: string;
@@ -103,6 +123,7 @@ export function SandboxConfigFromJSONTyped(json: any, ignoreDiscriminator: boole
         'internet': json['internet'] == null ? undefined : json['internet'],
         'nested': json['nested'] == null ? undefined : json['nested'],
         'placement': json['placement'] == null ? undefined : PlacementFromJSON(json['placement']),
+        'image': json['image'] == null ? undefined : json['image'],
         'recipe': json['recipe'] == null ? undefined : json['recipe'],
     };
 }
@@ -124,6 +145,7 @@ export function SandboxConfigToJSONTyped(value?: SandboxConfig | null, ignoreDis
         'internet': value['internet'],
         'nested': value['nested'],
         'placement': PlacementToJSON(value['placement']),
+        'image': value['image'],
         'recipe': value['recipe'],
     };
 }

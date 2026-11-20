@@ -20,7 +20,7 @@ import { mapValues } from '../runtime.js';
  */
 export interface ProfileRecipe {
     /**
-     * A Dockerfile starting `FROM harness/<name>`; empty boots the harness's own image.
+     * A recipe, as `sandbox.recipe` takes one, in place of the profile's recipe or image; empty boots the profile's image, or with none the server's base image (the harness's own, for a harness with no bundle).
      */
     recipe: string;
 }

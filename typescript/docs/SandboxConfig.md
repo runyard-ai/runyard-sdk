@@ -12,6 +12,7 @@ Name | Type
 `internet` | boolean
 `nested` | boolean
 `placement` | [Placement](Placement.md)
+`image` | string
 `recipe` | string
 
 ## Example
@@ -27,7 +28,8 @@ const example = {
   "internet": null,
   "nested": null,
   "placement": null,
-  "recipe": FROM harness/claude-code
+  "image": python:3.12-slim,
+  "recipe": FROM python:3.12-slim
 RUN --allow=deb.debian.org apt-get update && apt-get install -y ripgrep
 ,
 } satisfies SandboxConfig

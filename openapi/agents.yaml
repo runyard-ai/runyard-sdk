@@ -5173,6 +5173,15 @@ components:
             The image its disk is laid over, pinned by digest, once it has
             woken: built from its `config.sandbox.recipe` when it has one.
             It is the session's for its life.
+        bundle:
+          type: string
+          description: |
+            The bundle its harness was mounted from when it last woke — the
+            harness's `bundle` then — and absent for a session whose image
+            holds its harness. Unlike `image`, it is not the session's for
+            its life: each wake mounts the harness's bundle as it is, so a
+            session asleep wakes on a newer one, and one awake is moved onto
+            it by being put to sleep and woken.
     SessionSandboxRunner:
       type: object
       required: [id, name]
@@ -6162,6 +6171,17 @@ components:
           description: "`claude-code`, `codex` or `opencode`."
           example: claude-code
         title: {type: string, example: Claude Code}
+        bundle:
+          type: string
+          description: |
+            The image its sessions' harness is mounted from, beside whatever
+            image they boot: the harness and the tools it shells out to,
+            pinned by digest. What each session woke on is its
+            `sandbox.bundle`; one that differs from this is moved onto it by
+            its next wake. Absent for a harness this server runs from its own
+            image alone, whose sessions boot that image or a recipe `FROM
+            harness/<name>`.
+          example: releases.runyard.ai/runyard-public/bundle-claude@sha256:9b1c…
         providerTypes:
           type: array
           description: The types of provider it runs on.
@@ -6856,21 +6876,43 @@ components:
             that cannot give nested virtualisation, and the session fails to
             start saying so.
         placement: {$ref: "#/components/schemas/Placement"}
+        image:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          description: |
+            What the sandbox boots, as an OCI reference: any image, built
+            from any recipe its owner already has. The harness is not in it:
+            it is mounted beside it, from its bundle (`GET /v1/harnesses`,
+            `bundle`), with the tools it shells out to, for an image that has
+            none of its own. Pin it by digest: a session's disk is laid over
+            the image it first woke on, and keeps it. Refused beside a
+            `recipe`, and for a harness this server runs from its own image
+            alone (one with no `bundle`).
+          example: python:3.12-slim
         recipe:
           type: string
           maxLength: 65536
           description: |
-            What the sandbox boots, as a recipe starting `FROM
-            harness/<name>`, the image of the harness the session runs
-            (`POST /v1/images` says how one is written):
-            a config naming no harness runs the recipe's, and one naming
-            another is refused. Absent, the harness's image itself. A
-            session's disk is laid over the image it first woke on, so a
-            session keeps that image: a profile's recipe changed later is for
-            the sessions started after. Saved, it is built, and its image named
-            after the profile, or the session, unless someone named it.
+            What the sandbox boots, as a recipe built on any image (`POST
+            /v1/images` says how one is written). The harness is not in it:
+            it is mounted beside it from its bundle, as for `image`.
+
+            A recipe starting `FROM harness/<name>` is built on that
+            harness's own image, which holds it: a config naming no harness
+            runs the recipe's, and one naming another is refused. **That is
+            deprecated, and goes in a release soon**: start from any image
+            instead. It is still what a harness with no `bundle` takes, and
+            the only one.
+
+            Absent, and with no `image`, the server's base image, or for a
+            harness with no bundle, its own image. A session's disk is laid
+            over the image it first woke on, so a session keeps that image:
+            a profile's recipe changed later is for the sessions started
+            after. Saved, it is built, and its image named after the profile,
+            or the session, unless someone named it.
           example: |
-            FROM harness/claude-code
+            FROM python:3.12-slim
             RUN --allow=deb.debian.org apt-get update && apt-get install -y ripgrep
     Placement:
       type: object
@@ -6980,7 +7022,7 @@ components:
         recipe:
           type: string
           maxLength: 65536
-          description: A Dockerfile starting `FROM harness/<name>`; empty boots the harness's own image.
+          description: A recipe, as `sandbox.recipe` takes one, in place of the profile's recipe or image; empty boots the profile's image, or with none the server's base image (the harness's own, for a harness with no bundle).
     ProfilePage:
       allOf:
         - $ref: "#/components/schemas/Page"

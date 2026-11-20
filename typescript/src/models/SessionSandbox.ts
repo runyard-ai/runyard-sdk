@@ -86,6 +86,16 @@ export interface SessionSandbox {
      * 
      */
     image?: string;
+    /**
+     * The bundle its harness was mounted from when it last woke — the
+     * harness's `bundle` then — and absent for a session whose image
+     * holds its harness. Unlike `image`, it is not the session's for
+     * its life: each wake mounts the harness's bundle as it is, so a
+     * session asleep wakes on a newer one, and one awake is moved onto
+     * it by being put to sleep and woken.
+     * 
+     */
+    bundle?: string;
 }
 
 
@@ -116,6 +126,7 @@ export function SessionSandboxFromJSONTyped(json: any, ignoreDiscriminator: bool
         'errorCode': json['errorCode'] == null ? undefined : ErrorCodeFromJSON(json['errorCode']),
         'runner': json['runner'] == null ? undefined : SessionSandboxRunnerFromJSON(json['runner']),
         'image': json['image'] == null ? undefined : json['image'],
+        'bundle': json['bundle'] == null ? undefined : json['bundle'],
     };
 }
 
@@ -137,6 +148,7 @@ export function SessionSandboxToJSONTyped(value?: SessionSandbox | null, ignoreD
         'errorCode': ErrorCodeToJSON(value['errorCode']),
         'runner': SessionSandboxRunnerToJSON(value['runner']),
         'image': value['image'],
+        'bundle': value['bundle'],
     };
 }
 
