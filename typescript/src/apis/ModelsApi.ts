@@ -76,6 +76,13 @@ export interface FinishProviderSignInRequest {
     providerSignInFinish?: ProviderSignInFinish;
 }
 
+export interface ListProvidersRequest {
+    /**
+     * Those of the end user of this id alone.
+     */
+    endUser?: string;
+}
+
 export interface PutProviderRequest {
     /**
      * 
@@ -199,25 +206,27 @@ export interface ModelsApiInterface {
 
     /**
      * Creates request options for listProviders without sending the request
+     * @param {string} [endUser] Those of the end user of this id alone.
      * @throws {RequiredError}
      * @memberof ModelsApiInterface
      */
-    listProvidersRequestOpts(): Promise<runtime.RequestOpts>;
+    listProvidersRequestOpts(requestParameters: ListProvidersRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`. 
+     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`.  An application sees its own, each end user\'s among them. 
      * @summary The providers, and whether each has a working credential
+     * @param {string} [endUser] Those of the end user of this id alone.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ModelsApiInterface
      */
-    listProvidersRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListProviders200Response>>;
+    listProvidersRaw(requestParameters: ListProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListProviders200Response>>;
 
     /**
-     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`. 
+     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`.  An application sees its own, each end user\'s among them. 
      * The providers, and whether each has a working credential
      */
-    listProviders(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListProviders200Response>;
+    listProviders(requestParameters: ListProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListProviders200Response>;
 
     /**
      * Creates request options for putProvider without sending the request
@@ -522,8 +531,12 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     /**
      * Creates request options for listProviders without sending the request
      */
-    async listProvidersRequestOpts(): Promise<runtime.RequestOpts> {
+    async listProvidersRequestOpts(requestParameters: ListProvidersRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
+
+        if (requestParameters['endUser'] != null) {
+            queryParameters['endUser'] = requestParameters['endUser'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -555,22 +568,22 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`. 
+     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`.  An application sees its own, each end user\'s among them. 
      * The providers, and whether each has a working credential
      */
-    async listProvidersRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListProviders200Response>> {
-        const requestOptions = await this.listProvidersRequestOpts();
+    async listProvidersRaw(requestParameters: ListProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListProviders200Response>> {
+        const requestOptions = await this.listProvidersRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ListProviders200ResponseFromJSON(jsonValue));
     }
 
     /**
-     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`. 
+     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`.  An application sees its own, each end user\'s among them. 
      * The providers, and whether each has a working credential
      */
-    async listProviders(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListProviders200Response> {
-        const response = await this.listProvidersRaw(initOverrides);
+    async listProviders(requestParameters: ListProvidersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListProviders200Response> {
+        const response = await this.listProvidersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

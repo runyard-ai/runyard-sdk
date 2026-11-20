@@ -42,7 +42,7 @@ const example = {
   "enabled": null,
   "labels": null,
   "id": 0192f6a4-3c1e-7b2a-9d4e-5f6a7b8c9d0e,
-  "owner": null,
+  "owner": ada@example.com,
   "hookUrl": null,
   "secret": null,
   "nextFireAt": null,

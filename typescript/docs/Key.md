@@ -25,7 +25,7 @@ import type { Key } from '@runyard-ai/runyard-sdk'
 const example = {
   "id": k7d2m9x4p1qa,
   "name": null,
-  "owner": null,
+  "owner": ada@example.com,
   "scopes": null,
   "createdAt": null,
   "expiresAt": null,

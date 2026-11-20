@@ -73,6 +73,7 @@ docs/DirectoryOrg.md
 docs/DirectoryWorkspace.md
 docs/EgressEvent.md
 docs/EgressRule.md
+docs/EndUser.md
 docs/ErrorCode.md
 docs/ErrorError.md
 docs/ErrorEvent.md
@@ -229,6 +230,8 @@ docs/SessionStarting.md
 docs/SessionState.md
 docs/SessionStateSpan.md
 docs/SessionTask.md
+docs/SessionToken.md
+docs/SessionTokenRequest.md
 docs/SessionTool.md
 docs/SessionUpdate.md
 docs/SessionUsage.md
@@ -252,6 +255,9 @@ docs/TitleSource.md
 docs/ToolCallEvent.md
 docs/ToolImage.md
 docs/ToolResultEvent.md
+docs/Transfer.md
+docs/TransferProvidersInner.md
+docs/TransferSessionsInner.md
 docs/Trigger.md
 docs/TriggerPage.md
 docs/TriggerRef.md
@@ -375,6 +381,7 @@ src/models/DirectoryOrg.ts
 src/models/DirectoryWorkspace.ts
 src/models/EgressEvent.ts
 src/models/EgressRule.ts
+src/models/EndUser.ts
 src/models/ErrorCode.ts
 src/models/ErrorError.ts
 src/models/ErrorEvent.ts
@@ -521,6 +528,8 @@ src/models/SessionStarting.ts
 src/models/SessionState.ts
 src/models/SessionStateSpan.ts
 src/models/SessionTask.ts
+src/models/SessionToken.ts
+src/models/SessionTokenRequest.ts
 src/models/SessionTool.ts
 src/models/SessionUpdate.ts
 src/models/SessionUsage.ts
@@ -543,6 +552,9 @@ src/models/TitleSource.ts
 src/models/ToolCallEvent.ts
 src/models/ToolImage.ts
 src/models/ToolResultEvent.ts
+src/models/Transfer.ts
+src/models/TransferProvidersInner.ts
+src/models/TransferSessionsInner.ts
 src/models/Trigger.ts
 src/models/TriggerPage.ts
 src/models/TriggerRef.ts

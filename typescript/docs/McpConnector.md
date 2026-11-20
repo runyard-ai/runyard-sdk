@@ -31,7 +31,7 @@ const example = {
   "title": null,
   "url": https://mcp.example.com/mcp,
   "auth": null,
-  "owner": null,
+  "owner": ada@example.com,
   "everyone": null,
   "users": null,
   "name": github,

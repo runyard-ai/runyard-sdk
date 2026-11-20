@@ -35,7 +35,7 @@ const example = {
   "id": null,
   "at": null,
   "sessionId": 0192f6a4-3c1e-7b2a-9d4e-5f6a7b8c9d0e,
-  "owner": null,
+  "owner": ada@example.com,
   "broker": mcp-github,
   "actor": null,
   "kind": null,

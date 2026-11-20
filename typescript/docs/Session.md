@@ -11,6 +11,7 @@ Name | Type
 `titleSource` | [TitleSource](TitleSource.md)
 `autoTitle` | boolean
 `owner` | string
+`endUser` | [EndUser](EndUser.md)
 `state` | [SessionState](SessionState.md)
 `error` | string
 `profile` | [ProfileRef](ProfileRef.md)
@@ -45,7 +46,8 @@ const example = {
   "title": null,
   "titleSource": null,
   "autoTitle": null,
-  "owner": null,
+  "owner": ada@example.com,
+  "endUser": null,
   "state": null,
   "error": null,
   "profile": null,

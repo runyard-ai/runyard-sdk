@@ -20,6 +20,13 @@ import {
     AttachmentToJSON,
     AttachmentToJSONTyped,
 } from './Attachment.js';
+import type { EndUser } from './EndUser.js';
+import {
+    EndUserFromJSON,
+    EndUserFromJSONTyped,
+    EndUserToJSON,
+    EndUserToJSONTyped,
+} from './EndUser.js';
 import type { UserEventSource } from './UserEventSource.js';
 import {
     UserEventSourceFromJSON,
@@ -58,6 +65,10 @@ export interface UserEvent {
      * 
      */
     keyId?: string;
+    /**
+     * Whom it was sent for, when it was sent for an application's end user.
+     */
+    endUser?: EndUser;
     /**
      * A compaction asked for (`POST …/compact`) rather than words: its
      * `text` is the command the harness was given. The turn's
@@ -107,6 +118,7 @@ export function UserEventFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         'attachments': json['attachments'] == null ? undefined : ((json['attachments'] as Array<any>).map(AttachmentFromJSON)),
         'source': UserEventSourceFromJSON(json['source']),
         'keyId': json['keyId'] == null ? undefined : json['keyId'],
+        'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'compact': json['compact'] == null ? undefined : json['compact'],
     };
 }
@@ -128,6 +140,7 @@ export function UserEventToJSONTyped(value?: UserEvent | null, ignoreDiscriminat
         'attachments': value['attachments'] == null ? undefined : ((value['attachments'] as Array<any>).map(AttachmentToJSON)),
         'source': UserEventSourceToJSON(value['source']),
         'keyId': value['keyId'],
+        'endUser': EndUserToJSON(value['endUser']),
         'compact': value['compact'],
     };
 }

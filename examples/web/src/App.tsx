@@ -1,45 +1,58 @@
 import '@runyard-ai/runyard-react/styles.css'
-import { Composer, Conversation, TranscriptProvider, laneClass, sessions } from '@runyard-ai/runyard-react'
-import { useState } from 'react'
+import { Conversation, TranscriptProvider } from '@runyard-ai/runyard-react'
+import { useEffect, useState } from 'react'
 
-// The backend serves the relay at /agents. The browser never sees the
-// runyard key: it only talks to the backend.
-const api = { apiBase: '/agents/v1', fetch: (request: Request) => fetch(request) }
+// What the backend answers POST /chat with: the signed-in user's session,
+// and a token the browser talks to runyard with, directly. The browser
+// never sees the runyard key.
+interface Chat {
+  sessionId: string
+  token: string
+  expiresAt: string
+  apiBase: string
+}
 
 export function App() {
-  // The open chat, remembered across reloads.
-  const [sessionId, setSessionId] = useState(() => localStorage.getItem('sessionId') ?? undefined)
+  const [chat, setChat] = useState<Chat>()
+  const [failed, setFailed] = useState<string>()
 
-  function open(id: string | undefined) {
-    if (id) localStorage.setItem('sessionId', id)
-    else localStorage.removeItem('sessionId')
-    setSessionId(id)
-  }
-
-  // The first message starts a session; the conversation takes it from there.
-  async function start({ text }: { text: string }) {
-    const { data, failure } = await sessions.start(api, { autoTitle: true, firstTurn: { text } })
-    if (data) open(data.id)
-    return failure
-  }
+  // The chat, and a new token for it a minute before the last one ends.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let live = true
+    async function load() {
+      const res = await fetch('/chat', { method: 'POST' })
+      if (!res.ok) throw new Error(`${res.status} ${await res.text()}`)
+      const next = (await res.json()) as Chat
+      if (!live) return
+      setChat(next)
+      const renew = Math.max(new Date(next.expiresAt).getTime() - Date.now() - 60_000, 10_000)
+      timer = setTimeout(() => void load().catch(fail), renew)
+    }
+    function fail(err: unknown) {
+      if (live) setFailed(String(err))
+    }
+    load().catch(fail)
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
+  }, [])
 
   return (
-    <TranscriptProvider options={{ apiBase: api.apiBase }}>
-      <div className="app">
-        <header>
-          <strong>Acme Chat</strong>
-          <button onClick={() => open(undefined)}>New chat</button>
-        </header>
-        <main>
-          {sessionId ? (
-            <Conversation sessionId={sessionId} />
-          ) : (
-            <div className={laneClass}>
-              <Composer onSend={start} placeholder="Ask anything" />
-            </div>
-          )}
-        </main>
-      </div>
-    </TranscriptProvider>
+    <div className="app">
+      <header>
+        <strong>Acme Chat</strong>
+      </header>
+      <main>
+        {chat ? (
+          <TranscriptProvider options={{ apiBase: chat.apiBase, token: chat.token }}>
+            <Conversation sessionId={chat.sessionId} />
+          </TranscriptProvider>
+        ) : (
+          <p>{failed ?? 'Loading…'}</p>
+        )}
+      </main>
+    </div>
   )
 }

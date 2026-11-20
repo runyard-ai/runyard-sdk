@@ -36,7 +36,7 @@ const example = {
   "auth": null,
   "kind": null,
   "builtin": null,
-  "owner": null,
+  "owner": ada@example.com,
   "everyone": null,
   "users": null,
   "updatedAt": null,

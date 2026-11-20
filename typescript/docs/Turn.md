@@ -12,6 +12,7 @@ Name | Type
 `mode` | string
 `provider` | string
 `model` | string
+`endUser` | [EndUser](EndUser.md)
 
 ## Example
 
@@ -26,6 +27,7 @@ const example = {
   "mode": null,
   "provider": github,
   "model": claude-haiku-4-5-20251001,
+  "endUser": null,
 } satisfies Turn
 
 console.log(example)

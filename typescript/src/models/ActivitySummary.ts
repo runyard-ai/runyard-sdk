@@ -38,7 +38,7 @@ export interface ActivitySummary {
      */
     sessionId?: string;
     /**
-     * The session's person, or the deployment's. Absent when it is nobody's.
+     * The session's owner, or the deployment's. Absent when it is nobody's.
      */
     owner?: string;
     /**

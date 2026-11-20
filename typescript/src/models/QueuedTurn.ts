@@ -20,6 +20,13 @@ import {
     AttachmentToJSON,
     AttachmentToJSONTyped,
 } from './Attachment.js';
+import type { EndUser } from './EndUser.js';
+import {
+    EndUserFromJSON,
+    EndUserFromJSONTyped,
+    EndUserToJSON,
+    EndUserToJSONTyped,
+} from './EndUser.js';
 import type { UserEventSource } from './UserEventSource.js';
 import {
     UserEventSourceFromJSON,
@@ -50,6 +57,10 @@ export interface QueuedTurn {
      * 
      */
     source: UserEventSource;
+    /**
+     * Whom it was sent for, as `UserEvent`'s `endUser` says.
+     */
+    endUser?: EndUser;
     /**
      * A compaction asked for, waiting, as `UserEvent`'s `compact` says. Absent for any other turn.
      */
@@ -89,6 +100,7 @@ export function QueuedTurnFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'text': json['text'],
         'attachments': json['attachments'] == null ? undefined : ((json['attachments'] as Array<any>).map(AttachmentFromJSON)),
         'source': UserEventSourceFromJSON(json['source']),
+        'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'compact': json['compact'] == null ? undefined : json['compact'],
         'heldUntil': json['heldUntil'] == null ? undefined : (parseDateTime(json['heldUntil'])),
     };
@@ -109,6 +121,7 @@ export function QueuedTurnToJSONTyped(value?: QueuedTurn | null, ignoreDiscrimin
         'text': value['text'],
         'attachments': value['attachments'] == null ? undefined : ((value['attachments'] as Array<any>).map(AttachmentToJSON)),
         'source': UserEventSourceToJSON(value['source']),
+        'endUser': EndUserToJSON(value['endUser']),
         'compact': value['compact'],
         'heldUntil': value['heldUntil'] == null ? value['heldUntil'] : serializeDateTime(value['heldUntil']),
     };

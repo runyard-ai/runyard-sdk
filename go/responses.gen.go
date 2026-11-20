@@ -423,6 +423,9 @@ func (r *GetSubagentResponse) Raw() []byte { return r.Body }
 func (r *ListSessionTasksResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
+func (r *CreateSessionTokenResponse) Raw() []byte { return r.Body }
+
+// Raw is the body the answer was read from.
 func (r *ListTunnelsResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
@@ -442,6 +445,9 @@ func (r *ConfirmSignInResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *ListTasksResponse) Raw() []byte { return r.Body }
+
+// Raw is the body the answer was read from.
+func (r *TransferResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *ListTriggersResponse) Raw() []byte { return r.Body }

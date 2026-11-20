@@ -10,6 +10,7 @@ Name | Type
 `name` | string
 `title` | string
 `owner` | string
+`endUser` | [EndUser](EndUser.md)
 `everyone` | boolean
 `users` | Array&lt;string&gt;
 `type` | [ProviderType](ProviderType.md)
@@ -36,7 +37,8 @@ import type { Provider } from '@runyard-ai/runyard-sdk'
 const example = {
   "name": github,
   "title": Work subscription,
-  "owner": null,
+  "owner": ada@example.com,
+  "endUser": null,
   "everyone": null,
   "users": null,
   "type": null,

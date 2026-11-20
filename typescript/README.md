@@ -27,7 +27,62 @@ npm install @runyard-ai/runyard-sdk
 
 Take the version of the server it talks to.
 
-## Example
+## ry: start a session, and read its answer
+
+`@runyard-ai/runyard-sdk/ry` is the short way, with your application's key
+(`sessions.read`, `sessions.write`):
+
+```ts
+import { Runyard } from '@runyard-ai/runyard-sdk/ry';
+
+const ry = new Runyard({ url: 'https://agents.example.com', key: process.env.RUNYARD_KEY! });
+const s = await ry.start({ profile: 'support', text: 'Summarize ticket #42' });
+const answer = await s.reply(); // waits for the turn to end: what the session said
+const next = await s.send('Now draft a reply');
+
+// Everything it does, as it happens.
+for await (const ev of s.events()) {
+  if (ev.type === 'text') console.log(ev.text);
+  if (ev.type === 'turn_ended') break;
+}
+```
+
+`ry.session(id)` is a handle on a session you started before, and
+`ry.sessions({ ... })` lists them. `reply()` waits for the turn under way, or
+the next: a turn that already ended — sent in one request, read in another —
+is `lastReply()`'s, the answer of the turn that ended last.
+
+```ts
+const answer = await ry.session(id).lastReply();
+```
+
+A turn that ends other than as it should is a `TurnError`; a turn `send()`
+waits for that the session never starts — cancelled from the page while it
+waited, dropped by an interrupt that dropped the queue, or refused as it was
+given to the harness — a `TurnGoneError`, as soon as it is gone; an answer
+other than a success, an `APIError`. Every call takes a `signal`, which ends
+it and every request it makes.
+
+### Your users, and their browsers
+
+A session may be for one of your users — `endUser`, your own id for them —
+and their browser talks to it directly, with a **session token** your
+backend mints: it reaches that one session, sends its turns for that user,
+and nothing else. Your key never leaves your backend.
+
+```ts
+const s = await ry.start({ profile: 'support', endUser: { id: user.id } });
+// ttlSeconds: 60 to 86400; absent or 0 is the server's default, an hour.
+const { token, expiresAt } = await s.token({ endUser: { id: user.id, email: user.email }, ttlSeconds: 3600 });
+// The page: <TranscriptProvider options={{ apiBase: 'https://agents.example.com/v1', token }}>
+const mine = await ry.sessions({ endUser: user.id });
+```
+
+See [the examples](../examples).
+
+## The generated client
+
+`ry` sits on it (`ry.configuration`), and it is there for everything else.
 
 ```ts
 import { Configuration, SessionsApi, readEvents } from '@runyard-ai/runyard-sdk';
@@ -39,16 +94,13 @@ const configuration = new Configuration({
   accessToken: process.env.RUNYARD_AGENTS_KEY,
 });
 
-// The caller names the session: the same request again finds it rather
-// than making a second one.
 const sessions = new SessionsApi(configuration);
-await sessions.createSession({
-  sessionId: 'hello',
+const { id } = await sessions.startSession({
   sessionSpec: { firstTurn: { turnId: 't1', text: 'Say hello.' } },
 });
 
 // Its events, from the first on, and every new one as it happens.
-for await (const line of await readEvents(configuration, { sessionId: 'hello', follow: true })) {
+for await (const line of await readEvents(configuration, { sessionId: id, follow: true })) {
   if (line.line !== 'event') {
     continue; // a partial, or the line that says the transcript so far is read
   }
@@ -101,7 +153,7 @@ errors, its `code` and `errorMessage`. `errorCode(err)` is the code alone:
 import { ErrorCode, errorCode } from '@runyard-ai/runyard-sdk';
 
 try {
-  await sessions.getSession({ sessionId: 'hello' });
+  await sessions.getSession({ sessionId: id });
 } catch (err) {
   if ((await errorCode(err)) !== ErrorCode.NotFound) {
     throw err;
@@ -115,37 +167,9 @@ server says it starts.
 
 ## The relay
 
-`@runyard-ai/runyard-sdk/relay` is runyard-agents' API served by your own
-backend to your own front end, each person reaching only their own sessions.
-The key stays on the backend. `createRelay` is a fetch handler,
-`(Request) => Promise<Response>`, for Next.js, Hono, Bun or Deno.
-`toNodeHandler` makes it a handler for node:http or Express:
-
-```ts
-import { RelayError, createRelay, toNodeHandler } from '@runyard-ai/runyard-sdk/relay';
-
-const relay = createRelay({
-  url: 'https://agents.example.com',
-  key: process.env.RUNYARD_AGENTS_KEY!, // sessions.read, sessions.write, sessions.person
-  prefix: '/agents',
-  person: async (req) => ({ email: await emailOf(req) }), // throw: 401
-  scope: (_req, p) => ({ owner: p.email, labels: { 'acme.user': p.email } }),
-  start: (_req, p, spec) => {
-    spec.profileId = 'chat';
-    spec.provider = `claude-${p.email}`;
-  },
-  turn: (_req, p, turn) => {
-    turn.provider = `claude-${p.email}`;
-  },
-  started: async (_req, p, session) => record(p, session.id),
-});
-app.use('/agents', toNodeHandler(relay));
-```
-
-A hook that throws a `RelayError(status, code, message)` has the relay answer
-with it. One that throws anything else is a 500, told to `log`. What it
-serves, and what it lets the browser say, is in
-[the examples' README](../examples/README.md#what-the-relay-holds-to).
+`@runyard-ai/runyard-sdk/relay` is deprecated, and is being removed: a
+session token (`ry`'s `token()`) lets a browser talk to its session
+directly, which is what the relay was for.
 
 ## Reference
 

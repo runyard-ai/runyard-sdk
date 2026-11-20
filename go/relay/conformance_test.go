@@ -88,7 +88,7 @@ func TestConformance(t *testing.T) {
 	if s == nil {
 		s = made.JSON200
 	}
-	if s == nil || !strings.EqualFold(string(s.Owner), grace) || s.Labels["conformance.user"] != grace || s.Title != title {
+	if s == nil || !strings.EqualFold(s.Owner, grace) || s.Labels["conformance.user"] != grace || s.Title != title {
 		t.Fatalf("started %s", made.Body)
 	}
 	id := s.Id

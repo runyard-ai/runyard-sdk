@@ -6,6 +6,7 @@ All URIs are relative to *http://127.0.0.1:8140*
 |------------- | ------------- | -------------|
 | [**archiveSession**](SessionsApi.md#archivesession) | **POST** /v1/sessions/{sessionId}/archive | Archive a session |
 | [**createSession**](SessionsApi.md#createsession) | **PUT** /v1/sessions/{sessionId} | Start a session under an id the caller chose |
+| [**createSessionToken**](SessionsApi.md#createsessiontoken) | **POST** /v1/sessions/{sessionId}/tokens | A token a browser talks to this session with |
 | [**deleteSession**](SessionsApi.md#deletesession) | **DELETE** /v1/sessions/{sessionId} | Delete a session, its sandbox, its disk and its transcript |
 | [**forkSession**](SessionsApi.md#forksession) | **POST** /v1/sessions/{sessionId}/fork | Start a new session from this one\&#39;s conversation, up to an event |
 | [**getActivity**](SessionsApi.md#getactivity) | **GET** /v1/activity/{activityId} | One request a session sent through a broker, and its answer, whole |
@@ -192,6 +193,88 @@ example().catch(console.error);
 | **502** | Somebody else\&#39;s server answered badly, or not at all (&#x60;provider_error&#x60;, &#x60;upstream_error&#x60;). |  -  |
 | **503** | No sandbox can be made now (&#x60;capacity_exceeded&#x60;) or the account is at its quota (&#x60;quota_exceeded&#x60;). The one status that says: try again.  |  -  |
 | **507** | The workspace\&#39;s disk budget is full (&#x60;quota_exceeded&#x60;): the disks of its sessions, each counted at its full size, leave no room for this one\&#39;s. The message says the budget, what is held of it and what was asked (&#x60;GET /v1/quota&#x60;). Not a status to try again on: a disk is given back when its session is deleted, and not by waiting.  |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## createSessionToken
+
+> SessionToken createSessionToken(sessionId, sessionTokenRequest)
+
+A token a browser talks to this session with
+
+A session token: what an application\&#39;s backend hands a browser so that it talks to the server directly — reading the session, its transcript, files and sub-agents, sending and steering its turns, uploading what they attach — in this session alone, and nothing else (&#x60;403&#x60;). It is answered from any origin (CORS), being no cookie.  It speaks for its end user, when it has one: its turns are sent for them (&#x60;Turn.endUser&#x60;). Absent, the session\&#39;s end user; a session for an end user has tokens for them alone (&#x60;400&#x60;), and only an application\&#39;s session has end users at all.  It is signed by the server and kept nowhere: it ends at &#x60;expiresAt&#x60; — an hour by default, a day at most — or with its session, or once its owner may no longer steer it. Whoever may steer the session mints one: its owner, or an admin; never a session, nor another token. 
+
+### Example
+
+```ts
+import {
+  Configuration,
+  SessionsApi,
+} from '@runyard-ai/runyard-sdk';
+import type { CreateSessionTokenRequest } from '@runyard-ai/runyard-sdk';
+
+async function example() {
+  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
+  const config = new Configuration({ 
+    // To configure API key authorization: console
+    apiKey: "YOUR API KEY",
+    // Configure HTTP bearer authorization: apiKey
+    accessToken: "YOUR BEARER TOKEN",
+    // Configure HTTP bearer authorization: platform
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new SessionsApi(config);
+
+  const body = {
+    // string
+    sessionId: sessionId_example,
+    // SessionTokenRequest
+    sessionTokenRequest: ...,
+  } satisfies CreateSessionTokenRequest;
+
+  try {
+    const data = await api.createSessionToken(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **sessionId** | `string` |  | [Defaults to `undefined`] |
+| **sessionTokenRequest** | [SessionTokenRequest](SessionTokenRequest.md) |  | |
+
+### Return type
+
+[**SessionToken**](SessionToken.md)
+
+### Authorization
+
+[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **201** | The token. |  * Cache-Control - &#x60;no-store&#x60;: the body is a credential. <br>  |
+| **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
+| **401** | No key, or not a working one — one answer for every cause. |  -  |
+| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
+| **404** | Nothing by that id. |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
@@ -1086,7 +1169,7 @@ example().catch(console.error);
 
 ## listSessions
 
-> SessionPage listSessions(limit, cursor, whose, owner, state, source, archived, profileId, parentId, rootId, triggerId, label)
+> SessionPage listSessions(limit, cursor, whose, owner, endUser, state, source, archived, profileId, parentId, rootId, triggerId, label)
 
 The account\&#39;s sessions, newest activity first
 
@@ -1120,8 +1203,10 @@ async function example() {
     cursor: cursor_example,
     // 'all' | 'mine' (optional)
     whose: whose_example,
-    // string | Those of this person alone, of those the caller sees. (optional)
+    // string | Those of this owner alone, of those the caller sees. (optional)
     owner: owner_example,
+    // string | Those for the end user of this id alone, of those the caller sees. (optional)
+    endUser: endUser_example,
     // Array<SessionState> | Any of these states. (optional)
     state: ...,
     // Array<SessionSource> | Any of these sources. (optional)
@@ -1160,7 +1245,8 @@ example().catch(console.error);
 | **limit** | `number` | At most this many; the default and ceiling are in &#x60;GET /v1/info&#x60;. | [Optional] [Defaults to `undefined`] |
 | **cursor** | `string` | From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;. | [Optional] [Defaults to `undefined`] |
 | **whose** | `all`, `mine` |  | [Optional] [Defaults to `&#39;all&#39;`] [Enum: all, mine] |
-| **owner** | `string` | Those of this person alone, of those the caller sees. | [Optional] [Defaults to `undefined`] |
+| **owner** | `string` | Those of this owner alone, of those the caller sees. | [Optional] [Defaults to `undefined`] |
+| **endUser** | `string` | Those for the end user of this id alone, of those the caller sees. | [Optional] [Defaults to `undefined`] |
 | **state** | `Array<SessionState>` | Any of these states. | [Optional] |
 | **source** | `Array<SessionSource>` | Any of these sources. | [Optional] |
 | **archived** | `boolean` | Archived sessions only, or none of them (the default). | [Optional] [Defaults to `false`] |

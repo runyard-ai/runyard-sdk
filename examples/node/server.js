@@ -1,33 +1,38 @@
 import express from 'express';
-import { createRelay, toNodeHandler } from '@runyard-ai/runyard-sdk/relay';
+import { Runyard } from '@runyard-ai/runyard-sdk/ry';
 
 const env = (name) => process.env[name] ?? (console.error(`${name} is not set`), process.exit(1));
 
-// Stands in for your sign-in: everyone is this person of the workspace.
-const person = env('RUNYARD_PERSON');
+// Your application's key: it stays here, on your backend, and never reaches
+// a browser. sessions.read and sessions.write.
+const url = env('RUNYARD_URL').replace(/\/+$/, '');
+const ry = new Runyard({ url, key: env('RUNYARD_KEY') });
 
-// The relay is runyard's API, served by your backend to your front end. It
-// holds the key, and lets each person reach only their own sessions.
-const relay = createRelay({
-  url: env('RUNYARD_URL'),
-  key: env('RUNYARD_KEY'), // sessions.read, sessions.write, sessions.person
-  prefix: '/agents',
+// Stands in for your sign-in: everyone is this user of yours. Their id is
+// your own — a row of your users table — and runyard keeps it as it is.
+const userId = env('RUNYARD_USER');
 
-  // Who is asking. Your own sign-in goes here: read your session cookie and
-  // return the person's email.
-  person: (_req) => ({ email: person }),
-
-  // Which sessions they reach: their own, started from this app.
-  scope: (_req, p) => ({ owner: p.email, labels: { app: 'acme-chat' } }),
-
-  // What a session is started with, besides what the browser said.
-  start: (_req, _p, spec) => {
-    if (process.env.RUNYARD_PROFILE) spec.profileId = process.env.RUNYARD_PROFILE;
-  },
-});
+// The signed-in user's chat: the one they have, or a new one, for them.
+async function chatOf(user) {
+  const [mine] = await ry.sessions({ endUser: user.id });
+  if (mine) return ry.session(mine.id);
+  return ry.start({ profile: process.env.RUNYARD_PROFILE, title: 'Acme Chat', endUser: user });
+}
 
 const app = express();
-app.use('/agents', toNodeHandler(relay));
+
+// The page asks for its chat, and is given a token for it: with it, the
+// browser talks to runyard directly, in that one session and nothing else.
+app.post('/chat', async (_req, res, next) => {
+  try {
+    const user = { id: userId }; // Your sign-in goes here: who is asking.
+    const chat = await chatOf(user);
+    const { token, expiresAt } = await chat.token({ endUser: user });
+    res.json({ sessionId: chat.id, token, expiresAt, apiBase: `${url}/v1` });
+  } catch (err) {
+    next(err);
+  }
+});
 app.use(express.static('../web/dist'));
 
 app.listen(3000, () => console.log('Acme Chat on http://localhost:3000'));

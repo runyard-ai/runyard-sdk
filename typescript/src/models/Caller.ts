@@ -34,6 +34,13 @@ import {
     ScopeToJSON,
     ScopeToJSONTyped,
 } from './Scope.js';
+import type { ConnectAppRef } from './ConnectAppRef.js';
+import {
+    ConnectAppRefFromJSON,
+    ConnectAppRefFromJSONTyped,
+    ConnectAppRefToJSON,
+    ConnectAppRefToJSONTyped,
+} from './ConnectAppRef.js';
 import type { CallerSignIn } from './CallerSignIn.js';
 import {
     CallerSignInFromJSON,
@@ -41,12 +48,21 @@ import {
     CallerSignInToJSON,
     CallerSignInToJSONTyped,
 } from './CallerSignIn.js';
+import type { EndUser } from './EndUser.js';
+import {
+    EndUserFromJSON,
+    EndUserFromJSONTyped,
+    EndUserToJSON,
+    EndUserToJSONTyped,
+} from './EndUser.js';
 
 /**
  * A key — sent as a bearer, or the one a UI was signed in with — a
  * person signed in with a password or Google, who holds their role's
  * scopes, a session's harness calling through its brokers, or the
- * Runyard platform calling with a platform token.
+ * Runyard platform calling with a platform token, or a session token
+ * (`POST /v1/sessions/{sessionId}/tokens`), which acts as its
+ * session's owner in that session alone.
  * 
  * The platform is nobody: no person, not the workspace's owner. It
  * has no `email` and no `role`, and holds the scopes its token names
@@ -71,13 +87,19 @@ export interface Caller {
      */
     name: string;
     /**
-     * The person signed in, or the person the key is of. Absent for `platform`.
+     * The person signed in, or the person the key or session is of. Absent for `platform` and an application.
      */
     email?: string;
     /**
-     * The person's, or the key's person's. Absent for `platform`.
+     * The person's, or the key's or session's person's. Absent for `platform` and an application.
      */
     role?: Role;
+    /**
+     * For a key or session of an application's: the application. It
+     * holds the scopes its registration grants, over what is its own.
+     * 
+     */
+    app?: ConnectAppRef;
     /**
      * A person signed in with Google who has a profile picture: it is
      * `GET /v1/self/picture`.
@@ -97,9 +119,13 @@ export interface Caller {
      */
     scopes: Array<Scope>;
     /**
-     * For `session`, the session.
+     * For `session` and `token`, the session.
      */
     sessionId?: string;
+    /**
+     * For `token`, whom it speaks for, when it speaks for an end user.
+     */
+    endUser?: EndUser;
     /**
      * For `session`, the profile it was started from, when it was.
      */
@@ -115,6 +141,7 @@ export const CallerKindEnum = {
     Person: 'person',
     Session: 'session',
     Platform: 'platform',
+    Token: 'token',
 } as const;
 export type CallerKindEnum = typeof CallerKindEnum[keyof typeof CallerKindEnum];
 
@@ -143,11 +170,13 @@ export function CallerFromJSONTyped(json: any, ignoreDiscriminator: boolean): Ca
         'name': json['name'],
         'email': json['email'] == null ? undefined : json['email'],
         'role': json['role'] == null ? undefined : RoleFromJSON(json['role']),
+        'app': json['app'] == null ? undefined : ConnectAppRefFromJSON(json['app']),
         'hasPicture': json['hasPicture'] == null ? undefined : json['hasPicture'],
         'signIn': json['signIn'] == null ? undefined : CallerSignInFromJSON(json['signIn']),
         'keyId': json['keyId'] == null ? undefined : json['keyId'],
         'scopes': ((json['scopes'] as Array<any>).map(ScopeFromJSON)),
         'sessionId': json['sessionId'] == null ? undefined : json['sessionId'],
+        'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'profile': json['profile'] == null ? undefined : ProfileRefFromJSON(json['profile']),
     };
 }
@@ -167,11 +196,13 @@ export function CallerToJSONTyped(value?: Caller | null, ignoreDiscriminator: bo
         'name': value['name'],
         'email': value['email'],
         'role': RoleToJSON(value['role']),
+        'app': ConnectAppRefToJSON(value['app']),
         'hasPicture': value['hasPicture'],
         'signIn': CallerSignInToJSON(value['signIn']),
         'keyId': value['keyId'],
         'scopes': ((value['scopes'] as Array<any>).map(ScopeToJSON)),
         'sessionId': value['sessionId'],
+        'endUser': EndUserToJSON(value['endUser']),
         'profile': ProfileRefToJSON(value['profile']),
     };
 }

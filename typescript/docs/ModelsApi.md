@@ -250,11 +250,11 @@ This endpoint does not need any parameter.
 
 ## listProviders
 
-> ListProviders200Response listProviders()
+> ListProviders200Response listProviders(endUser)
 
 The providers, and whether each has a working credential
 
-A provider is a named credential for a model provider\&#39;s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\&#39;s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (&#x60;users&#x60;), or for &#x60;everyone&#x60;: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\&#39;s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on &#x60;POST …/models&#x60;. 
+A provider is a named credential for a model provider\&#39;s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\&#39;s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (&#x60;users&#x60;), or for &#x60;everyone&#x60;: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\&#39;s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on &#x60;POST …/models&#x60;.  An application sees its own, each end user\&#39;s among them. 
 
 ### Example
 
@@ -277,8 +277,13 @@ async function example() {
   });
   const api = new ModelsApi(config);
 
+  const body = {
+    // string | Those of the end user of this id alone. (optional)
+    endUser: endUser_example,
+  } satisfies ListProvidersRequest;
+
   try {
-    const data = await api.listProviders();
+    const data = await api.listProviders(body);
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -291,7 +296,10 @@ example().catch(console.error);
 
 ### Parameters
 
-This endpoint does not need any parameter.
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **endUser** | `string` | Those of the end user of this id alone. | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 

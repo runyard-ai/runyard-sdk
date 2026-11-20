@@ -34,6 +34,11 @@ import {
     NewInvitationToJSON,
 } from '../models/NewInvitation.js';
 import {
+    type Transfer,
+    TransferFromJSON,
+    TransferToJSON,
+} from '../models/Transfer.js';
+import {
     type User,
     UserFromJSON,
     UserToJSON,
@@ -78,6 +83,13 @@ export interface RevokeInvitationRequest {
      * 
      */
     invitationId: string;
+}
+
+export interface TransferRequest {
+    /**
+     * 
+     */
+    transfer: Transfer;
 }
 
 export interface UpdateUserRequest {
@@ -204,7 +216,7 @@ export interface PeopleApiInterface {
     listUsersRequestOpts(): Promise<runtime.RequestOpts>;
 
     /**
-     * Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs `sessions.write`, or `users.admin`. 
+     * Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs `sessions.write`, or `users.admin`; an application is never shown them (`403`), its end users being its own. 
      * @summary The people of the workspace
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -213,7 +225,7 @@ export interface PeopleApiInterface {
     listUsersRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListUsers200Response>>;
 
     /**
-     * Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs `sessions.write`, or `users.admin`. 
+     * Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs `sessions.write`, or `users.admin`; an application is never shown them (`403`), its end users being its own. 
      * The people of the workspace
      */
     listUsers(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListUsers200Response>;
@@ -240,6 +252,30 @@ export interface PeopleApiInterface {
      * Revoke an invitation, at once
      */
     revokeInvitation(requestParameters: RevokeInvitationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+
+    /**
+     * Creates request options for transfer without sending the request
+     * @param {Transfer} transfer 
+     * @throws {RequiredError}
+     * @memberof PeopleApiInterface
+     */
+    transferRequestOpts(requestParameters: TransferRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     * An admin hands things to another owner, a person or an application, all of them or none (`404` for one that is not there, `400` for one that cannot be): sessions, each with every session of its tree; providers; profiles, brokers, MCP connectors and triggers; and connect links, whose keys become their application\'s, holding what of their scopes an application may.  A session or a provider handed to an application may be given an end user; one handed to a person may not. A link is handed to its own application alone. A session awake is put to sleep, so that it wakes as its new owner\'s. 
+     * @summary Hand things to another owner
+     * @param {Transfer} transfer 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PeopleApiInterface
+     */
+    transferRaw(requestParameters: TransferRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Transfer>>;
+
+    /**
+     * An admin hands things to another owner, a person or an application, all of them or none (`404` for one that is not there, `400` for one that cannot be): sessions, each with every session of its tree; providers; profiles, brokers, MCP connectors and triggers; and connect links, whose keys become their application\'s, holding what of their scopes an application may.  A session or a provider handed to an application may be given an end user; one handed to a person may not. A link is handed to its own application alone. A session awake is put to sleep, so that it wakes as its new owner\'s. 
+     * Hand things to another owner
+     */
+    transfer(requestParameters: TransferRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Transfer>;
 
     /**
      * Creates request options for updateUser without sending the request
@@ -569,7 +605,7 @@ export class PeopleApi extends runtime.BaseAPI implements PeopleApiInterface {
     }
 
     /**
-     * Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs `sessions.write`, or `users.admin`. 
+     * Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs `sessions.write`, or `users.admin`; an application is never shown them (`403`), its end users being its own. 
      * The people of the workspace
      */
     async listUsersRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListUsers200Response>> {
@@ -580,7 +616,7 @@ export class PeopleApi extends runtime.BaseAPI implements PeopleApiInterface {
     }
 
     /**
-     * Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs `sessions.write`, or `users.admin`. 
+     * Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs `sessions.write`, or `users.admin`; an application is never shown them (`403`), its end users being its own. 
      * The people of the workspace
      */
     async listUsers(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListUsers200Response> {
@@ -646,6 +682,71 @@ export class PeopleApi extends runtime.BaseAPI implements PeopleApiInterface {
      */
     async revokeInvitation(requestParameters: RevokeInvitationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.revokeInvitationRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Creates request options for transfer without sending the request
+     */
+    async transferRequestOpts(requestParameters: TransferRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['transfer'] == null) {
+            throw new runtime.RequiredError(
+                'transfer',
+                'Required parameter "transfer" was null or undefined when calling transfer().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("apiKey", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("platform", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/v1/transfers`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: TransferToJSON(requestParameters['transfer']),
+        };
+    }
+
+    /**
+     * An admin hands things to another owner, a person or an application, all of them or none (`404` for one that is not there, `400` for one that cannot be): sessions, each with every session of its tree; providers; profiles, brokers, MCP connectors and triggers; and connect links, whose keys become their application\'s, holding what of their scopes an application may.  A session or a provider handed to an application may be given an end user; one handed to a person may not. A link is handed to its own application alone. A session awake is put to sleep, so that it wakes as its new owner\'s. 
+     * Hand things to another owner
+     */
+    async transferRaw(requestParameters: TransferRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Transfer>> {
+        const requestOptions = await this.transferRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => TransferFromJSON(jsonValue));
+    }
+
+    /**
+     * An admin hands things to another owner, a person or an application, all of them or none (`404` for one that is not there, `400` for one that cannot be): sessions, each with every session of its tree; providers; profiles, brokers, MCP connectors and triggers; and connect links, whose keys become their application\'s, holding what of their scopes an application may.  A session or a provider handed to an application may be given an end user; one handed to a person may not. A link is handed to its own application alone. A session awake is put to sleep, so that it wakes as its new owner\'s. 
+     * Hand things to another owner
+     */
+    async transfer(requestParameters: TransferRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Transfer> {
+        const response = await this.transferRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**

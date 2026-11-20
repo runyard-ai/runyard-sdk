@@ -334,7 +334,7 @@ example().catch(console.error);
 
 Add an MCP connector, or change it
 
-A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is &#x60;needs_authorization&#x60; until a person goes through &#x60;POST …/authorize&#x60;. Its tools are listed from it. 
+A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is &#x60;needs_authorization&#x60; until a person goes through &#x60;POST …/authorize&#x60;. Its tools are listed from it. Another\&#39;s is changed by an admin alone: to anybody else its name is &#x60;409&#x60;. 
 
 ### Example
 
@@ -407,6 +407,7 @@ example().catch(console.error);
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 | **404** | Nothing by that id. |  -  |
+| **409** | Not in the state this needs (&#x60;conflict&#x60;), a different spec under an id already used (&#x60;spec_conflict&#x60;), or still used by something (&#x60;in_use&#x60;).  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

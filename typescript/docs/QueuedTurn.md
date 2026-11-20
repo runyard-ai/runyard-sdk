@@ -11,6 +11,7 @@ Name | Type
 `text` | string
 `attachments` | [Array&lt;Attachment&gt;](Attachment.md)
 `source` | [UserEventSource](UserEventSource.md)
+`endUser` | [EndUser](EndUser.md)
 `compact` | boolean
 `heldUntil` | Date
 
@@ -25,6 +26,7 @@ const example = {
   "text": null,
   "attachments": null,
   "source": null,
+  "endUser": null,
   "compact": null,
   "heldUntil": null,
 } satisfies QueuedTurn

@@ -32,6 +32,10 @@
 //
 // Nothing else: any other path is not found, as is a session of anybody
 // else's.
+//
+// Deprecated: a session token (package ry's Session.Token) lets a browser
+// talk to its session directly, which is what the relay was for; the relay
+// is being removed.
 package relay
 
 import (

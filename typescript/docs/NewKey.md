@@ -7,6 +7,7 @@
 Name | Type
 ------------ | -------------
 `name` | string
+`app` | string
 `scopes` | [Array&lt;Scope&gt;](Scope.md)
 `expiresAt` | Date
 
@@ -18,6 +19,7 @@ import type { NewKey } from '@runyard-ai/runyard-sdk'
 // TODO: Update the object below with actual values
 const example = {
   "name": null,
+  "app": acme-app,
   "scopes": null,
   "expiresAt": null,
 } satisfies NewKey

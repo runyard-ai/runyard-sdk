@@ -20,6 +20,13 @@ import {
     AttachmentToJSON,
     AttachmentToJSONTyped,
 } from './Attachment.js';
+import type { EndUser } from './EndUser.js';
+import {
+    EndUserFromJSON,
+    EndUserFromJSONTyped,
+    EndUserToJSON,
+    EndUserToJSONTyped,
+} from './EndUser.js';
 
 /**
  * 
@@ -54,6 +61,18 @@ export interface Turn {
      * The model this turn runs on, and the session's from then on, as `provider` is.
      */
     model?: string;
+    /**
+     * Whom an application's turn is sent for. Only the application
+     * names one — a session token's turns are its end user's, and any
+     * other caller's are nobody's — and a session for an end user takes
+     * turns for them alone (`400`). Absent, the session's end user.
+     * 
+     * A turn sent for an end user who has a provider of the session's
+     * owner's, of a type its harness runs on, runs on it, unless it
+     * names one; and a tunnel it opens is open to their `email`.
+     * 
+     */
+    endUser?: EndUser;
 }
 
 
@@ -92,6 +111,7 @@ export function TurnFromJSONTyped(json: any, ignoreDiscriminator: boolean): Turn
         'mode': json['mode'] == null ? undefined : json['mode'],
         'provider': json['provider'] == null ? undefined : json['provider'],
         'model': json['model'] == null ? undefined : json['model'],
+        'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
     };
 }
 
@@ -112,6 +132,7 @@ export function TurnToJSONTyped(value?: Turn | null, ignoreDiscriminator: boolea
         'mode': value['mode'],
         'provider': value['provider'],
         'model': value['model'],
+        'endUser': EndUserToJSON(value['endUser']),
     };
 }
 

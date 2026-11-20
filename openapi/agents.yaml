@@ -911,7 +911,8 @@ paths:
       description: |
         Every person of the workspace, by address, in their role in it: whom
         a session, or a thing they own, may be shared with. It needs
-        `sessions.write`, or `users.admin`.
+        `sessions.write`, or `users.admin`; an application is never shown
+        them (`403`), its end users being its own.
       responses:
         "200":
           description: The people.
@@ -1130,6 +1131,13 @@ paths:
         Each provider's models are asked of its API, with its own
         credential, when it is made or signed in, every hour after, and on
         `POST …/models`.
+
+        An application sees its own, each end user's among them.
+      parameters:
+        - name: endUser
+          in: query
+          description: Those of the end user of this id alone.
+          schema: {type: string, minLength: 1, maxLength: 200}
       responses:
         "200":
           description: The providers, by name.
@@ -2431,7 +2439,8 @@ paths:
         `/.well-known/agent-skills`. What it answers at both is the same
         for every sandbox of the workspace, and kept as long as its
         `Cache-Control: max-age` says (`BrokerSpec`). Its credentials, and
-        what it lets through, are the broker's.
+        what it lets through, are the broker's. Another's is changed by an
+        admin alone: to anybody else its name is `409`.
       requestBody:
         required: true
         content:
@@ -2537,7 +2546,8 @@ paths:
         A remote MCP server (streamable HTTP), and how to authenticate to it:
         not at all, a static header held here, or OAuth — after which the
         MCP connector is `needs_authorization` until a person goes through
-        `POST …/authorize`. Its tools are listed from it.
+        `POST …/authorize`. Its tools are listed from it. Another's is
+        changed by an admin alone: to anybody else its name is `409`.
       requestBody:
         required: true
         content:
@@ -2558,6 +2568,7 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
     get:
       operationId: getMcpConnector
       x-public: true
@@ -2666,8 +2677,12 @@ paths:
             default: all
         - name: owner
           in: query
-          description: Those of this person alone, of those the caller sees.
-          schema: {type: string, format: email}
+          description: Those of this owner alone, of those the caller sees.
+          schema: {$ref: "#/components/schemas/Owner"}
+        - name: endUser
+          in: query
+          description: Those for the end user of this id alone, of those the caller sees.
+          schema: {type: string, minLength: 1, maxLength: 200}
         - name: state
           in: query
           description: Any of these states.
@@ -3126,6 +3141,84 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/SessionShares"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /v1/sessions/{sessionId}/tokens:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      operationId: createSessionToken
+      x-public: true
+      tags: [Sessions]
+      summary: A token a browser talks to this session with
+      description: |
+        A session token: what an application's backend hands a browser so
+        that it talks to the server directly — reading the session, its
+        transcript, files and sub-agents, sending and steering its turns,
+        uploading what they attach — in this session alone, and nothing
+        else (`403`). It is answered from any origin (CORS), being no
+        cookie.
+
+        It speaks for its end user, when it has one: its turns are sent
+        for them (`Turn.endUser`). Absent, the session's end user; a
+        session for an end user has tokens for them alone (`400`), and only
+        an application's session has end users at all.
+
+        It is signed by the server and kept nowhere: it ends at
+        `expiresAt` — an hour by default, a day at most — or with its
+        session, or once its owner may no longer steer it. Whoever may
+        steer the session mints one: its owner, or an admin; never a
+        session, nor another token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SessionTokenRequest"}
+      responses:
+        "201":
+          description: The token.
+          headers:
+            Cache-Control:
+              description: "`no-store`: the body is a credential."
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SessionToken"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /v1/transfers:
+    post:
+      operationId: transfer
+      x-public: true
+      tags: [People]
+      summary: Hand things to another owner
+      description: |
+        An admin hands things to another owner, a person or an
+        application, all of them or none (`404` for one that is not there,
+        `400` for one that cannot be): sessions, each with every session of
+        its tree; providers; profiles, brokers, MCP connectors and triggers;
+        and connect links, whose keys become their application's, holding
+        what of their scopes an application may.
+
+        A session or a provider handed to an application may be given an
+        end user; one handed to a person may not. A link is handed to its
+        own application alone. A session awake is put to sleep, so that it
+        wakes as its new owner's.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Transfer"}
+      responses:
+        "200":
+          description: Handed over.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Transfer"}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
@@ -5307,13 +5400,111 @@ components:
         calling with a platform token, holds what the token names of
         `--platform-scopes`, and never `keys.admin`, `users.admin` or
         `sessions.person`.
+    Owner:
+      type: string
+      pattern: "^(app:[a-z][a-z0-9-]{0,62}|[^@\\s]+@[^@\\s]+)$"
+      description: |
+        Whose a thing is: a person, by address, or an application, as
+        `app:<id>` — one of the workspace's connect applications
+        (`/v1/connect/apps`). An application holds the scopes its
+        registration grants over what is its own, as a member holds theirs.
+      example: ada@example.com
+    EndUser:
+      type: object
+      required: [id]
+      additionalProperties: false
+      description: |
+        Somebody an application signs in itself, whom a session, a
+        provider or a turn of the application's is for. No person of the
+        workspace: no role, no sign-in, no key.
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The application's own id for them — a row of its users table, say — opaque to the workspace.
+          example: u123
+        email:
+          type: string
+          format: email
+          description: |
+            Their address, when the application gives it: what a tunnel a
+            turn of theirs opens is open to (the tunnel gateway asks them to
+            sign in as it). Without it, a turn of theirs opens no tunnel.
+    SessionTokenRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        endUser: {$ref: "#/components/schemas/EndUser"}
+        ttlSeconds:
+          type: integer
+          minimum: 60
+          maximum: 86400
+          default: 3600
+          description: How long it works.
+    SessionToken:
+      type: object
+      required: [token, sessionId, expiresAt]
+      properties:
+        token:
+          type: string
+          description: "The bearer, `ryst_…`, sent as `Authorization: Bearer`. Shown this once, and kept nowhere."
+        sessionId: {type: string}
+        endUser: {$ref: "#/components/schemas/EndUser"}
+        expiresAt: {type: string, format: date-time}
+    Transfer:
+      type: object
+      required: [to]
+      additionalProperties: false
+      properties:
+        to: {$ref: "#/components/schemas/Owner"}
+        sessions:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            required: [id]
+            additionalProperties: false
+            properties:
+              id: {type: string}
+              endUser: {$ref: "#/components/schemas/EndUser"}
+        providers:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            required: [name]
+            additionalProperties: false
+            properties:
+              name: {$ref: "#/components/schemas/Name"}
+              endUser: {$ref: "#/components/schemas/EndUser"}
+        profiles:
+          type: array
+          maxItems: 1000
+          items: {$ref: "#/components/schemas/Id"}
+        brokers:
+          type: array
+          maxItems: 1000
+          items: {$ref: "#/components/schemas/Name"}
+        mcpConnectors:
+          type: array
+          maxItems: 1000
+          items: {$ref: "#/components/schemas/Name"}
+        triggers:
+          type: array
+          maxItems: 1000
+          items: {$ref: "#/components/schemas/Id"}
+        links:
+          type: array
+          maxItems: 100
+          items: {type: string}
+          description: Connect links, by id (`GET /v1/connect/links`).
     Owned:
       type: object
       required: [owner, everyone, users]
       properties:
         owner:
-          type: string
-          format: email
+          allOf: [{$ref: "#/components/schemas/Owner"}]
           description: Who made it, who may use it always.
         everyone:
           type: boolean
@@ -5506,7 +5697,9 @@ components:
         A key — sent as a bearer, or the one a UI was signed in with — a
         person signed in with a password or Google, who holds their role's
         scopes, a session's harness calling through its brokers, or the
-        Runyard platform calling with a platform token.
+        Runyard platform calling with a platform token, or a session token
+        (`POST /v1/sessions/{sessionId}/tokens`), which acts as its
+        session's owner in that session alone.
 
         The platform is nobody: no person, not the workspace's owner. It
         has no `email` and no `role`, and holds the scopes its token names
@@ -5520,17 +5713,22 @@ components:
       properties:
         kind:
           type: string
-          enum: [key, person, session, platform]
+          enum: [key, person, session, platform, token]
         name:
           type: string
           description: The key's name, the person's username or Google name, or `Runyard platform`.
         email:
           type: string
           format: email
-          description: The person signed in, or the person the key is of. Absent for `platform`.
+          description: The person signed in, or the person the key or session is of. Absent for `platform` and an application.
         role:
           allOf: [{$ref: "#/components/schemas/Role"}]
-          description: The person's, or the key's person's. Absent for `platform`.
+          description: The person's, or the key's or session's person's. Absent for `platform` and an application.
+        app:
+          allOf: [{$ref: "#/components/schemas/ConnectAppRef"}]
+          description: |
+            For a key or session of an application's: the application. It
+            holds the scopes its registration grants, over what is its own.
         hasPicture:
           type: boolean
           description: |
@@ -5557,7 +5755,10 @@ components:
           items: {$ref: "#/components/schemas/Scope"}
         sessionId:
           type: string
-          description: For `session`, the session.
+          description: For `session` and `token`, the session.
+        endUser:
+          allOf: [{$ref: "#/components/schemas/EndUser"}]
+          description: For `token`, whom it speaks for, when it speaks for an end user.
         profile:
           allOf: [{$ref: "#/components/schemas/ProfileRef"}]
           description: For `session`, the profile it was started from, when it was.
@@ -5571,6 +5772,12 @@ components:
       required: [name, scopes, expiresAt]
       properties:
         name: {type: string, minLength: 1, maxLength: 100}
+        app:
+          allOf: [{$ref: "#/components/schemas/ConnectAppId"}]
+          description: |
+            A key of this application's rather than the caller's: an
+            admin's to mint. Its scopes are those of the application's
+            registration it is given.
         scopes:
           type: array
           minItems: 1
@@ -5663,11 +5870,10 @@ components:
           example: Acme App
         redirectUris:
           type: array
-          minItems: 1
           maxItems: 10
           items: {type: string, maxLength: 2048}
           description: >-
-            Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
+            None for one an admin mints its keys for, which never connects. Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
           example: ["https://acme-app.example/runyard/callback"]
         scopes:
           type: array
@@ -5704,7 +5910,6 @@ components:
           maxLength: 100
         redirectUris:
           type: array
-          minItems: 1
           maxItems: 10
           items: {type: string, maxLength: 2048}
         scopes:
@@ -5890,9 +6095,12 @@ components:
         id: {type: string, example: k7d2m9x4p1qa}
         name: {type: string}
         owner:
-          type: string
-          format: email
-          description: The person it is of — who made it; the workspace's owner for the one the server keeps from `--owner-key-file`.
+          allOf: [{$ref: "#/components/schemas/Owner"}]
+          description: |
+            Whose it is, and whom it acts as: the person who made it — the
+            workspace's owner for the one the server keeps from
+            `--owner-key-file` — or the application an admin minted it for
+            (`app:<id>`).
         scopes:
           type: array
           items: {$ref: "#/components/schemas/Scope"}
@@ -6029,9 +6237,11 @@ components:
         name: {$ref: "#/components/schemas/Name"}
         title: {type: string, example: Work subscription}
         owner:
-          type: string
-          format: email
+          allOf: [{$ref: "#/components/schemas/Owner"}]
           description: Who made it, who may use it always.
+        endUser:
+          allOf: [{$ref: "#/components/schemas/EndUser"}]
+          description: For an application's provider, the end user whose own it is.
         everyone:
           type: boolean
           description: Every person may use it, whoever `users` names.
@@ -6256,6 +6466,12 @@ components:
             it speaks for — and it is `403` otherwise. Absent, the caller's
             person. Its owner removed from the workspace, it is deleted with
             them (`DELETE /v1/users/{userEmail}`).
+        endUser:
+          allOf: [{$ref: "#/components/schemas/EndUser"}]
+          description: |
+            For an application's provider, the end user whose own
+            subscription it is: their turns run on it (`Turn.endUser`). Only
+            an application names one, and it is `403` otherwise.
     ProviderSignInFinish:
       type: object
       description: By the flow's method — `code` for `code`, `redirectUrl` for `redirect`, nothing for `device`.
@@ -7226,8 +7442,7 @@ components:
           type: boolean
           description: One of the server's own, which is nobody's and everyone's.
         owner:
-          type: string
-          format: email
+          allOf: [{$ref: "#/components/schemas/Owner"}]
           description: Who declared it. Absent for a builtin.
         everyone:
           type: boolean
@@ -7495,6 +7710,13 @@ components:
                 person it speaks for. Absent, the caller's person: who is
                 signed in, whose key it is, or for a session calling through
                 its brokers, its owner.
+            endUser:
+              allOf: [{$ref: "#/components/schemas/EndUser"}]
+              description: |
+                Whom an application's session is for. Only an application
+                names one, and it is `403` otherwise; absent, the session is
+                the application's own. A session a session starts is for its
+                parent's.
             parentId:
               allOf: [{$ref: "#/components/schemas/Id"}]
               description: |
@@ -8185,9 +8407,8 @@ components:
             image's build, one the server never knew — which is its
             person's to read, or an admin's when it is nobody's.
         owner:
-          type: string
-          format: email
-          description: The session's person, or the deployment's. Absent when it is nobody's.
+          allOf: [{$ref: "#/components/schemas/Owner"}]
+          description: The session's owner, or the deployment's. Absent when it is nobody's.
         broker:
           type: string
           description: "The broker's name in the machine; empty for a call to this server's API (`kind: api`)."
@@ -8324,9 +8545,11 @@ components:
             harness has the `title` feature and the workspace's
             `titleSummaries` allow it.
         owner:
-          type: string
-          format: email
+          allOf: [{$ref: "#/components/schemas/Owner"}]
           description: Whose it is — who steers it, shares it and opens its tunnels, and what it may use.
+        endUser:
+          allOf: [{$ref: "#/components/schemas/EndUser"}]
+          description: For an application's session, whom it is for, when it is for somebody.
         state: {$ref: "#/components/schemas/SessionState"}
         error:
           type: string
@@ -8550,6 +8773,17 @@ components:
           type: string
           example: claude-haiku-4-5-20251001
           description: The model this turn runs on, and the session's from then on, as `provider` is.
+        endUser:
+          allOf: [{$ref: "#/components/schemas/EndUser"}]
+          description: |
+            Whom an application's turn is sent for. Only the application
+            names one — a session token's turns are its end user's, and any
+            other caller's are nobody's — and a session for an end user takes
+            turns for them alone (`400`). Absent, the session's end user.
+
+            A turn sent for an end user who has a provider of the session's
+            owner's, of a type its harness runs on, runs on it, unless it
+            names one; and a tunnel it opens is open to their `email`.
     TurnAccepted:
       type: object
       required: [turnId, position]
@@ -8936,6 +9170,9 @@ components:
           items: {$ref: "#/components/schemas/Attachment"}
         source: {$ref: "#/components/schemas/UserEventSource"}
         keyId: {type: string}
+        endUser:
+          allOf: [{$ref: "#/components/schemas/EndUser"}]
+          description: Whom it was sent for, when it was sent for an application's end user.
         compact:
           type: boolean
           description: |
@@ -8958,6 +9195,9 @@ components:
           type: array
           items: {$ref: "#/components/schemas/Attachment"}
         source: {$ref: "#/components/schemas/UserEventSource"}
+        endUser:
+          allOf: [{$ref: "#/components/schemas/EndUser"}]
+          description: Whom it was sent for, as `UserEvent`'s `endUser` says.
         compact:
           type: boolean
           description: A compaction asked for, waiting, as `UserEvent`'s `compact` says. Absent for any other turn.
@@ -9226,8 +9466,7 @@ components:
           properties:
             id: {$ref: "#/components/schemas/Id"}
             owner:
-              type: string
-              format: email
+              allOf: [{$ref: "#/components/schemas/Owner"}]
               description: Who made it — whose the sessions it starts are, and what they may use.
             hookUrl:
               type: string

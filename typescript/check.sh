@@ -23,7 +23,7 @@ fi
 
 node_modules/.bin/tsc -p tsconfig.json
 node_modules/.bin/tsc -p tsconfig.test.json
-node --test --test-reporter=spec --test-timeout=60000 build/test/errors.test.js build/test/streams.test.js build/test/relay.test.js
+node --test --test-reporter=spec --test-timeout=60000 build/test/errors.test.js build/test/streams.test.js build/test/ry.test.js build/test/relay.test.js
 if [ -n "${RUNYARD_AGENTS_URL:-}" ]; then
-	node --test --test-reporter=spec --test-timeout=300000 build/test/conformance.test.js build/test/relay.conformance.test.js
+	node --test --test-reporter=spec --test-timeout=300000 build/test/conformance.test.js build/test/ry.conformance.test.js build/test/relay.conformance.test.js
 fi

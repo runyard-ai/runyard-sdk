@@ -6,19 +6,23 @@ a Node backend or a Go backend; pick one.
 ![The example's chat page](screenshot.png)
 
 ```
-web/    the page: React, with @runyard-ai/runyard-react's Conversation and Composer
-node/   the backend in Node: the relay and the page (server.js)
-go/     the backend in Go: the relay and the page (main.go)
+web/    the page: React, with @runyard-ai/runyard-react's Conversation
+node/   the backend in Node: POST /chat, and the page (server.js)
+go/     the backend in Go: POST /chat, and the page (main.go)
 ```
 
-The backend holds your runyard key and runs the **relay**, which serves
-runyard's API to the browser at `/agents`, limited to the signed-in person's
-own sessions. The page talks only to the relay, never to runyard.
+The backend holds your application's runyard key. When the page asks for its
+chat (`POST /chat`), the backend finds the signed-in user's session — or
+starts one for them — and mints a **session token** for it. The page then
+talks to runyard directly with that token: it reaches that one session, sends
+its turns for that user, and nothing else. The key never leaves the backend.
 
 ## Run it
 
-You need a runyard server, a key with `sessions.read`, `sessions.write` and
-`sessions.person`, and the email of a person in its workspace.
+You need a runyard server and a key of your application's with
+`sessions.read` and `sessions.write`: an admin makes one for it
+(`POST /v1/keys` with its `app`, or in the console), or it is given one when
+it connects.
 
 ```sh
 # 1. Build the page.
@@ -27,7 +31,7 @@ cd web && npm install && npm run build && cd ..
 # 2. Run a backend.
 export RUNYARD_URL=https://agents.example.com
 export RUNYARD_KEY=ryak_…
-export RUNYARD_PERSON=ada@example.com   # stands in for your sign-in
+export RUNYARD_USER=u123            # stands in for your sign-in: your own id for the user
 
 cd node && npm install && npm start     # Node
 cd go && go run .                       # or Go
@@ -37,28 +41,26 @@ Open http://localhost:3000. `RUNYARD_PROFILE`, when set, is the profile
 sessions are started from; the workspace's default otherwise.
 
 To work on the page, keep a backend running and run `npm run dev` in `web/`:
-Vite serves the page and sends `/agents` to the backend.
+Vite serves the page and sends `/chat` to the backend.
 
 ## What to read
 
-- [`node/server.js`](node/server.js) or [`go/main.go`](go/main.go): the
-  relay's three hooks, which are your integration:
-  - `person`: who is asking. Replace the example's fixed person with your own
-    sign-in.
-  - `scope`: which sessions they reach. Here, their own, labelled
-    `app: acme-chat`.
-  - `start`: what a session starts with: its profile, its provider.
-- [`web/src/App.tsx`](web/src/App.tsx): the chat. The first message starts a
-  session (`sessions.start`); `Conversation` then draws it, with its composer.
+- [`node/server.js`](node/server.js) or [`go/main.go`](go/main.go): `POST
+  /chat`, your integration. Replace the fixed `RUNYARD_USER` with your own
+  sign-in; give the user's `email` too, if a session should open tunnels to
+  them.
+- [`web/src/App.tsx`](web/src/App.tsx): the chat. It asks the backend for its
+  session and token, renews the token before it ends, and draws the session
+  with `<TranscriptProvider options={{ apiBase, token }}>` and
+  `<Conversation>`, which has its composer.
 
-## What the relay holds to
+## What a token holds to
 
-- **Who:** every request needs a person, from your `person` hook; without one
-  it is `401`.
-- **Whose:** a person reaches only the sessions of their scope's owner and
-  labels. Any other is `404`, as if it did not exist.
-- **What the browser may say:** a session's title and first turn, a turn's
-  text and mode. The profile, the provider, the labels and the rest are your
-  backend's, set in its hooks. A body with any other field is `400`.
-- **Nothing else:** it serves sessions, their transcripts, turns, uploads and
-  files; any other route is `404`.
+- **One session:** it reads that session — its transcript, files and
+  sub-agents — sends and steers its turns, and uploads what they attach.
+  Anything else is refused.
+- **One user:** its turns are sent for the end user it was minted for.
+- **A while:** an hour unless the backend says otherwise, a day at most.
+
+The relay these examples used before (`go/relay`,
+`@runyard-ai/runyard-sdk/relay`) is deprecated, and is being removed.

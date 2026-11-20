@@ -216,7 +216,7 @@ export interface MCPConnectorsApiInterface {
     putMcpConnectorRequestOpts(requestParameters: PutMcpConnectorRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is `needs_authorization` until a person goes through `POST …/authorize`. Its tools are listed from it. 
+     * A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is `needs_authorization` until a person goes through `POST …/authorize`. Its tools are listed from it. Another\'s is changed by an admin alone: to anybody else its name is `409`. 
      * @summary Add an MCP connector, or change it
      * @param {string} mcpConnectorName 
      * @param {McpConnectorSpec} mcpConnectorSpec 
@@ -227,7 +227,7 @@ export interface MCPConnectorsApiInterface {
     putMcpConnectorRaw(requestParameters: PutMcpConnectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<McpConnector>>;
 
     /**
-     * A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is `needs_authorization` until a person goes through `POST …/authorize`. Its tools are listed from it. 
+     * A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is `needs_authorization` until a person goes through `POST …/authorize`. Its tools are listed from it. Another\'s is changed by an admin alone: to anybody else its name is `409`. 
      * Add an MCP connector, or change it
      */
     putMcpConnector(requestParameters: PutMcpConnectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<McpConnector>;
@@ -567,7 +567,7 @@ export class MCPConnectorsApi extends runtime.BaseAPI implements MCPConnectorsAp
     }
 
     /**
-     * A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is `needs_authorization` until a person goes through `POST …/authorize`. Its tools are listed from it. 
+     * A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is `needs_authorization` until a person goes through `POST …/authorize`. Its tools are listed from it. Another\'s is changed by an admin alone: to anybody else its name is `409`. 
      * Add an MCP connector, or change it
      */
     async putMcpConnectorRaw(requestParameters: PutMcpConnectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<McpConnector>> {
@@ -578,7 +578,7 @@ export class MCPConnectorsApi extends runtime.BaseAPI implements MCPConnectorsAp
     }
 
     /**
-     * A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is `needs_authorization` until a person goes through `POST …/authorize`. Its tools are listed from it. 
+     * A remote MCP server (streamable HTTP), and how to authenticate to it: not at all, a static header held here, or OAuth — after which the MCP connector is `needs_authorization` until a person goes through `POST …/authorize`. Its tools are listed from it. Another\'s is changed by an admin alone: to anybody else its name is `409`. 
      * Add an MCP connector, or change it
      */
     async putMcpConnector(requestParameters: PutMcpConnectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<McpConnector> {

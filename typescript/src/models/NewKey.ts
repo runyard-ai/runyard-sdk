@@ -32,6 +32,13 @@ export interface NewKey {
      */
     name: string;
     /**
+     * A key of this application's rather than the caller's: an
+     * admin's to mint. Its scopes are those of the application's
+     * registration it is given.
+     * 
+     */
+    app?: string;
+    /**
      * 
      */
     scopes: Array<Scope>;
@@ -62,6 +69,7 @@ export function NewKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): Ne
     return {
         
         'name': json['name'],
+        'app': json['app'] == null ? undefined : json['app'],
         'scopes': ((json['scopes'] as Array<any>).map(ScopeFromJSON)),
         'expiresAt': (json['expiresAt'] == null ? json['expiresAt'] : parseDateTime(json['expiresAt'])),
     };
@@ -79,6 +87,7 @@ export function NewKeyToJSONTyped(value?: NewKey | null, ignoreDiscriminator: bo
     return {
         
         'name': value['name'],
+        'app': value['app'],
         'scopes': ((value['scopes'] as Array<any>).map(ScopeToJSON)),
         'expiresAt': value['expiresAt'] == null ? value['expiresAt'] : serializeDateTime(value['expiresAt']),
     };

@@ -45,7 +45,7 @@ export interface ConnectApp {
      */
     name: string;
     /**
-     * Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
+     * None for one an admin mints its keys for, which never connects. Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
      */
     redirectUris: Array<string>;
     /**

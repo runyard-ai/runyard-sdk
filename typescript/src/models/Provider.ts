@@ -34,6 +34,13 @@ import {
     ProviderKindToJSON,
     ProviderKindToJSONTyped,
 } from './ProviderKind.js';
+import type { EndUser } from './EndUser.js';
+import {
+    EndUserFromJSON,
+    EndUserFromJSONTyped,
+    EndUserToJSON,
+    EndUserToJSONTyped,
+} from './EndUser.js';
 import type { ProviderType } from './ProviderType.js';
 import {
     ProviderTypeFromJSON,
@@ -60,6 +67,10 @@ export interface Provider {
      * Who made it, who may use it always.
      */
     owner: string;
+    /**
+     * For an application's provider, the end user whose own it is.
+     */
+    endUser?: EndUser;
     /**
      * Every person may use it, whoever `users` names.
      */
@@ -179,6 +190,7 @@ export function ProviderFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
         'name': json['name'],
         'title': json['title'],
         'owner': json['owner'],
+        'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'everyone': json['everyone'],
         'users': json['users'],
         'type': ProviderTypeFromJSON(json['type']),
@@ -212,6 +224,7 @@ export function ProviderToJSONTyped(value?: Provider | null, ignoreDiscriminator
         'name': value['name'],
         'title': value['title'],
         'owner': value['owner'],
+        'endUser': EndUserToJSON(value['endUser']),
         'everyone': value['everyone'],
         'users': value['users'],
         'type': ProviderTypeToJSON(value['type']),

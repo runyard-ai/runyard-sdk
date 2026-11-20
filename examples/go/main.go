@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
-	runyard "github.com/runyard-ai/runyard-sdk/go"
-	"github.com/runyard-ai/runyard-sdk/go/relay"
+	"github.com/runyard-ai/runyard-sdk/go/ry"
 )
 
 func main() {
@@ -17,45 +19,58 @@ func main() {
 }
 
 func run() error {
-	// Stands in for your sign-in: everyone is this person of the workspace.
-	person := env("RUNYARD_PERSON")
-
-	// The relay is runyard's API, served by your backend to your front end.
-	// It holds the key, and lets each person reach only their own sessions.
-	agents, err := relay.New(relay.Config{
-		URL: env("RUNYARD_URL"),
-		Key: env("RUNYARD_KEY"), // sessions.read, sessions.write, sessions.person
-
-		// Who is asking. Your own sign-in goes here: read your session cookie
-		// and return the person's email.
-		Person: func(*http.Request) (relay.Person, error) {
-			return relay.Person{Email: person}, nil
-		},
-
-		// Which sessions they reach: their own, started from this app.
-		Scope: func(_ *http.Request, p relay.Person) (relay.Scope, error) {
-			return relay.Scope{Owner: p.Email, Labels: map[string]string{"app": "acme-chat"}}, nil
-		},
-
-		// What a session is started with, besides what the browser said.
-		Start: func(_ *http.Request, _ relay.Person, spec *runyard.SessionSpec) error {
-			if profile := os.Getenv("RUNYARD_PROFILE"); profile != "" {
-				spec.ProfileId = &profile
-			}
-			return nil
-		},
-	})
+	// Your application's key: it stays here, on your backend, and never
+	// reaches a browser. sessions.read and sessions.write.
+	url := strings.TrimRight(env("RUNYARD_URL"), "/")
+	c, err := ry.New(url, env("RUNYARD_KEY"))
 	if err != nil {
 		return err
 	}
 
+	// Stands in for your sign-in: everyone is this user of yours. Their id
+	// is your own — a row of your users table — and runyard keeps it as it
+	// is.
+	userID := env("RUNYARD_USER")
+
 	mux := http.NewServeMux()
-	mux.Handle("/agents/", http.StripPrefix("/agents", agents))
+	// The page asks for its chat, and is given a token for it: with it, the
+	// browser talks to runyard directly, in that one session and nothing
+	// else.
+	mux.HandleFunc("POST /chat", func(w http.ResponseWriter, r *http.Request) {
+		user := &ry.EndUser{ID: userID} // Your sign-in goes here: who is asking.
+		chat, err := chatOf(r.Context(), c, user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		tok, err := chat.Token(r.Context(), ry.TokenOptions{EndUser: user})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"sessionId": chat.ID(), "token": tok.Value, "expiresAt": tok.ExpiresAt, "apiBase": url + "/v1",
+		})
+	})
 	mux.Handle("/", http.FileServer(http.Dir("../web/dist")))
 
 	log.Print("Acme Chat on http://localhost:3000")
 	server := &http.Server{Addr: ":3000", Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	return server.ListenAndServe()
+}
+
+// chatOf is the signed-in user's chat: the one they have, or a new one, for
+// them.
+func chatOf(ctx context.Context, c *ry.Client, user *ry.EndUser) (*ry.Session, error) {
+	mine, err := c.Sessions(ctx, ry.List{EndUser: user.ID})
+	if err != nil {
+		return nil, err
+	}
+	if len(mine) > 0 {
+		return c.Session(mine[0].ID), nil
+	}
+	return c.Start(ctx, ry.Start{Profile: os.Getenv("RUNYARD_PROFILE"), Title: "Acme Chat", EndUser: user})
 }
 
 func env(name string) string {

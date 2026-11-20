@@ -10,6 +10,7 @@ Name | Type
 `method` | [SignInMethod](SignInMethod.md)
 `title` | string
 `owner` | string
+`endUser` | [EndUser](EndUser.md)
 
 ## Example
 
@@ -22,6 +23,7 @@ const example = {
   "method": null,
   "title": null,
   "owner": null,
+  "endUser": null,
 } satisfies ProviderSignIn
 
 console.log(example)

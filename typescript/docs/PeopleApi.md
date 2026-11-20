@@ -10,6 +10,7 @@ All URIs are relative to *http://127.0.0.1:8140*
 | [**listInvitations**](PeopleApi.md#listinvitations) | **GET** /v1/invitations | The invitations nobody has used yet |
 | [**listUsers**](PeopleApi.md#listusers) | **GET** /v1/users | The people of the workspace |
 | [**revokeInvitation**](PeopleApi.md#revokeinvitation) | **DELETE** /v1/invitations/{invitationId} | Revoke an invitation, at once |
+| [**transfer**](PeopleApi.md#transfer) | **POST** /v1/transfers | Hand things to another owner |
 | [**updateUser**](PeopleApi.md#updateuser) | **PATCH** /v1/users/{userEmail} | Make a person an admin of the workspace, or a member |
 
 
@@ -333,7 +334,7 @@ This endpoint does not need any parameter.
 
 The people of the workspace
 
-Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs &#x60;sessions.write&#x60;, or &#x60;users.admin&#x60;. 
+Every person of the workspace, by address, in their role in it: whom a session, or a thing they own, may be shared with. It needs &#x60;sessions.write&#x60;, or &#x60;users.admin&#x60;; an application is never shown them (&#x60;403&#x60;), its end users being its own. 
 
 ### Example
 
@@ -465,6 +466,85 @@ example().catch(console.error);
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | Its link no longer signs anybody in. |  -  |
+| **401** | No key, or not a working one — one answer for every cause. |  -  |
+| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
+| **404** | Nothing by that id. |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## transfer
+
+> Transfer transfer(transfer)
+
+Hand things to another owner
+
+An admin hands things to another owner, a person or an application, all of them or none (&#x60;404&#x60; for one that is not there, &#x60;400&#x60; for one that cannot be): sessions, each with every session of its tree; providers; profiles, brokers, MCP connectors and triggers; and connect links, whose keys become their application\&#39;s, holding what of their scopes an application may.  A session or a provider handed to an application may be given an end user; one handed to a person may not. A link is handed to its own application alone. A session awake is put to sleep, so that it wakes as its new owner\&#39;s. 
+
+### Example
+
+```ts
+import {
+  Configuration,
+  PeopleApi,
+} from '@runyard-ai/runyard-sdk';
+import type { TransferRequest } from '@runyard-ai/runyard-sdk';
+
+async function example() {
+  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
+  const config = new Configuration({ 
+    // To configure API key authorization: console
+    apiKey: "YOUR API KEY",
+    // Configure HTTP bearer authorization: apiKey
+    accessToken: "YOUR BEARER TOKEN",
+    // Configure HTTP bearer authorization: platform
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new PeopleApi(config);
+
+  const body = {
+    // Transfer
+    transfer: ...,
+  } satisfies TransferRequest;
+
+  try {
+    const data = await api.transfer(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **transfer** | [Transfer](Transfer.md) |  | |
+
+### Return type
+
+[**Transfer**](Transfer.md)
+
+### Authorization
+
+[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Handed over. |  -  |
+| **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 | **404** | Nothing by that id. |  -  |

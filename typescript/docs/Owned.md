@@ -17,7 +17,7 @@ import type { Owned } from '@runyard-ai/runyard-sdk'
 
 // TODO: Update the object below with actual values
 const example = {
-  "owner": null,
+  "owner": ada@example.com,
   "everyone": null,
   "users": null,
 } satisfies Owned

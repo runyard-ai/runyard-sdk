@@ -83,6 +83,13 @@ import {
     SessionSandboxToJSON,
     SessionSandboxToJSONTyped,
 } from './SessionSandbox.js';
+import type { EndUser } from './EndUser.js';
+import {
+    EndUserFromJSON,
+    EndUserFromJSONTyped,
+    EndUserToJSON,
+    EndUserToJSONTyped,
+} from './EndUser.js';
 
 /**
  * 
@@ -115,6 +122,10 @@ export interface Session {
      * Whose it is — who steers it, shares it and opens its tunnels, and what it may use.
      */
     owner: string;
+    /**
+     * For an application's session, whom it is for, when it is for somebody.
+     */
+    endUser?: EndUser;
     /**
      * 
      */
@@ -279,6 +290,7 @@ export function SessionFromJSONTyped(json: any, ignoreDiscriminator: boolean): S
         'titleSource': json['titleSource'] == null ? undefined : TitleSourceFromJSON(json['titleSource']),
         'autoTitle': json['autoTitle'] == null ? undefined : json['autoTitle'],
         'owner': json['owner'],
+        'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'state': SessionStateFromJSON(json['state']),
         'error': json['error'] == null ? undefined : json['error'],
         'profile': json['profile'] == null ? undefined : ProfileRefFromJSON(json['profile']),
@@ -320,6 +332,7 @@ export function SessionToJSONTyped(value?: Session | null, ignoreDiscriminator: 
         'titleSource': TitleSourceToJSON(value['titleSource']),
         'autoTitle': value['autoTitle'],
         'owner': value['owner'],
+        'endUser': EndUserToJSON(value['endUser']),
         'state': SessionStateToJSON(value['state']),
         'error': value['error'],
         'profile': ProfileRefToJSON(value['profile']),

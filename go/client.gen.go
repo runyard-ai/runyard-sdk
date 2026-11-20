@@ -171,6 +171,7 @@ const (
 	CallerKindPerson   CallerKind = "person"
 	CallerKindPlatform CallerKind = "platform"
 	CallerKindSession  CallerKind = "session"
+	CallerKindToken    CallerKind = "token"
 )
 
 // Defines values for CallerSignInVia.
@@ -782,8 +783,8 @@ type Activity struct {
 	// daemon could not keep, how many in `error`.
 	Outcome *ActivityOutcome `json:"outcome,omitempty"`
 
-	// Owner The session's person, or the deployment's. Absent when it is nobody's.
-	Owner *openapi_types.Email `json:"owner,omitempty"`
+	// Owner The session's owner, or the deployment's. Absent when it is nobody's.
+	Owner *Owner `json:"owner,omitempty"`
 
 	// Request A request or an answer as it was sent.
 	Request ActivityMessage `json:"request"`
@@ -920,8 +921,8 @@ type ActivitySummary struct {
 	// daemon could not keep, how many in `error`.
 	Outcome *ActivitySummaryOutcome `json:"outcome,omitempty"`
 
-	// Owner The session's person, or the deployment's. Absent when it is nobody's.
-	Owner *openapi_types.Email `json:"owner,omitempty"`
+	// Owner The session's owner, or the deployment's. Absent when it is nobody's.
+	Owner *Owner `json:"owner,omitempty"`
 
 	// SessionId The session whose machine sent it. Absent for a gateway entry of a
 	// sandbox that is no session's — a deployment a person made, an
@@ -1141,9 +1142,9 @@ type Broker struct {
 	Name Name       `json:"name"`
 
 	// Owner Who declared it. Absent for a builtin.
-	Owner     *openapi_types.Email `json:"owner,omitempty"`
-	Title     string               `json:"title"`
-	UpdatedAt time.Time            `json:"updatedAt"`
+	Owner     *Owner    `json:"owner,omitempty"`
+	Title     string    `json:"title"`
+	UpdatedAt time.Time `json:"updatedAt"`
 
 	// Url Where the daemon dials it. Absent for a builtin, which this server serves.
 	Url *string `json:"url,omitempty"`
@@ -1287,7 +1288,9 @@ type BuiltInBroker string
 // Caller A key — sent as a bearer, or the one a UI was signed in with — a
 // person signed in with a password or Google, who holds their role's
 // scopes, a session's harness calling through its brokers, or the
-// Runyard platform calling with a platform token.
+// Runyard platform calling with a platform token, or a session token
+// (`POST /v1/sessions/{sessionId}/tokens`), which acts as its
+// session's owner in that session alone.
 //
 // The platform is nobody: no person, not the workspace's owner. It
 // has no `email` and no `role`, and holds the scopes its token names
@@ -1299,8 +1302,15 @@ type BuiltInBroker string
 // its owner — reading and starting sessions and firing triggers, in its
 // own tree alone.
 type Caller struct {
-	// Email The person signed in, or the person the key is of. Absent for `platform`.
+	// App For a key or session of an application's: the application. It
+	// holds the scopes its registration grants, over what is its own.
+	App *ConnectAppRef `json:"app,omitempty"`
+
+	// Email The person signed in, or the person the key or session is of. Absent for `platform` and an application.
 	Email *openapi_types.Email `json:"email,omitempty"`
+
+	// EndUser For `token`, whom it speaks for, when it speaks for an end user.
+	EndUser *EndUser `json:"endUser,omitempty"`
 
 	// HasPicture A person signed in with Google who has a profile picture: it is
 	// `GET /v1/self/picture`.
@@ -1316,11 +1326,11 @@ type Caller struct {
 	// Profile For `session`, the profile it was started from, when it was.
 	Profile *ProfileRef `json:"profile,omitempty"`
 
-	// Role The person's, or the key's person's. Absent for `platform`.
+	// Role The person's, or the key's or session's person's. Absent for `platform` and an application.
 	Role   *Role   `json:"role,omitempty"`
 	Scopes []Scope `json:"scopes"`
 
-	// SessionId For `session`, the session.
+	// SessionId For `session` and `token`, the session.
 	SessionId *string `json:"sessionId,omitempty"`
 
 	// SignIn For a person signed in to a UI, how and when: what a UI asks
@@ -1401,7 +1411,7 @@ type ConnectApp struct {
 	// Name What the consent page calls it, and its keys are named after.
 	Name string `json:"name"`
 
-	// RedirectUris Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
+	// RedirectUris None for one an admin mints its keys for, which never connects. Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
 	RedirectUris []string `json:"redirectUris"`
 
 	// Scopes What its keys hold, of what their approver does. Unsaid, it is `sessions.read sessions.write sessions.delete sessions.person profiles.write brokers.write providers.write users.admin`: what an application needs to run sessions for its own users.
@@ -1934,6 +1944,19 @@ type EgressRule struct {
 
 	// Ports What it opens, the daemon's default (`tcp/80`, `tcp/443`) written out.
 	Ports []string `json:"ports"`
+}
+
+// EndUser Somebody an application signs in itself, whom a session, a
+// provider or a turn of the application's is for. No person of the
+// workspace: no role, no sign-in, no key.
+type EndUser struct {
+	// Email Their address, when the application gives it: what a tunnel a
+	// turn of theirs opens is open to (the tunnel gateway asks them to
+	// sign in as it). Without it, a turn of theirs opens no tunnel.
+	Email *openapi_types.Email `json:"email,omitempty"`
+
+	// Id The application's own id for them — a row of its users table, say — opaque to the workspace.
+	Id string `json:"id"`
 }
 
 // Error defines model for Error.
@@ -2563,9 +2586,12 @@ type Key struct {
 	Link *bool  `json:"link,omitempty"`
 	Name string `json:"name"`
 
-	// Owner The person it is of — who made it; the workspace's owner for the one the server keeps from `--owner-key-file`.
-	Owner  openapi_types.Email `json:"owner"`
-	Scopes []Scope             `json:"scopes"`
+	// Owner Whose it is, and whom it acts as: the person who made it — the
+	// workspace's owner for the one the server keeps from
+	// `--owner-key-file` — or the application an admin minted it for
+	// (`app:<id>`).
+	Owner  Owner   `json:"owner"`
+	Scopes []Scope `json:"scopes"`
 
 	// Suspended Why a key does not work now, though it is kept and listed: an admin
 	// may delete it, and it works again when its cause ends.
@@ -2742,7 +2768,7 @@ type McpConnector struct {
 	Name     Name       `json:"name"`
 
 	// Owner Who made it, who may use it always.
-	Owner openapi_types.Email `json:"owner"`
+	Owner Owner `json:"owner"`
 
 	// Skills The skills its server publishes, as the Agent Skills Discovery
 	// RFC v0.2.0 says: the index at
@@ -2845,9 +2871,12 @@ type MintedKey struct {
 	Link *bool  `json:"link,omitempty"`
 	Name string `json:"name"`
 
-	// Owner The person it is of — who made it; the workspace's owner for the one the server keeps from `--owner-key-file`.
-	Owner  openapi_types.Email `json:"owner"`
-	Scopes []Scope             `json:"scopes"`
+	// Owner Whose it is, and whom it acts as: the person who made it — the
+	// workspace's owner for the one the server keeps from
+	// `--owner-key-file` — or the application an admin minted it for
+	// (`app:<id>`).
+	Owner  Owner   `json:"owner"`
+	Scopes []Scope `json:"scopes"`
 
 	// Secret The whole key, `ryak_<id>_<secret>`. Shown this once.
 	Secret string `json:"secret"`
@@ -2913,6 +2942,11 @@ type NewInvitation struct {
 
 // NewKey defines model for NewKey.
 type NewKey struct {
+	// App A key of this application's rather than the caller's: an
+	// admin's to mint. Its scopes are those of the application's
+	// registration it is given.
+	App *ConnectAppId `json:"app,omitempty"`
+
 	// ExpiresAt In the future, and within ten years.
 	ExpiresAt time.Time `json:"expiresAt"`
 	Name      string    `json:"name"`
@@ -2955,11 +2989,17 @@ type Owned struct {
 	Everyone bool `json:"everyone"`
 
 	// Owner Who made it, who may use it always.
-	Owner openapi_types.Email `json:"owner"`
+	Owner Owner `json:"owner"`
 
 	// Users The people besides its owner who may use it, by address, sorted.
 	Users []openapi_types.Email `json:"users"`
 }
+
+// Owner Whose a thing is: a person, by address, or an application, as
+// `app:<id>` — one of the workspace's connect applications
+// (`/v1/connect/apps`). An application holds the scopes its
+// registration grants over what is its own, as a member holds theirs.
+type Owner = string
 
 // Page defines model for Page.
 type Page struct {
@@ -3053,7 +3093,7 @@ type Profile struct {
 	Model *string `json:"model,omitempty"`
 
 	// Owner Who made it, who may use it always.
-	Owner openapi_types.Email `json:"owner"`
+	Owner Owner `json:"owner"`
 
 	// Provider The provider it runs on, by name, of a type its harness runs on
 	// (`400` otherwise); when absent, that of the session that started
@@ -3161,6 +3201,9 @@ type Provider struct {
 	BaseUrl   *string    `json:"baseUrl,omitempty"`
 	CheckedAt *time.Time `json:"checkedAt,omitempty"`
 
+	// EndUser For an application's provider, the end user whose own it is.
+	EndUser *EndUser `json:"endUser,omitempty"`
+
 	// Everyone Every person may use it, whoever `users` names.
 	Everyone bool `json:"everyone"`
 
@@ -3203,7 +3246,7 @@ type Provider struct {
 	Name         Name       `json:"name"`
 
 	// Owner Who made it, who may use it always.
-	Owner openapi_types.Email `json:"owner"`
+	Owner Owner `json:"owner"`
 
 	// Plan The subscription's plan, when the provider says.
 	Plan *string `json:"plan,omitempty"`
@@ -3271,6 +3314,11 @@ type ProviderKind string
 
 // ProviderSignIn defines model for ProviderSignIn.
 type ProviderSignIn struct {
+	// EndUser For an application's provider, the end user whose own
+	// subscription it is: their turns run on it (`Turn.endUser`). Only
+	// an application names one, and it is `403` otherwise.
+	EndUser *EndUser `json:"endUser,omitempty"`
+
 	// Method How to sign in; the type's first when absent — `code` for
 	// `anthropic`, `device` for `openai`. One the type does not offer
 	// is `400`.
@@ -3332,6 +3380,9 @@ type QueuedTurn struct {
 
 	// Compact A compaction asked for, waiting, as `UserEvent`'s `compact` says. Absent for any other turn.
 	Compact *bool `json:"compact,omitempty"`
+
+	// EndUser Whom it was sent for, as `UserEvent`'s `endUser` says.
+	EndUser *EndUser `json:"endUser,omitempty"`
 
 	// HeldUntil While somebody edits it (`PUT …/hold`): until when the session
 	// is given neither it nor any turn behind it, unless the edit is
@@ -3420,7 +3471,7 @@ type RegisteredConnectApp struct {
 	// Name What the consent page calls it, and its keys are named after.
 	Name string `json:"name"`
 
-	// RedirectUris Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
+	// RedirectUris None for one an admin mints its keys for, which never connects. Where its answers may go, each matched byte for byte: `https://`, or `http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`), with no user and no fragment.
 	RedirectUris []string `json:"redirectUris"`
 
 	// Scopes What its keys hold, of what their approver does. Unsaid, it is `sessions.read sessions.write sessions.delete sessions.person profiles.write brokers.write providers.write users.admin`: what an application needs to run sessions for its own users.
@@ -3707,6 +3758,9 @@ type Session struct {
 	Config    SessionConfig `json:"config"`
 	CreatedAt time.Time     `json:"createdAt"`
 
+	// EndUser For an application's session, whom it is for, when it is for somebody.
+	EndUser *EndUser `json:"endUser,omitempty"`
+
 	// Error Why it failed, or why its last turn did.
 	Error *string `json:"error,omitempty"`
 
@@ -3739,7 +3793,7 @@ type Session struct {
 	NextAlarmAt *time.Time `json:"nextAlarmAt,omitempty"`
 
 	// Owner Whose it is — who steers it, shares it and opens its tunnels, and what it may use.
-	Owner openapi_types.Email `json:"owner"`
+	Owner Owner `json:"owner"`
 
 	// PausedAt When its person was offboarded (`User.offboardedAt`): it sleeps,
 	// and wakes for nothing — a turn, an alarm, a trigger — until they
@@ -4133,6 +4187,12 @@ type SessionSpec struct {
 	// Built-ins the workspace's policy does not allow are dropped, as kept and as read.
 	Brokers *[]Name `json:"brokers,omitempty"`
 
+	// EndUser Whom an application's session is for. Only an application
+	// names one, and it is `403` otherwise; absent, the session is
+	// the application's own. A session a session starts is for its
+	// parent's.
+	EndUser *EndUser `json:"endUser,omitempty"`
+
 	// Env Variables of the session's environment. Never a secret — those are brokers'.
 	Env       *map[string]string `json:"env,omitempty"`
 	FirstTurn *Turn              `json:"firstTurn,omitempty"`
@@ -4325,6 +4385,30 @@ type SessionTask struct {
 	Status       TaskStatus `json:"status"`
 	Subject      string     `json:"subject"`
 	UpdatedAt    time.Time  `json:"updatedAt"`
+}
+
+// SessionToken defines model for SessionToken.
+type SessionToken struct {
+	// EndUser Somebody an application signs in itself, whom a session, a
+	// provider or a turn of the application's is for. No person of the
+	// workspace: no role, no sign-in, no key.
+	EndUser   *EndUser  `json:"endUser,omitempty"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	SessionId string    `json:"sessionId"`
+
+	// Token The bearer, `ryst_…`, sent as `Authorization: Bearer`. Shown this once, and kept nowhere.
+	Token string `json:"token"`
+}
+
+// SessionTokenRequest defines model for SessionTokenRequest.
+type SessionTokenRequest struct {
+	// EndUser Somebody an application signs in itself, whom a session, a
+	// provider or a turn of the application's is for. No person of the
+	// workspace: no role, no sign-in, no key.
+	EndUser *EndUser `json:"endUser,omitempty"`
+
+	// TtlSeconds How long it works.
+	TtlSeconds *int `json:"ttlSeconds,omitempty"`
 }
 
 // SessionTool defines model for SessionTool.
@@ -4620,6 +4704,37 @@ type ToolResultEvent struct {
 // ToolResultEventType defines model for ToolResultEvent.Type.
 type ToolResultEventType string
 
+// Transfer defines model for Transfer.
+type Transfer struct {
+	Brokers *[]Name `json:"brokers,omitempty"`
+
+	// Links Connect links, by id (`GET /v1/connect/links`).
+	Links         *[]string `json:"links,omitempty"`
+	McpConnectors *[]Name   `json:"mcpConnectors,omitempty"`
+	Profiles      *[]Id     `json:"profiles,omitempty"`
+	Providers     *[]struct {
+		// EndUser Somebody an application signs in itself, whom a session, a
+		// provider or a turn of the application's is for. No person of the
+		// workspace: no role, no sign-in, no key.
+		EndUser *EndUser `json:"endUser,omitempty"`
+		Name    Name     `json:"name"`
+	} `json:"providers,omitempty"`
+	Sessions *[]struct {
+		// EndUser Somebody an application signs in itself, whom a session, a
+		// provider or a turn of the application's is for. No person of the
+		// workspace: no role, no sign-in, no key.
+		EndUser *EndUser `json:"endUser,omitempty"`
+		Id      string   `json:"id"`
+	} `json:"sessions,omitempty"`
+
+	// To Whose a thing is: a person, by address, or an application, as
+	// `app:<id>` — one of the workspace's connect applications
+	// (`/v1/connect/apps`). An application holds the scopes its
+	// registration grants over what is its own, as a member holds theirs.
+	To       Owner `json:"to"`
+	Triggers *[]Id `json:"triggers,omitempty"`
+}
+
 // Trigger defines model for Trigger.
 type Trigger struct {
 	Concurrency *TriggerConcurrency `json:"concurrency,omitempty"`
@@ -4644,7 +4759,7 @@ type Trigger struct {
 	Overrides *SessionConfig `json:"overrides,omitempty"`
 
 	// Owner Who made it — whose the sessions it starts are, and what they may use.
-	Owner openapi_types.Email `json:"owner"`
+	Owner Owner `json:"owner"`
 
 	// ProfileId Chosen by the caller, opaque to the server. A UUID unless the caller has a better one.
 	ProfileId Id `json:"profileId"`
@@ -4764,7 +4879,17 @@ type TunnelSpec struct {
 // Turn defines model for Turn.
 type Turn struct {
 	Attachments *[]Attachment `json:"attachments,omitempty"`
-	Mode        *TurnMode     `json:"mode,omitempty"`
+
+	// EndUser Whom an application's turn is sent for. Only the application
+	// names one — a session token's turns are its end user's, and any
+	// other caller's are nobody's — and a session for an end user takes
+	// turns for them alone (`400`). Absent, the session's end user.
+	//
+	// A turn sent for an end user who has a provider of the session's
+	// owner's, of a type its harness runs on, runs on it, unless it
+	// names one; and a tunnel it opens is open to their `email`.
+	EndUser *EndUser  `json:"endUser,omitempty"`
+	Mode    *TurnMode `json:"mode,omitempty"`
 
 	// Model The model this turn runs on, and the session's from then on, as `provider` is.
 	Model *string `json:"model,omitempty"`
@@ -4960,8 +5085,11 @@ type UserEvent struct {
 	// `text` is the command the harness was given. The turn's
 	// `compaction` event, before its `turn_ended`, says what it did.
 	// Absent for any other turn.
-	Compact *bool   `json:"compact,omitempty"`
-	KeyId   *string `json:"keyId,omitempty"`
+	Compact *bool `json:"compact,omitempty"`
+
+	// EndUser Whom it was sent for, when it was sent for an application's end user.
+	EndUser *EndUser `json:"endUser,omitempty"`
+	KeyId   *string  `json:"keyId,omitempty"`
 
 	// Source Who sent it, from the key that did — `user` for a person, signed in or spoken for by a key with `sessions.person`; `system` for what the server told the session, as a background task ending; `alarm` for an alarm of the session's own that the server fired.
 	Source UserEventSource `json:"source"`
@@ -5305,6 +5433,12 @@ type ListProfilesParams struct {
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// ListProvidersParams defines parameters for ListProviders.
+type ListProvidersParams struct {
+	// EndUser Those of the end user of this id alone.
+	EndUser *string `form:"endUser,omitempty" json:"endUser,omitempty"`
+}
+
 // SearchSessionsParams defines parameters for SearchSessions.
 type SearchSessionsParams struct {
 	// Q The words, separated by spaces.
@@ -5331,8 +5465,11 @@ type ListSessionsParams struct {
 	Cursor *Cursor                  `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Whose  *ListSessionsParamsWhose `form:"whose,omitempty" json:"whose,omitempty"`
 
-	// Owner Those of this person alone, of those the caller sees.
-	Owner *openapi_types.Email `form:"owner,omitempty" json:"owner,omitempty"`
+	// Owner Those of this owner alone, of those the caller sees.
+	Owner *Owner `form:"owner,omitempty" json:"owner,omitempty"`
+
+	// EndUser Those for the end user of this id alone, of those the caller sees.
+	EndUser *string `form:"endUser,omitempty" json:"endUser,omitempty"`
 
 	// State Any of these states.
 	State *[]SessionState `form:"state,omitempty" json:"state,omitempty"`
@@ -5672,6 +5809,9 @@ type RewindJSONRequestBody RewindJSONBody
 // PutSessionSharesJSONRequestBody defines body for PutSessionShares for application/json ContentType.
 type PutSessionSharesJSONRequestBody = SessionShares
 
+// CreateSessionTokenJSONRequestBody defines body for CreateSessionToken for application/json ContentType.
+type CreateSessionTokenJSONRequestBody = SessionTokenRequest
+
 // SendTurnJSONRequestBody defines body for SendTurn for application/json ContentType.
 type SendTurnJSONRequestBody = Turn
 
@@ -5680,6 +5820,9 @@ type PutWorkspaceSettingsJSONRequestBody = WorkspaceSettings
 
 // ConfirmSignInJSONRequestBody defines body for ConfirmSignIn for application/json ContentType.
 type ConfirmSignInJSONRequestBody = ConfirmSignIn
+
+// TransferJSONRequestBody defines body for Transfer for application/json ContentType.
+type TransferJSONRequestBody = Transfer
 
 // PutTriggerJSONRequestBody defines body for PutTrigger for application/json ContentType.
 type PutTriggerJSONRequestBody = TriggerSpec
@@ -6733,7 +6876,7 @@ type ClientInterface interface {
 	RestoreProfileVersion(ctx context.Context, profileId ProfileId, version int, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProviders request
-	ListProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListProviders(ctx context.Context, params *ListProvidersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteProvider request
 	DeleteProvider(ctx context.Context, provider ProviderName, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6954,6 +7097,11 @@ type ClientInterface interface {
 	// ListSessionTasks request
 	ListSessionTasks(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateSessionTokenWithBody request with any body
+	CreateSessionTokenWithBody(ctx context.Context, sessionId SessionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateSessionToken(ctx context.Context, sessionId SessionId, body CreateSessionTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListTunnels request
 	ListTunnels(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6980,6 +7128,11 @@ type ClientInterface interface {
 
 	// ListTasks request
 	ListTasks(ctx context.Context, params *ListTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TransferWithBody request with any body
+	TransferWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	Transfer(ctx context.Context, body TransferJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTriggers request
 	ListTriggers(ctx context.Context, params *ListTriggersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8244,8 +8397,8 @@ func (c *Client) RestoreProfileVersion(ctx context.Context, profileId ProfileId,
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListProvidersRequest(c.Server)
+func (c *Client) ListProviders(ctx context.Context, params *ListProvidersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProvidersRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9192,6 +9345,30 @@ func (c *Client) ListSessionTasks(ctx context.Context, sessionId SessionId, reqE
 	return c.Client.Do(req)
 }
 
+func (c *Client) CreateSessionTokenWithBody(ctx context.Context, sessionId SessionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionTokenRequestWithBody(c.Server, sessionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSessionToken(ctx context.Context, sessionId SessionId, body CreateSessionTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionTokenRequest(c.Server, sessionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListTunnels(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListTunnelsRequest(c.Server, sessionId)
 	if err != nil {
@@ -9302,6 +9479,30 @@ func (c *Client) ConfirmSignIn(ctx context.Context, body ConfirmSignInJSONReques
 
 func (c *Client) ListTasks(ctx context.Context, params *ListTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListTasksRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) TransferWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTransferRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Transfer(ctx context.Context, body TransferJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTransferRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12729,7 +12930,7 @@ func NewRestoreProfileVersionRequest(server string, profileId ProfileId, version
 }
 
 // NewListProvidersRequest generates requests for ListProviders
-func NewListProvidersRequest(server string) (*http.Request, error) {
+func NewListProvidersRequest(server string, params *ListProvidersParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -12745,6 +12946,28 @@ func NewListProvidersRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.EndUser != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "endUser", runtime.ParamLocationQuery, *params.EndUser); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -13493,6 +13716,22 @@ func NewListSessionsRequest(server string, params *ListSessionsParams) (*http.Re
 		if params.Owner != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "owner", runtime.ParamLocationQuery, *params.Owner); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.EndUser != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "endUser", runtime.ParamLocationQuery, *params.EndUser); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -15732,6 +15971,53 @@ func NewListSessionTasksRequest(server string, sessionId SessionId) (*http.Reque
 	return req, nil
 }
 
+// NewCreateSessionTokenRequest calls the generic CreateSessionToken builder with application/json body
+func NewCreateSessionTokenRequest(server string, sessionId SessionId, body CreateSessionTokenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateSessionTokenRequestWithBody(server, sessionId, "application/json", bodyReader)
+}
+
+// NewCreateSessionTokenRequestWithBody generates requests for CreateSessionToken with any type of body
+func NewCreateSessionTokenRequestWithBody(server string, sessionId SessionId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "sessionId", runtime.ParamLocationPath, sessionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/tokens", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListTunnelsRequest generates requests for ListTunnels
 func NewListTunnelsRequest(server string, sessionId SessionId) (*http.Request, error) {
 	var err error
@@ -16047,6 +16333,46 @@ func NewListTasksRequest(server string, params *ListTasksParams) (*http.Request,
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewTransferRequest calls the generic Transfer builder with application/json body
+func NewTransferRequest(server string, body TransferJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTransferRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewTransferRequestWithBody generates requests for Transfer with any type of body
+func NewTransferRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/transfers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -17092,7 +17418,7 @@ type ClientWithResponsesInterface interface {
 	RestoreProfileVersionWithResponse(ctx context.Context, profileId ProfileId, version int, reqEditors ...RequestEditorFn) (*RestoreProfileVersionResponse, error)
 
 	// ListProvidersWithResponse request
-	ListProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListProvidersResponse, error)
+	ListProvidersWithResponse(ctx context.Context, params *ListProvidersParams, reqEditors ...RequestEditorFn) (*ListProvidersResponse, error)
 
 	// DeleteProviderWithResponse request
 	DeleteProviderWithResponse(ctx context.Context, provider ProviderName, reqEditors ...RequestEditorFn) (*DeleteProviderResponse, error)
@@ -17313,6 +17639,11 @@ type ClientWithResponsesInterface interface {
 	// ListSessionTasksWithResponse request
 	ListSessionTasksWithResponse(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*ListSessionTasksResponse, error)
 
+	// CreateSessionTokenWithBodyWithResponse request with any body
+	CreateSessionTokenWithBodyWithResponse(ctx context.Context, sessionId SessionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionTokenResponse, error)
+
+	CreateSessionTokenWithResponse(ctx context.Context, sessionId SessionId, body CreateSessionTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionTokenResponse, error)
+
 	// ListTunnelsWithResponse request
 	ListTunnelsWithResponse(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*ListTunnelsResponse, error)
 
@@ -17339,6 +17670,11 @@ type ClientWithResponsesInterface interface {
 
 	// ListTasksWithResponse request
 	ListTasksWithResponse(ctx context.Context, params *ListTasksParams, reqEditors ...RequestEditorFn) (*ListTasksResponse, error)
+
+	// TransferWithBodyWithResponse request with any body
+	TransferWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TransferResponse, error)
+
+	TransferWithResponse(ctx context.Context, body TransferJSONRequestBody, reqEditors ...RequestEditorFn) (*TransferResponse, error)
 
 	// ListTriggersWithResponse request
 	ListTriggersWithResponse(ctx context.Context, params *ListTriggersParams, reqEditors ...RequestEditorFn) (*ListTriggersResponse, error)
@@ -19022,6 +19358,7 @@ type PutMcpConnectorResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -21011,6 +21348,32 @@ func (r ListSessionTasksResponse) StatusCode() int {
 	return 0
 }
 
+type CreateSessionTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *SessionToken
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSessionTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSessionTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListTunnelsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -21188,6 +21551,32 @@ func (r ListTasksResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListTasksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type TransferResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Transfer
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r TransferResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TransferResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -22443,8 +22832,8 @@ func (c *ClientWithResponses) RestoreProfileVersionWithResponse(ctx context.Cont
 }
 
 // ListProvidersWithResponse request returning *ListProvidersResponse
-func (c *ClientWithResponses) ListProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListProvidersResponse, error) {
-	rsp, err := c.ListProviders(ctx, reqEditors...)
+func (c *ClientWithResponses) ListProvidersWithResponse(ctx context.Context, params *ListProvidersParams, reqEditors ...RequestEditorFn) (*ListProvidersResponse, error) {
+	rsp, err := c.ListProviders(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -23138,6 +23527,23 @@ func (c *ClientWithResponses) ListSessionTasksWithResponse(ctx context.Context, 
 	return ParseListSessionTasksResponse(rsp)
 }
 
+// CreateSessionTokenWithBodyWithResponse request with arbitrary body returning *CreateSessionTokenResponse
+func (c *ClientWithResponses) CreateSessionTokenWithBodyWithResponse(ctx context.Context, sessionId SessionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionTokenResponse, error) {
+	rsp, err := c.CreateSessionTokenWithBody(ctx, sessionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionTokenResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateSessionTokenWithResponse(ctx context.Context, sessionId SessionId, body CreateSessionTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionTokenResponse, error) {
+	rsp, err := c.CreateSessionToken(ctx, sessionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionTokenResponse(rsp)
+}
+
 // ListTunnelsWithResponse request returning *ListTunnelsResponse
 func (c *ClientWithResponses) ListTunnelsWithResponse(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*ListTunnelsResponse, error) {
 	rsp, err := c.ListTunnels(ctx, sessionId, reqEditors...)
@@ -23223,6 +23629,23 @@ func (c *ClientWithResponses) ListTasksWithResponse(ctx context.Context, params 
 		return nil, err
 	}
 	return ParseListTasksResponse(rsp)
+}
+
+// TransferWithBodyWithResponse request with arbitrary body returning *TransferResponse
+func (c *ClientWithResponses) TransferWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TransferResponse, error) {
+	rsp, err := c.TransferWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTransferResponse(rsp)
+}
+
+func (c *ClientWithResponses) TransferWithResponse(ctx context.Context, body TransferJSONRequestBody, reqEditors ...RequestEditorFn) (*TransferResponse, error) {
+	rsp, err := c.Transfer(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTransferResponse(rsp)
 }
 
 // ListTriggersWithResponse request returning *ListTriggersResponse
@@ -26701,6 +27124,13 @@ func ParsePutMcpConnectorResponse(rsp *http.Response) (*PutMcpConnectorResponse,
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -30674,6 +31104,60 @@ func ParseListSessionTasksResponse(rsp *http.Response) (*ListSessionTasksRespons
 	return response, nil
 }
 
+// ParseCreateSessionTokenResponse parses an HTTP response from a CreateSessionTokenWithResponse call
+func ParseCreateSessionTokenResponse(rsp *http.Response) (*CreateSessionTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSessionTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest SessionToken
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListTunnelsResponse parses an HTTP response from a ListTunnelsWithResponse call
 func ParseListTunnelsResponse(rsp *http.Response) (*ListTunnelsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -31009,6 +31493,60 @@ func ParseListTasksResponse(rsp *http.Response) (*ListTasksResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest TaskPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTransferResponse parses an HTTP response from a TransferWithResponse call
+func ParseTransferResponse(rsp *http.Response) (*TransferResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TransferResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Transfer
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

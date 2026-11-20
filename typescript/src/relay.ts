@@ -18,6 +18,10 @@
 //   });
 //   // A fetch handler (Next.js, Hono, Bun, Deno): relay(request).
 //   // node:http or Express: app.use('/agents', toNodeHandler(relay)).
+//
+// Deprecated: a session token (ry's RunyardSession.token) lets a browser
+// talk to its session directly, which is what the relay was for; the relay
+// is being removed.
 
 import type { Attachment, ErrorCode, ProviderSignIn, Session, SessionSpec, Turn } from './models/index.js';
 import { SessionFromJSON } from './models/index.js';

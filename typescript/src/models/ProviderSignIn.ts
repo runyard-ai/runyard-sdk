@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { EndUser } from './EndUser.js';
+import {
+    EndUserFromJSON,
+    EndUserFromJSONTyped,
+    EndUserToJSON,
+    EndUserToJSONTyped,
+} from './EndUser.js';
 import type { ProviderType } from './ProviderType.js';
 import {
     ProviderTypeFromJSON,
@@ -58,6 +65,13 @@ export interface ProviderSignIn {
      * 
      */
     owner?: string;
+    /**
+     * For an application's provider, the end user whose own
+     * subscription it is: their turns run on it (`Turn.endUser`). Only
+     * an application names one, and it is `403` otherwise.
+     * 
+     */
+    endUser?: EndUser;
 }
 
 
@@ -84,6 +98,7 @@ export function ProviderSignInFromJSONTyped(json: any, ignoreDiscriminator: bool
         'method': json['method'] == null ? undefined : SignInMethodFromJSON(json['method']),
         'title': json['title'] == null ? undefined : json['title'],
         'owner': json['owner'] == null ? undefined : json['owner'],
+        'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
     };
 }
 
@@ -102,6 +117,7 @@ export function ProviderSignInToJSONTyped(value?: ProviderSignIn | null, ignoreD
         'method': SignInMethodToJSON(value['method']),
         'title': value['title'],
         'owner': value['owner'],
+        'endUser': EndUserToJSON(value['endUser']),
     };
 }
 

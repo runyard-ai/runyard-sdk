@@ -94,6 +94,16 @@ import {
     SessionStateToJSON,
 } from '../models/SessionState.js';
 import {
+    type SessionToken,
+    SessionTokenFromJSON,
+    SessionTokenToJSON,
+} from '../models/SessionToken.js';
+import {
+    type SessionTokenRequest,
+    SessionTokenRequestFromJSON,
+    SessionTokenRequestToJSON,
+} from '../models/SessionTokenRequest.js';
+import {
     type SessionUpdate,
     SessionUpdateFromJSON,
     SessionUpdateToJSON,
@@ -115,6 +125,17 @@ export interface CreateSessionRequest {
      * 
      */
     sessionSpec: SessionSpec;
+}
+
+export interface CreateSessionTokenRequest {
+    /**
+     * 
+     */
+    sessionId: string;
+    /**
+     * 
+     */
+    sessionTokenRequest: SessionTokenRequest;
 }
 
 export interface DeleteSessionRequest {
@@ -243,9 +264,13 @@ export interface ListSessionsRequest {
      */
     whose?: ListSessionsWhoseEnum;
     /**
-     * Those of this person alone, of those the caller sees.
+     * Those of this owner alone, of those the caller sees.
      */
     owner?: string;
+    /**
+     * Those for the end user of this id alone, of those the caller sees.
+     */
+    endUser?: string;
     /**
      * Any of these states.
      */
@@ -415,6 +440,32 @@ export interface SessionsApiInterface {
      * @deprecated
      */
     createSession(requestParameters: CreateSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Session>;
+
+    /**
+     * Creates request options for createSessionToken without sending the request
+     * @param {string} sessionId 
+     * @param {SessionTokenRequest} sessionTokenRequest 
+     * @throws {RequiredError}
+     * @memberof SessionsApiInterface
+     */
+    createSessionTokenRequestOpts(requestParameters: CreateSessionTokenRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     * A session token: what an application\'s backend hands a browser so that it talks to the server directly — reading the session, its transcript, files and sub-agents, sending and steering its turns, uploading what they attach — in this session alone, and nothing else (`403`). It is answered from any origin (CORS), being no cookie.  It speaks for its end user, when it has one: its turns are sent for them (`Turn.endUser`). Absent, the session\'s end user; a session for an end user has tokens for them alone (`400`), and only an application\'s session has end users at all.  It is signed by the server and kept nowhere: it ends at `expiresAt` — an hour by default, a day at most — or with its session, or once its owner may no longer steer it. Whoever may steer the session mints one: its owner, or an admin; never a session, nor another token. 
+     * @summary A token a browser talks to this session with
+     * @param {string} sessionId 
+     * @param {SessionTokenRequest} sessionTokenRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof SessionsApiInterface
+     */
+    createSessionTokenRaw(requestParameters: CreateSessionTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SessionToken>>;
+
+    /**
+     * A session token: what an application\'s backend hands a browser so that it talks to the server directly — reading the session, its transcript, files and sub-agents, sending and steering its turns, uploading what they attach — in this session alone, and nothing else (`403`). It is answered from any origin (CORS), being no cookie.  It speaks for its end user, when it has one: its turns are sent for them (`Turn.endUser`). Absent, the session\'s end user; a session for an end user has tokens for them alone (`400`), and only an application\'s session has end users at all.  It is signed by the server and kept nowhere: it ends at `expiresAt` — an hour by default, a day at most — or with its session, or once its owner may no longer steer it. Whoever may steer the session mints one: its owner, or an admin; never a session, nor another token. 
+     * A token a browser talks to this session with
+     */
+    createSessionToken(requestParameters: CreateSessionTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SessionToken>;
 
     /**
      * Creates request options for deleteSession without sending the request
@@ -702,7 +753,8 @@ export interface SessionsApiInterface {
      * @param {number} [limit] At most this many; the default and ceiling are in &#x60;GET /v1/info&#x60;.
      * @param {string} [cursor] From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;.
      * @param {'all' | 'mine'} [whose] 
-     * @param {string} [owner] Those of this person alone, of those the caller sees.
+     * @param {string} [owner] Those of this owner alone, of those the caller sees.
+     * @param {string} [endUser] Those for the end user of this id alone, of those the caller sees.
      * @param {Array<SessionState>} [state] Any of these states.
      * @param {Array<SessionSource>} [source] Any of these sources.
      * @param {boolean} [archived] Archived sessions only, or none of them (the default).
@@ -722,7 +774,8 @@ export interface SessionsApiInterface {
      * @param {number} [limit] At most this many; the default and ceiling are in &#x60;GET /v1/info&#x60;.
      * @param {string} [cursor] From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;.
      * @param {'all' | 'mine'} [whose] 
-     * @param {string} [owner] Those of this person alone, of those the caller sees.
+     * @param {string} [owner] Those of this owner alone, of those the caller sees.
+     * @param {string} [endUser] Those for the end user of this id alone, of those the caller sees.
      * @param {Array<SessionState>} [state] Any of these states.
      * @param {Array<SessionSource>} [source] Any of these sources.
      * @param {boolean} [archived] Archived sessions only, or none of them (the default).
@@ -1087,6 +1140,79 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
      */
     async createSession(requestParameters: CreateSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Session> {
         const response = await this.createSessionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for createSessionToken without sending the request
+     */
+    async createSessionTokenRequestOpts(requestParameters: CreateSessionTokenRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['sessionId'] == null) {
+            throw new runtime.RequiredError(
+                'sessionId',
+                'Required parameter "sessionId" was null or undefined when calling createSessionToken().'
+            );
+        }
+
+        if (requestParameters['sessionTokenRequest'] == null) {
+            throw new runtime.RequiredError(
+                'sessionTokenRequest',
+                'Required parameter "sessionTokenRequest" was null or undefined when calling createSessionToken().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("apiKey", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("platform", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/v1/sessions/{sessionId}/tokens`;
+        urlPath = urlPath.replace('{sessionId}', encodeURIComponent(String(requestParameters['sessionId'])));
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: SessionTokenRequestToJSON(requestParameters['sessionTokenRequest']),
+        };
+    }
+
+    /**
+     * A session token: what an application\'s backend hands a browser so that it talks to the server directly — reading the session, its transcript, files and sub-agents, sending and steering its turns, uploading what they attach — in this session alone, and nothing else (`403`). It is answered from any origin (CORS), being no cookie.  It speaks for its end user, when it has one: its turns are sent for them (`Turn.endUser`). Absent, the session\'s end user; a session for an end user has tokens for them alone (`400`), and only an application\'s session has end users at all.  It is signed by the server and kept nowhere: it ends at `expiresAt` — an hour by default, a day at most — or with its session, or once its owner may no longer steer it. Whoever may steer the session mints one: its owner, or an admin; never a session, nor another token. 
+     * A token a browser talks to this session with
+     */
+    async createSessionTokenRaw(requestParameters: CreateSessionTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SessionToken>> {
+        const requestOptions = await this.createSessionTokenRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => SessionTokenFromJSON(jsonValue));
+    }
+
+    /**
+     * A session token: what an application\'s backend hands a browser so that it talks to the server directly — reading the session, its transcript, files and sub-agents, sending and steering its turns, uploading what they attach — in this session alone, and nothing else (`403`). It is answered from any origin (CORS), being no cookie.  It speaks for its end user, when it has one: its turns are sent for them (`Turn.endUser`). Absent, the session\'s end user; a session for an end user has tokens for them alone (`400`), and only an application\'s session has end users at all.  It is signed by the server and kept nowhere: it ends at `expiresAt` — an hour by default, a day at most — or with its session, or once its owner may no longer steer it. Whoever may steer the session mints one: its owner, or an admin; never a session, nor another token. 
+     * A token a browser talks to this session with
+     */
+    async createSessionToken(requestParameters: CreateSessionTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SessionToken> {
+        const response = await this.createSessionTokenRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -1846,6 +1972,10 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
 
         if (requestParameters['owner'] != null) {
             queryParameters['owner'] = requestParameters['owner'];
+        }
+
+        if (requestParameters['endUser'] != null) {
+            queryParameters['endUser'] = requestParameters['endUser'];
         }
 
         if (requestParameters['state'] != null) {

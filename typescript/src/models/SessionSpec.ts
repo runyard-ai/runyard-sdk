@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { EndUser } from './EndUser.js';
+import {
+    EndUserFromJSON,
+    EndUserFromJSONTyped,
+    EndUserToJSON,
+    EndUserToJSONTyped,
+} from './EndUser.js';
 import type { Turn } from './Turn.js';
 import {
     TurnFromJSON,
@@ -118,6 +125,14 @@ export interface SessionSpec {
      */
     owner?: string;
     /**
+     * Whom an application's session is for. Only an application
+     * names one, and it is `403` otherwise; absent, the session is
+     * the application's own. A session a session starts is for its
+     * parent's.
+     * 
+     */
+    endUser?: EndUser;
+    /**
      * The session that started this one. Only a session calling
      * through its brokers may name it — itself — so lineage cannot
      * be forged.
@@ -165,6 +180,7 @@ export function SessionSpecFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'title': json['title'] == null ? undefined : json['title'],
         'autoTitle': json['autoTitle'] == null ? undefined : json['autoTitle'],
         'owner': json['owner'] == null ? undefined : json['owner'],
+        'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'parentId': json['parentId'] == null ? undefined : json['parentId'],
         'labels': json['labels'] == null ? undefined : json['labels'],
         'firstTurn': json['firstTurn'] == null ? undefined : TurnFromJSON(json['firstTurn']),
@@ -196,6 +212,7 @@ export function SessionSpecToJSONTyped(value?: SessionSpec | null, ignoreDiscrim
         'title': value['title'],
         'autoTitle': value['autoTitle'],
         'owner': value['owner'],
+        'endUser': EndUserToJSON(value['endUser']),
         'parentId': value['parentId'],
         'labels': value['labels'],
         'firstTurn': TurnToJSON(value['firstTurn']),
