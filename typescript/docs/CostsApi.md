@@ -19,7 +19,7 @@ All URIs are relative to *http://127.0.0.1:8140*
 
 Let it go, and what it costs with it
 
-A sandbox is powered down and deleted, its disk kept as a volume of its own; a volume or an image is deleted. One already gone is gone.  A session\&#39;s or one of the workspace\&#39;s images is refused, &#x60;409&#x60;: it is let go from there, as a deleted session lets its go. So are a volume a sandbox holds and an image a sandbox boots from, as the daemon refuses them.  A sandbox or a volume on a runner that is away is deleted once that runner is back: &#x60;202&#x60;, naming the runner, and it is listed &#x60;deleting&#x60; until then. 
+A sandbox is powered down and deleted, its disk kept as a volume of its own; a volume or an image is deleted. One already gone is gone.  A session\&#39;s is refused, &#x60;409&#x60;: it is let go from there, as a deleted session lets its go. So are a volume a sandbox holds and an image a sandbox boots from, as the daemon refuses them.  A sandbox or a volume on a runner that is away is deleted once that runner is back: &#x60;202&#x60;, naming the runner, and it is listed &#x60;deleting&#x60; until then. 
 
 ### Example
 
@@ -103,7 +103,7 @@ example().catch(console.error);
 
 One thing of the workspace\&#39;s sandboxes server, and what it costs
 
-One sandbox, volume or image of the workspace\&#39;s sandboxes server: what it is now, who made it, what it costs an hour and cost over the window, as the workspace\&#39;s costs say. One no longer there is said with what it cost.  One that is a session\&#39;s, or one of the workspace\&#39;s own images, says so in &#x60;ownedBy&#x60;: it is managed from there. 
+One sandbox, volume or image of the workspace\&#39;s sandboxes server: what it is now, who made it, what it costs an hour and cost over the window, as the workspace\&#39;s costs say. One no longer there is said with what it cost.  One that is a session\&#39;s says so in &#x60;ownedBy&#x60;: it is managed from there. 
 
 ### Example
 

@@ -4,7 +4,6 @@ export * from './BrokersApi.js';
 export * from './ConnectApi.js';
 export * from './CostsApi.js';
 export * from './EventsApi.js';
-export * from './ImagesApi.js';
 export * from './KeysApi.js';
 export * from './MCPConnectorsApi.js';
 export * from './MetaApi.js';

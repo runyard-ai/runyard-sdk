@@ -10,7 +10,6 @@ All URIs are relative to *http://127.0.0.1:8140*
 | [**listProfileVersions**](ProfilesApi.md#listprofileversions) | **GET** /v1/profiles/{profileId}/versions | Every version of a profile, newest first |
 | [**listProfiles**](ProfilesApi.md#listprofiles) | **GET** /v1/profiles | Every profile of the account |
 | [**putProfile**](ProfilesApi.md#putprofile) | **PUT** /v1/profiles/{profileId} | Create a profile, or make a new version of it |
-| [**putProfileRecipe**](ProfilesApi.md#putprofilerecipe) | **PUT** /v1/profiles/{profileId}/recipe | Change the recipe its sessions\&#39; sandboxes boot |
 | [**putProfileUsers**](ProfilesApi.md#putprofileusers) | **PUT** /v1/profiles/{profileId}/users | Say who besides its owner may use a profile: who may start sessions from it |
 | [**restoreProfileVersion**](ProfilesApi.md#restoreprofileversion) | **POST** /v1/profiles/{profileId}/versions/{version}/restore | Go back to a version |
 
@@ -483,93 +482,8 @@ example().catch(console.error);
 | **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
-| **422** | A recipe this server or the sandboxes daemon will not build (&#x60;recipe_invalid&#x60;): its message names the line.  |  -  |
 | **502** | Somebody else\&#39;s server answered badly, or not at all (&#x60;provider_error&#x60;, &#x60;upstream_error&#x60;). |  -  |
 | **404** | Nothing by that id. |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
-## putProfileRecipe
-
-> Profile putProfileRecipe(profileId, profileRecipe)
-
-Change the recipe its sessions\&#39; sandboxes boot
-
-A new version of the profile with &#x60;sandbox.recipe&#x60; this, and the rest as it was; the image is built at once. Its owner\&#39;s — and, for the profile a session was started from, that session\&#39;s, as its person: so a session improves the environment sessions like it start in. Test the version by starting a session from it, and restore the one before if it is worse. The same recipe again makes no version. 
-
-### Example
-
-```ts
-import {
-  Configuration,
-  ProfilesApi,
-} from '@runyard-ai/runyard-sdk';
-import type { PutProfileRecipeRequest } from '@runyard-ai/runyard-sdk';
-
-async function example() {
-  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: console
-    apiKey: "YOUR API KEY",
-    // Configure HTTP bearer authorization: apiKey
-    accessToken: "YOUR BEARER TOKEN",
-    // Configure HTTP bearer authorization: platform
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new ProfilesApi(config);
-
-  const body = {
-    // string
-    profileId: profileId_example,
-    // ProfileRecipe
-    profileRecipe: ...,
-  } satisfies PutProfileRecipeRequest;
-
-  try {
-    const data = await api.putProfileRecipe(body);
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **profileId** | `string` |  | [Defaults to `undefined`] |
-| **profileRecipe** | [ProfileRecipe](ProfileRecipe.md) |  | |
-
-### Return type
-
-[**Profile**](Profile.md)
-
-### Authorization
-
-[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
-
-### HTTP request headers
-
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** | The profile at its latest version. |  -  |
-| **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
-| **401** | No key, or not a working one — one answer for every cause. |  -  |
-| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
-| **404** | Nothing by that id. |  -  |
-| **422** | A recipe this server or the sandboxes daemon will not build (&#x60;recipe_invalid&#x60;): its message names the line.  |  -  |
-| **502** | Somebody else\&#39;s server answered badly, or not at all (&#x60;provider_error&#x60;, &#x60;upstream_error&#x60;). |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
@@ -662,7 +576,7 @@ example().catch(console.error);
 
 Go back to a version
 
-A new version, the same as that one, becomes its latest: what came after it is kept, to go forward to again. Its owner\&#39;s — and, for a profile a session was started from, that session\&#39;s, as its person. 
+A new version, the same as that one, becomes its latest: what came after it is kept, to go forward to again. Its owner\&#39;s to do. 
 
 ### Example
 

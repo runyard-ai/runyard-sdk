@@ -21,7 +21,6 @@ docs/BrokerMcp.md
 docs/BrokerPage.md
 docs/BrokerSpec.md
 docs/BrokersApi.md
-docs/BuildProgress.md
 docs/BuiltInBroker.md
 docs/Caller.md
 docs/CallerSignIn.md
@@ -83,12 +82,6 @@ docs/Harness.md
 docs/HarnessFeature.md
 docs/HarnessModel.md
 docs/Identity.md
-docs/Image.md
-docs/ImageList.md
-docs/ImageName.md
-docs/ImageRequest.md
-docs/ImageState.md
-docs/ImagesApi.md
 docs/Info.md
 docs/InfrastructureImage.md
 docs/InfrastructureItem.md
@@ -150,7 +143,6 @@ docs/Placement.md
 docs/Preferences.md
 docs/Profile.md
 docs/ProfilePage.md
-docs/ProfileRecipe.md
 docs/ProfileRef.md
 docs/ProfileSpec.md
 docs/ProfileVersionList.md
@@ -277,7 +269,6 @@ src/apis/BrokersApi.ts
 src/apis/ConnectApi.ts
 src/apis/CostsApi.ts
 src/apis/EventsApi.ts
-src/apis/ImagesApi.ts
 src/apis/KeysApi.ts
 src/apis/MCPConnectorsApi.ts
 src/apis/MetaApi.ts
@@ -313,7 +304,6 @@ src/models/BrokerKind.ts
 src/models/BrokerMcp.ts
 src/models/BrokerPage.ts
 src/models/BrokerSpec.ts
-src/models/BuildProgress.ts
 src/models/BuiltInBroker.ts
 src/models/Caller.ts
 src/models/CallerSignIn.ts
@@ -372,11 +362,6 @@ src/models/Harness.ts
 src/models/HarnessFeature.ts
 src/models/HarnessModel.ts
 src/models/Identity.ts
-src/models/Image.ts
-src/models/ImageList.ts
-src/models/ImageName.ts
-src/models/ImageRequest.ts
-src/models/ImageState.ts
 src/models/Info.ts
 src/models/InfrastructureImage.ts
 src/models/InfrastructureItem.ts
@@ -433,7 +418,6 @@ src/models/Placement.ts
 src/models/Preferences.ts
 src/models/Profile.ts
 src/models/ProfilePage.ts
-src/models/ProfileRecipe.ts
 src/models/ProfileRef.ts
 src/models/ProfileSpec.ts
 src/models/ProfileVersionList.ts

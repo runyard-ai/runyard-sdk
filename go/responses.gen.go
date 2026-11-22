@@ -69,21 +69,6 @@ func (r *ListHarnessesResponse) Raw() []byte { return r.Body }
 func (r *ReceiveHookResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
-func (r *ListImagesResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *BuildImageResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *GetImageResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *ReadImageLogResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *PutImageNameResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
 func (r *GetInfoResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
@@ -157,9 +142,6 @@ func (r *GetProfileResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *PutProfileResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *PutProfileRecipeResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *PutProfileUsersResponse) Raw() []byte { return r.Body }

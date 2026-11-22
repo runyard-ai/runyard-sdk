@@ -189,7 +189,6 @@ example().catch(console.error);
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 | **404** | Nothing by that id. |  -  |
 | **409** | Not in the state this needs (&#x60;conflict&#x60;), a different spec under an id already used (&#x60;spec_conflict&#x60;), or still used by something (&#x60;in_use&#x60;).  |  -  |
-| **422** | A recipe this server or the sandboxes daemon will not build (&#x60;recipe_invalid&#x60;): its message names the line.  |  -  |
 | **502** | Somebody else\&#39;s server answered badly, or not at all (&#x60;provider_error&#x60;, &#x60;upstream_error&#x60;). |  -  |
 | **503** | No sandbox can be made now (&#x60;capacity_exceeded&#x60;) or the account is at its quota (&#x60;quota_exceeded&#x60;). The one status that says: try again.  |  -  |
 | **507** | The workspace\&#39;s disk budget is full (&#x60;quota_exceeded&#x60;): the disks of its sessions, each counted at its full size, leave no room for this one\&#39;s. The message says the budget, what is held of it and what was asked (&#x60;GET /v1/quota&#x60;). Not a status to try again on: a disk is given back when its session is deleted, and not by waiting.  |  -  |
@@ -1764,7 +1763,6 @@ example().catch(console.error);
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 | **404** | Nothing by that id. |  -  |
 | **409** | Not in the state this needs (&#x60;conflict&#x60;), a different spec under an id already used (&#x60;spec_conflict&#x60;), or still used by something (&#x60;in_use&#x60;).  |  -  |
-| **422** | A recipe this server or the sandboxes daemon will not build (&#x60;recipe_invalid&#x60;): its message names the line.  |  -  |
 | **502** | Somebody else\&#39;s server answered badly, or not at all (&#x60;provider_error&#x60;, &#x60;upstream_error&#x60;). |  -  |
 | **503** | No sandbox can be made now (&#x60;capacity_exceeded&#x60;) or the account is at its quota (&#x60;quota_exceeded&#x60;). The one status that says: try again.  |  -  |
 | **507** | The workspace\&#39;s disk budget is full (&#x60;quota_exceeded&#x60;): the disks of its sessions, each counted at its full size, leave no room for this one\&#39;s. The message says the budget, what is held of it and what was asked (&#x60;GET /v1/quota&#x60;). Not a status to try again on: a disk is given back when its session is deleted, and not by waiting.  |  -  |

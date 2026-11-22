@@ -109,7 +109,7 @@ info:
     ### One workspace
 
     A server serves one **workspace**: its sessions, triggers, profiles,
-    images, providers, brokers, MCP connectors, people, keys,
+    providers, brokers, MCP connectors, people, keys,
     usage and activity. What the workspace itself is comes from how the
     server is started, never from this API: its name and title
     (`--workspace`, `--workspace-title`), the runyard-sandboxes server it works
@@ -186,8 +186,6 @@ tags:
     description: Reusable configurations a session is started from.
   - name: Brokers
     description: APIs a session reaches without holding their credentials.
-  - name: Images
-    description: Images built from recipes, for what a session's sandbox boots.
   - name: MCP connectors
     description: MCP servers, their credentials held here, served to a session through a broker.
   - name: Sessions
@@ -1569,7 +1567,6 @@ paths:
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
-        "422": {$ref: "#/components/responses/RecipeInvalid"}
         "502": {$ref: "#/components/responses/Upstream"}
         "404": {$ref: "#/components/responses/NotFound"}
     get:
@@ -1659,8 +1656,7 @@ paths:
       summary: Go back to a version
       description: |
         A new version, the same as that one, becomes its latest: what came
-        after it is kept, to go forward to again. Its owner's — and, for a
-        profile a session was started from, that session's, as its person.
+        after it is kept, to go forward to again. Its owner's to do.
       responses:
         "200":
           description: The profile at its new latest version.
@@ -1671,38 +1667,6 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
-  /v1/profiles/{profileId}/recipe:
-    parameters:
-      - $ref: "#/components/parameters/ProfileId"
-    put:
-      operationId: putProfileRecipe
-      x-public: true
-      tags: [Profiles]
-      summary: Change the recipe its sessions' sandboxes boot
-      description: |
-        A new version of the profile with `sandbox.recipe` this, and the
-        rest as it was; the image is built at once. Its owner's — and, for
-        the profile a session was started from, that session's, as its person:
-        so a session improves the environment sessions like it start in. Test
-        the version by starting a session from it, and restore the one
-        before if it is worse. The same recipe again makes no version.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/ProfileRecipe"}
-      responses:
-        "200":
-          description: The profile at its latest version.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Profile"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "422": {$ref: "#/components/responses/RecipeInvalid"}
-        "502": {$ref: "#/components/responses/Upstream"}
   /v1/profiles/{profileId}/versions/{version}:
     parameters:
       - $ref: "#/components/parameters/ProfileId"
@@ -1723,151 +1687,6 @@ paths:
               schema: {$ref: "#/components/schemas/Profile"}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
-        "404": {$ref: "#/components/responses/NotFound"}
-  /v1/images:
-    get:
-      operationId: listImages
-      x-public: true
-      tags: [Images]
-      summary: The images the caller's profiles and sessions use
-      description: |
-        An image is named by what it is made of and is nobody's, so what a
-        person is shown is what is theirs uses: their profiles' recipes,
-        their sessions' images, and the images they named. An admin is shown
-        every image this server knows. Newest first.
-      responses:
-        "200":
-          description: The images.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/ImageList"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "502": {$ref: "#/components/responses/Upstream"}
-        "404": {$ref: "#/components/responses/NotFound"}
-    post:
-      operationId: buildImage
-      x-public: true
-      tags: [Images]
-      summary: The image a recipe makes, built if it is not yet
-      description: |
-        A recipe is a Dockerfile of one stage. One that starts
-        `FROM harness/<name>` — `FROM harness/claude-code` — is built on the
-        image of that harness, which holds what a session of it runs: what a
-        profile's or a session's `sandbox.recipe` is. One that starts `FROM`
-        any other image is built on it, and a session boots it with its
-        harness mounted beside it.
-        Every `RUN` says what it may reach, for that step alone —
-        `--allow=<host>,…` and `--broker=<name>` — and nothing else is
-        reached. The runyard-sandboxes daemon builds it, each step in a
-        sandbox of its own.
-
-        An image is identified by what it is made of — the recipe, its
-        harness's image in place of `harness/<name>` — so the same recipe
-        again is the same image: built
-        once, `200` while it builds and after. A recipe whose build failed
-        is built again. A server whose harness image changes builds every
-        recipe again, on the new one.
-
-        A profile or a session whose `sandbox.recipe` is set asks for its
-        image when it is saved; a session waits for it before its first wake.
-
-        Its `name`, and what it is for, are what people pick it by: they
-        name the image as `PUT …/images/{imageId}/name` does.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/ImageRequest"}
-      responses:
-        "200":
-          description: The image, building, built or failed.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Image"}
-        "202":
-          description: Its build, started.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Image"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "422": {$ref: "#/components/responses/RecipeInvalid"}
-        "502": {$ref: "#/components/responses/Upstream"}
-        "404": {$ref: "#/components/responses/NotFound"}
-  /v1/images/{imageId}:
-    parameters:
-      - $ref: "#/components/parameters/ImageId"
-    get:
-      operationId: getImage
-      x-public: true
-      tags: [Images]
-      summary: An image, and where its build is
-      responses:
-        "200":
-          description: The image.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Image"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-  /v1/images/{imageId}/name:
-    parameters:
-      - $ref: "#/components/parameters/ImageId"
-    put:
-      operationId: putImageName
-      x-public: true
-      tags: [Images]
-      summary: Name an image, and say what it is for
-      description: |
-        What a person picks an image by, in place of its id: whoever may
-        see the image may name it, in place of what it was called, and
-        sees it among their images from then on. The name is kept by the
-        image's id, so a recipe built again is named as it was.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/ImageName"}
-      responses:
-        "200":
-          description: The image, named.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Image"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-  /v1/images/{imageId}/log:
-    parameters:
-      - $ref: "#/components/parameters/ImageId"
-    get:
-      operationId: readImageLog
-      x-public: true
-      tags: [Images]
-      summary: What its build printed, from a byte offset
-      description: |
-        Each step begins with a line naming it, followed by what it printed.
-        `from` is a byte offset, so a reader that dropped resumes where it
-        stopped; with `follow` the body stays open until the build ends.
-      parameters:
-        - name: from
-          in: query
-          description: The first byte wanted.
-          schema: {type: integer, format: int64, minimum: 0, default: 0}
-        - $ref: "#/components/parameters/Follow"
-      responses:
-        "200":
-          description: The bytes.
-          content:
-            text/plain:
-              schema: {type: string}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
   /v1/tunnels:
     get:
@@ -1920,7 +1739,7 @@ paths:
       tags: [Brokers]
       summary: Declare a broker, or change it
       description: |
-        `llm`, `egress`, `tunnels`, `sessions` and `images` are the server's
+        `llm`, `egress`, `tunnels` and `sessions` are the server's
         own: they always exist and are not changed here (`409 in_use`).
         Any other is a `shared` broker: one the sandboxes daemon declares
         under the same name, and dials with the machine's certificate. A
@@ -2279,7 +2098,6 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
         "409": {$ref: "#/components/responses/Conflict"}
-        "422": {$ref: "#/components/responses/RecipeInvalid"}
         "502": {$ref: "#/components/responses/Upstream"}
         "503": {$ref: "#/components/responses/Capacity"}
         "507": {$ref: "#/components/responses/DiskBudget"}
@@ -2354,7 +2172,6 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
         "409": {$ref: "#/components/responses/Conflict"}
-        "422": {$ref: "#/components/responses/RecipeInvalid"}
         "502": {$ref: "#/components/responses/Upstream"}
         "503": {$ref: "#/components/responses/Capacity"}
         "507": {$ref: "#/components/responses/DiskBudget"}
@@ -3141,8 +2958,8 @@ paths:
         the workspace's costs say. One no longer there is said with what it
         cost.
 
-        One that is a session's, or one of the workspace's own images, says
-        so in `ownedBy`: it is managed from there.
+        One that is a session's says so in `ownedBy`: it is managed from
+        there.
       parameters:
         - name: window
           in: query
@@ -3172,8 +2989,7 @@ paths:
         A sandbox is powered down and deleted, its disk kept as a volume of
         its own; a volume or an image is deleted. One already gone is gone.
 
-        A session's or one of the workspace's images is
-        refused, `409`: it is let go from there, as a deleted session lets its
+        A session's is refused, `409`: it is let go from there, as a deleted session lets its
         go. So are a volume a sandbox holds and an image a sandbox boots
         from, as the daemon refuses them.
 
@@ -4389,11 +4205,6 @@ components:
       in: path
       required: true
       schema: {$ref: "#/components/schemas/Id"}
-    ImageId:
-      name: imageId
-      in: path
-      required: true
-      schema: {$ref: "#/components/schemas/ImageId"}
     TriggerId:
       name: triggerId
       in: path
@@ -4467,13 +4278,6 @@ components:
         Not in the state this needs (`conflict`), a different spec under an
         id already used (`spec_conflict`), or still used by something
         (`in_use`).
-      content:
-        application/json:
-          schema: {$ref: "#/components/schemas/Error"}
-    RecipeInvalid:
-      description: |
-        A recipe this server or the sandboxes daemon will not build
-        (`recipe_invalid`): its message names the line.
       content:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
@@ -4629,9 +4433,9 @@ components:
         image:
           type: string
           description: |
-            The image its disk is laid over, pinned by digest, once it has
-            woken: built from its `config.sandbox.recipe` when it has one.
-            It is the session's for its life.
+            The image its disk is laid over, as it first woke on it: its
+            `config.sandbox.image`, or the server's. It is the session's for
+            its life.
         bundle:
           type: string
           description: |
@@ -4790,7 +4594,6 @@ components:
         - not_supported
         - not_implemented
         - recent_signin_required
-        - recipe_invalid
         - managed
         - runner_offline
         - runner_unreachable
@@ -5631,8 +5434,7 @@ components:
             pinned by digest. What each session woke on is its
             `sandbox.bundle`; one that differs from this is moved onto it by
             its next wake. Absent for a harness this server runs from its own
-            image alone, whose sessions boot that image or a recipe `FROM
-            harness/<name>`.
+            image alone, whose sessions boot that image.
           example: releases.runyard.ai/runyard-public/bundle-claude@sha256:9b1c…
         providerTypes:
           type: array
@@ -6000,8 +5802,8 @@ components:
             is none: its sessions are given what their config names.
     BuiltInBroker:
       type: string
-      enum: [llm, egress, tunnels, sessions, images]
-      x-enum-varnames: [BuiltInLlm, BuiltInEgress, BuiltInTunnels, BuiltInSessions, BuiltInImages]
+      enum: [llm, egress, tunnels, sessions]
+      x-enum-varnames: [BuiltInLlm, BuiltInEgress, BuiltInTunnels, BuiltInSessions]
       description: One of the server's own brokers.
     WorkspacePolicy:
       type: object
@@ -6324,39 +6126,17 @@ components:
           minLength: 1
           maxLength: 1024
           description: |
-            What the sandbox boots, as an OCI reference: any image, built
-            from any recipe its owner already has. The harness is not in it:
-            it is mounted beside it, from its bundle (`GET /v1/harnesses`,
-            `bundle`), with the tools it shells out to, for an image that has
-            none of its own. Pin it by digest: a session's disk is laid over
-            the image it first woke on, and keeps it. Refused beside a
-            `recipe`, and for a harness this server runs from its own image
-            alone (one with no `bundle`).
+            What the sandbox boots, as an OCI reference, by tag or by
+            digest: any image, made wherever its owner makes images. The
+            harness is not in it: it is mounted beside it, from its bundle
+            (`GET /v1/harnesses`, `bundle`), with the tools it shells out
+            to, for an image that has none of its own. Pin it by digest: a
+            session's disk is laid over the image it first woke on, and a
+            tag names whatever it names when the session wakes again.
+            Refused for a harness this server runs from its own image alone
+            (one with no `bundle`). Absent, the server's base image, or for
+            a harness with no bundle, its own image.
           example: python:3.12-slim
-        recipe:
-          type: string
-          maxLength: 65536
-          description: |
-            What the sandbox boots, as a recipe built on any image (`POST
-            /v1/images` says how one is written). The harness is not in it:
-            it is mounted beside it from its bundle, as for `image`.
-
-            A recipe starting `FROM harness/<name>` is built on that
-            harness's own image, which holds it: a config naming no harness
-            runs the recipe's, and one naming another is refused. **That is
-            deprecated, and goes in a release soon**: start from any image
-            instead. It is still what a harness with no `bundle` takes, and
-            the only one.
-
-            Absent, and with no `image`, the server's base image, or for a
-            harness with no bundle, its own image. A session's disk is laid
-            over the image it first woke on, so a session keeps that image:
-            a profile's recipe changed later is for the sessions started
-            after. Saved, it is built, and its image named after the profile,
-            or the session, unless someone named it.
-          example: |
-            FROM python:3.12-slim
-            RUN --allow=deb.debian.org apt-get update && apt-get install -y ripgrep
     Placement:
       type: object
       additionalProperties: false
@@ -6379,7 +6159,7 @@ components:
       properties:
         harness:
           type: string
-          description: "`claude-code` or `codex`; when absent, its recipe's, or the server's default. A session's is fixed once made."
+          description: "`claude-code` or `codex`; when absent, the server's default. A session's is fixed once made."
           example: claude-code
         terminal:
           type: boolean
@@ -6444,10 +6224,6 @@ components:
           properties:
             id: {$ref: "#/components/schemas/Id"}
             version: {type: integer, minimum: 1}
-            image:
-              allOf:
-                - $ref: "#/components/schemas/Image"
-              description: Its `sandbox.recipe`'s image, when it has one.
             createdAt: {type: string, format: date-time}
             updatedAt: {type: string, format: date-time}
     ProfileVersionList:
@@ -6457,15 +6233,6 @@ components:
         items:
           type: array
           items: {$ref: "#/components/schemas/Profile"}
-    ProfileRecipe:
-      type: object
-      required: [recipe]
-      additionalProperties: false
-      properties:
-        recipe:
-          type: string
-          maxLength: 65536
-          description: A recipe, as `sandbox.recipe` takes one, in place of the profile's recipe or image; empty boots the profile's image, or with none the server's base image (the harness's own, for a harness with no bundle).
     ProfilePage:
       allOf:
         - $ref: "#/components/schemas/Page"
@@ -6475,75 +6242,6 @@ components:
             items:
               type: array
               items: {$ref: "#/components/schemas/Profile"}
-    ImageId:
-      type: string
-      pattern: "^img_[0-9a-f]{16}$"
-      description: What an image is made of — its recipe, on its harness's image — hashed.
-      example: img_4c1e9a7f2b06d3a1
-    ImageState:
-      type: string
-      description: |
-        | state | what it means |
-        |---|---|
-        | `building` | its build is queued or running |
-        | `ready` | built: `ref` is what a sandbox boots |
-        | `failed` | its build failed or was cancelled; `error` says why, and asking for it again builds it again |
-      enum: [building, ready, failed]
-      # Named here: a third enum with `ready` and `failed` in it leaves
-      # oapi-codegen prefixing one of them by chance.
-      x-enum-varnames: [ImageBuilding, ImageReady, ImageFailed]
-    ImageRequest:
-      type: object
-      required: [recipe, name]
-      additionalProperties: false
-      properties:
-        recipe: {type: string, minLength: 1, maxLength: 65536}
-        name: {$ref: "#/components/schemas/ImageTitle"}
-        description: {$ref: "#/components/schemas/ImageDescription"}
-    ImageTitle:
-      type: string
-      minLength: 1
-      maxLength: 100
-      description: What a person picks the image by.
-      example: Coder
-    ImageDescription:
-      type: string
-      maxLength: 2000
-      description: What the image is for, and what it holds.
-      example: Go, Node and the GitHub CLI, for working on runyard.
-    ImageName:
-      type: object
-      required: [name]
-      additionalProperties: false
-      properties:
-        name: {$ref: "#/components/schemas/ImageTitle"}
-        description: {$ref: "#/components/schemas/ImageDescription"}
-    ImageList:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items: {$ref: "#/components/schemas/Image"}
-    Image:
-      type: object
-      required: [id, recipe, state]
-      properties:
-        id: {$ref: "#/components/schemas/ImageId"}
-        recipe: {type: string}
-        name:
-          allOf:
-            - $ref: "#/components/schemas/ImageTitle"
-          description: What it is called, once someone named it.
-        description: {$ref: "#/components/schemas/ImageDescription"}
-        state: {$ref: "#/components/schemas/ImageState"}
-        error: {type: string}
-        ref:
-          type: string
-          description: Once `ready`, the image built, pinned by digest.
-          example: 127.0.0.1:5002/runyard/agents/img_4c1e9a7f2b06d3a1@sha256:1805c461…
-        createdAt: {type: string, format: date-time}
-        finishedAt: {type: string, format: date-time}
     DeletedLater:
       type: object
       description: |
@@ -6586,9 +6284,8 @@ components:
         | `egress` | the internet, one host at a time, as the session asks — the server's own |
         | `tunnels` | publishing its ports as addresses — the server's own |
         | `sessions` | this server, as its session — to start and talk to other sessions — the server's own |
-        | `images` | this server, as its session — to build images from recipes — the server's own |
         | `shared` | a broker declared here, which the sandboxes daemon dials at its `url` with the machine's certificate, and this server serves nothing — so it keeps working while this server restarts |
-      enum: [llm, egress, tunnels, sessions, images, shared]
+      enum: [llm, egress, tunnels, sessions, shared]
     BrokerSpec:
       type: object
       required: [title, url]
@@ -6853,21 +6550,16 @@ components:
 
         | phase | what it means |
         |---|---|
-        | `building` | its image is being built from `config.sandbox.recipe` — by this start, or by an earlier one that asked for the same recipe and image, which it waits on; `build` says how far |
         | `booting` | its sandbox is being made, and booted |
         | `harness` | its harness is being started in its sandbox |
-
-        A step of its build is said on its events (a `state` event) as it
-        begins; the build's log moves on here — and so on `GET /v1/changes`
-        — every few seconds at most.
       properties:
         phase:
           type: string
-          enum: [building, booting, harness]
+          enum: [booting, harness]
           # Named here: `booting` is a sandbox's state too, and an enum
           # sharing a value with another leaves oapi-codegen prefixing some
           # other enum's names by chance.
-          x-enum-varnames: [StartingBuilding, StartingBooting, StartingHarness]
+          x-enum-varnames: [StartingBooting, StartingHarness]
         since:
           type: string
           format: date-time
@@ -6875,35 +6567,6 @@ components:
         failed:
           type: boolean
           description: Its start failed in this phase; the session's `error` says why.
-        build: {$ref: "#/components/schemas/BuildProgress"}
-    BuildProgress:
-      type: object
-      required: [image, step, steps]
-      description: How far the build of an image has got.
-      properties:
-        image: {$ref: "#/components/schemas/ImageId"}
-        step:
-          type: integer
-          minimum: 0
-          description: >-
-            The step it is at, from 1 — the one running, the one that failed, or the last once all are done and it is pushing; 0 before the first.
-        steps:
-          type: integer
-          minimum: 0
-          description: How many steps its recipe has after its `FROM`; 0 until the daemon has said.
-        instruction:
-          type: string
-          description: That step's instruction, as written.
-          example: RUN go install github.com/bufbuild/buf/cmd/buf@v1.47.2
-        stepSince:
-          type: string
-          format: date-time
-          description: When that step began.
-        logTail:
-          type: array
-          maxItems: 20
-          description: The last lines of its log, oldest first, each cut at 300 characters.
-          items: {type: string}
     SessionSource:
       type: string
       description: |
@@ -7184,7 +6847,7 @@ components:
           description: Its cost over the window, and an hour now; absent when it was not metered in it.
           allOf: [{$ref: "#/components/schemas/CostResource"}]
         ownedBy:
-          description: What it is part of, which manages it; absent for what is no session's or workspace image.
+          description: What it is part of, which manages it; absent for what is no session's.
           allOf: [{$ref: "#/components/schemas/InfrastructureOwner"}]
         madeBy: {type: string, description: "Who made it, and with which key."}
         createdAt: {type: string, format: date-time}
@@ -7195,7 +6858,6 @@ components:
       type: object
       properties:
         session: {$ref: "#/components/schemas/SessionRef"}
-        image: {type: string, description: The workspace's image's id.}
     SessionRef:
       type: object
       required: [id, title]
@@ -7624,8 +7286,7 @@ components:
           allOf: [{$ref: "#/components/schemas/Id"}]
           description: |
             The session whose machine sent it. Absent for a gateway entry of a
-            sandbox that is no session's — an image's build, one the server
-            never knew — which is its person's to read, or an admin's when it
+            sandbox that is no session's — one the server never knew — which is its person's to read, or an admin's when it
             is nobody's.
         owner:
           allOf: [{$ref: "#/components/schemas/Owner"}]
@@ -8613,7 +8274,7 @@ components:
     StateEvent:
       type: object
       description: >-
-        The session's state, or its sandbox's, changed — or, while it starts, its start moved on to another phase or another step of its build.
+        The session's state, or its sandbox's, changed — or, while it starts, its start moved on to another phase.
       required: [type, state, sandboxState]
       properties:
         type: {type: string, enum: [state]}

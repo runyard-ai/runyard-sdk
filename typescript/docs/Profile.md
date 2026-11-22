@@ -22,7 +22,6 @@ Name | Type
 `users` | Array&lt;string&gt;
 `id` | string
 `version` | number
-`image` | [Image](Image.md)
 `createdAt` | Date
 `updatedAt` | Date
 
@@ -49,7 +48,6 @@ const example = {
   "users": null,
   "id": 0192f6a4-3c1e-7b2a-9d4e-5f6a7b8c9d0e,
   "version": null,
-  "image": null,
   "createdAt": null,
   "updatedAt": null,
 } satisfies Profile

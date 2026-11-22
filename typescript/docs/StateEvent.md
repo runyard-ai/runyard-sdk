@@ -1,7 +1,7 @@
 
 # StateEvent
 
-The session\'s state, or its sandbox\'s, changed — or, while it starts, its start moved on to another phase or another step of its build.
+The session\'s state, or its sandbox\'s, changed — or, while it starts, its start moved on to another phase.
 
 ## Properties
 

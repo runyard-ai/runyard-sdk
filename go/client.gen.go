@@ -149,7 +149,6 @@ const (
 // Defines values for BrokerKind.
 const (
 	Egress   BrokerKind = "egress"
-	Images   BrokerKind = "images"
 	Llm      BrokerKind = "llm"
 	Sessions BrokerKind = "sessions"
 	Shared   BrokerKind = "shared"
@@ -159,7 +158,6 @@ const (
 // Defines values for BuiltInBroker.
 const (
 	BuiltInEgress   BuiltInBroker = "egress"
-	BuiltInImages   BuiltInBroker = "images"
 	BuiltInLlm      BuiltInBroker = "llm"
 	BuiltInSessions BuiltInBroker = "sessions"
 	BuiltInTunnels  BuiltInBroker = "tunnels"
@@ -278,7 +276,6 @@ const (
 	ErrorCodeProviderError        ErrorCode = "provider_error"
 	ErrorCodeQuotaExceeded        ErrorCode = "quota_exceeded"
 	ErrorCodeRecentSigninRequired ErrorCode = "recent_signin_required"
-	ErrorCodeRecipeInvalid        ErrorCode = "recipe_invalid"
 	ErrorCodeRunnerOffline        ErrorCode = "runner_offline"
 	ErrorCodeRunnerUnreachable    ErrorCode = "runner_unreachable"
 	ErrorCodeSandboxFailed        ErrorCode = "sandbox_failed"
@@ -341,13 +338,6 @@ const (
 const (
 	Claims IdentityMode = "claims"
 	Local  IdentityMode = "local"
-)
-
-// Defines values for ImageState.
-const (
-	ImageBuilding ImageState = "building"
-	ImageFailed   ImageState = "failed"
-	ImageReady    ImageState = "ready"
 )
 
 // Defines values for InfrastructureKind.
@@ -510,9 +500,8 @@ const (
 
 // Defines values for SessionStartingPhase.
 const (
-	StartingBooting  SessionStartingPhase = "booting"
-	StartingBuilding SessionStartingPhase = "building"
-	StartingHarness  SessionStartingPhase = "harness"
+	StartingBooting SessionStartingPhase = "booting"
+	StartingHarness SessionStartingPhase = "harness"
 )
 
 // Defines values for SessionState.
@@ -769,8 +758,7 @@ type Activity struct {
 	Response ActivityMessage `json:"response"`
 
 	// SessionId The session whose machine sent it. Absent for a gateway entry of a
-	// sandbox that is no session's — an image's build, one the server
-	// never knew — which is its person's to read, or an admin's when it
+	// sandbox that is no session's — one the server never knew — which is its person's to read, or an admin's when it
 	// is nobody's.
 	SessionId *Id `json:"sessionId,omitempty"`
 
@@ -901,8 +889,7 @@ type ActivitySummary struct {
 	Owner *Owner `json:"owner,omitempty"`
 
 	// SessionId The session whose machine sent it. Absent for a gateway entry of a
-	// sandbox that is no session's — an image's build, one the server
-	// never knew — which is its person's to read, or an admin's when it
+	// sandbox that is no session's — one the server never knew — which is its person's to read, or an admin's when it
 	// is nobody's.
 	SessionId *Id `json:"sessionId,omitempty"`
 
@@ -1107,7 +1094,6 @@ type Broker struct {
 	// | `egress` | the internet, one host at a time, as the session asks — the server's own |
 	// | `tunnels` | publishing its ports as addresses — the server's own |
 	// | `sessions` | this server, as its session — to start and talk to other sessions — the server's own |
-	// | `images` | this server, as its session — to build images from recipes — the server's own |
 	// | `shared` | a broker declared here, which the sandboxes daemon dials at its `url` with the machine's certificate, and this server serves nothing — so it keeps working while this server restarts |
 	Kind BrokerKind `json:"kind"`
 
@@ -1150,7 +1136,6 @@ type BrokerAuth string
 // | `egress` | the internet, one host at a time, as the session asks — the server's own |
 // | `tunnels` | publishing its ports as addresses — the server's own |
 // | `sessions` | this server, as its session — to start and talk to other sessions — the server's own |
-// | `images` | this server, as its session — to build images from recipes — the server's own |
 // | `shared` | a broker declared here, which the sandboxes daemon dials at its `url` with the machine's certificate, and this server serves nothing — so it keeps working while this server restarts |
 type BrokerKind string
 
@@ -1235,27 +1220,6 @@ type BrokerSpec struct {
 
 	// Url Where the broker listens. With `auth: certificate`, `https`, as the sandbox's certificate is presented over TLS, and only its host and port are used: a session's request carries its own path. With `auth: jwt`, `http` or `https`, and its path is a prefix put before every request's own; `http` carries the token and everything else in the clear, for loopback or a private link.
 	Url string `json:"url"`
-}
-
-// BuildProgress How far the build of an image has got.
-type BuildProgress struct {
-	// Image What an image is made of — its recipe, on its harness's image — hashed.
-	Image ImageId `json:"image"`
-
-	// Instruction That step's instruction, as written.
-	Instruction *string `json:"instruction,omitempty"`
-
-	// LogTail The last lines of its log, oldest first, each cut at 300 characters.
-	LogTail *[]string `json:"logTail,omitempty"`
-
-	// Step The step it is at, from 1 — the one running, the one that failed, or the last once all are done and it is pushing; 0 before the first.
-	Step int `json:"step"`
-
-	// StepSince When that step began.
-	StepSince *time.Time `json:"stepSince,omitempty"`
-
-	// Steps How many steps its recipe has after its `FROM`; 0 until the daemon has said.
-	Steps int `json:"steps"`
 }
 
 // BuiltInBroker One of the server's own brokers.
@@ -2011,8 +1975,7 @@ type Harness struct {
 	// pinned by digest. What each session woke on is its
 	// `sandbox.bundle`; one that differs from this is moved onto it by
 	// its next wake. Absent for a harness this server runs from its own
-	// image alone, whose sessions boot that image or a recipe `FROM
-	// harness/<name>`.
+	// image alone, whose sessions boot that image.
 	Bundle *string `json:"bundle,omitempty"`
 
 	// DefaultModel What a session on it runs when it names no model: the server's
@@ -2139,73 +2102,6 @@ type Identity struct {
 // IdentityMode defines model for Identity.Mode.
 type IdentityMode string
 
-// Image defines model for Image.
-type Image struct {
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
-
-	// Description What the image is for, and what it holds.
-	Description *ImageDescription `json:"description,omitempty"`
-	Error       *string           `json:"error,omitempty"`
-	FinishedAt  *time.Time        `json:"finishedAt,omitempty"`
-
-	// Id What an image is made of — its recipe, on its harness's image — hashed.
-	Id ImageId `json:"id"`
-
-	// Name What it is called, once someone named it.
-	Name   *ImageTitle `json:"name,omitempty"`
-	Recipe string      `json:"recipe"`
-
-	// Ref Once `ready`, the image built, pinned by digest.
-	Ref *string `json:"ref,omitempty"`
-
-	// State | state | what it means |
-	// |---|---|
-	// | `building` | its build is queued or running |
-	// | `ready` | built: `ref` is what a sandbox boots |
-	// | `failed` | its build failed or was cancelled; `error` says why, and asking for it again builds it again |
-	State ImageState `json:"state"`
-}
-
-// ImageDescription What the image is for, and what it holds.
-type ImageDescription = string
-
-// ImageId What an image is made of — its recipe, on its harness's image — hashed.
-type ImageId = string
-
-// ImageList defines model for ImageList.
-type ImageList struct {
-	Items []Image `json:"items"`
-}
-
-// ImageName defines model for ImageName.
-type ImageName struct {
-	// Description What the image is for, and what it holds.
-	Description *ImageDescription `json:"description,omitempty"`
-
-	// Name What a person picks the image by.
-	Name ImageTitle `json:"name"`
-}
-
-// ImageRequest defines model for ImageRequest.
-type ImageRequest struct {
-	// Description What the image is for, and what it holds.
-	Description *ImageDescription `json:"description,omitempty"`
-
-	// Name What a person picks the image by.
-	Name   ImageTitle `json:"name"`
-	Recipe string     `json:"recipe"`
-}
-
-// ImageState | state | what it means |
-// |---|---|
-// | `building` | its build is queued or running |
-// | `ready` | built: `ref` is what a sandbox boots |
-// | `failed` | its build failed or was cancelled; `error` says why, and asking for it again builds it again |
-type ImageState string
-
-// ImageTitle What a person picks the image by.
-type ImageTitle = string
-
 // Info defines model for Info.
 type Info struct {
 	// ConsoleKey The public half of the key this server signs what it forwards to
@@ -2279,7 +2175,7 @@ type InfrastructureItem struct {
 	// Name What a person knows it by.
 	Name string `json:"name"`
 
-	// OwnedBy What it is part of, which manages it; absent for what is no session's or workspace image.
+	// OwnedBy What it is part of, which manages it; absent for what is no session's.
 	OwnedBy *InfrastructureOwner   `json:"ownedBy,omitempty"`
 	Sandbox *InfrastructureSandbox `json:"sandbox,omitempty"`
 
@@ -2296,8 +2192,6 @@ type InfrastructureKind string
 
 // InfrastructureOwner defines model for InfrastructureOwner.
 type InfrastructureOwner struct {
-	// Image The workspace's image's id.
-	Image   *string     `json:"image,omitempty"`
 	Session *SessionRef `json:"session,omitempty"`
 }
 
@@ -2869,14 +2763,11 @@ type Profile struct {
 	// Everyone Every person may use it.
 	Everyone bool `json:"everyone"`
 
-	// Harness `claude-code` or `codex`; when absent, its recipe's, or the server's default. A session's is fixed once made.
+	// Harness `claude-code` or `codex`; when absent, the server's default. A session's is fixed once made.
 	Harness *string `json:"harness,omitempty"`
 
 	// Id Chosen by the caller, opaque to the server. A UUID unless the caller has a better one.
 	Id Id `json:"id"`
-
-	// Image Its `sandbox.recipe`'s image, when it has one.
-	Image *Image `json:"image,omitempty"`
 
 	// McpConnectors The MCP connectors the session is given, by name.
 	McpConnectors *[]Name `json:"mcpConnectors,omitempty"`
@@ -2926,12 +2817,6 @@ type ProfilePage struct {
 	NextCursor *string `json:"nextCursor,omitempty"`
 }
 
-// ProfileRecipe defines model for ProfileRecipe.
-type ProfileRecipe struct {
-	// Recipe A recipe, as `sandbox.recipe` takes one, in place of the profile's recipe or image; empty boots the profile's image, or with none the server's base image (the harness's own, for a harness with no bundle).
-	Recipe string `json:"recipe"`
-}
-
 // ProfileRef What it was started from.
 type ProfileRef struct {
 	// Id Chosen by the caller, opaque to the server. A UUID unless the caller has a better one.
@@ -2949,7 +2834,7 @@ type ProfileSpec struct {
 	// Env Variables of the session's environment. Never a secret — those are brokers'.
 	Env *map[string]string `json:"env,omitempty"`
 
-	// Harness `claude-code` or `codex`; when absent, its recipe's, or the server's default. A session's is fixed once made.
+	// Harness `claude-code` or `codex`; when absent, the server's default. A session's is fixed once made.
 	Harness *string `json:"harness,omitempty"`
 
 	// McpConnectors The MCP connectors the session is given, by name.
@@ -3305,14 +3190,16 @@ type SandboxConfig struct {
 	// IdleSeconds How long without a turn or a running background task before the session sleeps; 0 never.
 	IdleSeconds *int `json:"idleSeconds,omitempty"`
 
-	// Image What the sandbox boots, as an OCI reference: any image, built
-	// from any recipe its owner already has. The harness is not in it:
-	// it is mounted beside it, from its bundle (`GET /v1/harnesses`,
-	// `bundle`), with the tools it shells out to, for an image that has
-	// none of its own. Pin it by digest: a session's disk is laid over
-	// the image it first woke on, and keeps it. Refused beside a
-	// `recipe`, and for a harness this server runs from its own image
-	// alone (one with no `bundle`).
+	// Image What the sandbox boots, as an OCI reference, by tag or by
+	// digest: any image, made wherever its owner makes images. The
+	// harness is not in it: it is mounted beside it, from its bundle
+	// (`GET /v1/harnesses`, `bundle`), with the tools it shells out
+	// to, for an image that has none of its own. Pin it by digest: a
+	// session's disk is laid over the image it first woke on, and a
+	// tag names whatever it names when the session wakes again.
+	// Refused for a harness this server runs from its own image alone
+	// (one with no `bundle`). Absent, the server's base image, or for
+	// a harness with no bundle, its own image.
 	Image *string `json:"image,omitempty"`
 
 	// Internet Whether the sandbox reaches the whole internet from the start, on
@@ -3333,25 +3220,6 @@ type SandboxConfig struct {
 	// runner meets fails to start, saying which constraint nobody
 	// meets.
 	Placement *Placement `json:"placement,omitempty"`
-
-	// Recipe What the sandbox boots, as a recipe built on any image (`POST
-	// /v1/images` says how one is written). The harness is not in it:
-	// it is mounted beside it from its bundle, as for `image`.
-	//
-	// A recipe starting `FROM harness/<name>` is built on that
-	// harness's own image, which holds it: a config naming no harness
-	// runs the recipe's, and one naming another is refused. **That is
-	// deprecated, and goes in a release soon**: start from any image
-	// instead. It is still what a harness with no `bundle` takes, and
-	// the only one.
-	//
-	// Absent, and with no `image`, the server's base image, or for a
-	// harness with no bundle, its own image. A session's disk is laid
-	// over the image it first woke on, so a session keeps that image:
-	// a profile's recipe changed later is for the sessions started
-	// after. Saved, it is built, and its image named after the profile,
-	// or the session, unless someone named it.
-	Recipe *string `json:"recipe,omitempty"`
 
 	// Resources A sandbox's size. Absent fields are the default; more than `limits.maxResources` is `400`.
 	Resources *Resources `json:"resources,omitempty"`
@@ -3624,13 +3492,8 @@ type Session struct {
 	//
 	// | phase | what it means |
 	// |---|---|
-	// | `building` | its image is being built from `config.sandbox.recipe` — by this start, or by an earlier one that asked for the same recipe and image, which it waits on; `build` says how far |
 	// | `booting` | its sandbox is being made, and booted |
 	// | `harness` | its harness is being started in its sandbox |
-	//
-	// A step of its build is said on its events (a `state` event) as it
-	// begins; the build's log moves on here — and so on `GET /v1/changes`
-	// — every few seconds at most.
 	Starting *SessionStarting `json:"starting,omitempty"`
 
 	// State The session's state; the sandbox's is `sandbox.state`.
@@ -3683,7 +3546,7 @@ type SessionConfig struct {
 	// Env Variables of the session's environment. Never a secret — those are brokers'.
 	Env *map[string]string `json:"env,omitempty"`
 
-	// Harness `claude-code` or `codex`; when absent, its recipe's, or the server's default. A session's is fixed once made.
+	// Harness `claude-code` or `codex`; when absent, the server's default. A session's is fixed once made.
 	Harness *string `json:"harness,omitempty"`
 
 	// McpConnectors The MCP connectors the session is given, by name.
@@ -3901,9 +3764,9 @@ type SessionSandbox struct {
 	// Id The runyard-sandboxes sandbox, while there is one.
 	Id *string `json:"id,omitempty"`
 
-	// Image The image its disk is laid over, pinned by digest, once it has
-	// woken: built from its `config.sandbox.recipe` when it has one.
-	// It is the session's for its life.
+	// Image The image its disk is laid over, as it first woke on it: its
+	// `config.sandbox.image`, or the server's. It is the session's for
+	// its life.
 	Image *string `json:"image,omitempty"`
 
 	// Resources A sandbox's size. Absent fields are the default; more than `limits.maxResources` is `400`.
@@ -3991,7 +3854,7 @@ type SessionSpec struct {
 	Env       *map[string]string `json:"env,omitempty"`
 	FirstTurn *Turn              `json:"firstTurn,omitempty"`
 
-	// Harness `claude-code` or `codex`; when absent, its recipe's, or the server's default. A session's is fixed once made.
+	// Harness `claude-code` or `codex`; when absent, the server's default. A session's is fixed once made.
 	Harness *string            `json:"harness,omitempty"`
 	Labels  *map[string]string `json:"labels,omitempty"`
 
@@ -4091,17 +3954,9 @@ type SessionStartedEventType string
 //
 // | phase | what it means |
 // |---|---|
-// | `building` | its image is being built from `config.sandbox.recipe` — by this start, or by an earlier one that asked for the same recipe and image, which it waits on; `build` says how far |
 // | `booting` | its sandbox is being made, and booted |
 // | `harness` | its harness is being started in its sandbox |
-//
-// A step of its build is said on its events (a `state` event) as it
-// begins; the build's log moves on here — and so on `GET /v1/changes`
-// — every few seconds at most.
 type SessionStarting struct {
-	// Build How far the build of an image has got.
-	Build *BuildProgress `json:"build,omitempty"`
-
 	// Failed Its start failed in this phase; the session's `error` says why.
 	Failed *bool                `json:"failed,omitempty"`
 	Phase  SessionStartingPhase `json:"phase"`
@@ -4308,7 +4163,7 @@ type SnippetPart struct {
 	Text  string `json:"text"`
 }
 
-// StateEvent The session's state, or its sandbox's, changed — or, while it starts, its start moved on to another phase or another step of its build.
+// StateEvent The session's state, or its sandbox's, changed — or, while it starts, its start moved on to another phase.
 type StateEvent struct {
 	Reason *string `json:"reason,omitempty"`
 
@@ -5069,9 +4924,6 @@ type Gapped = GapError
 // NotFound defines model for NotFound.
 type NotFound = Error
 
-// RecipeInvalid defines model for RecipeInvalid.
-type RecipeInvalid = Error
-
 // TooLarge defines model for TooLarge.
 type TooLarge = Error
 
@@ -5133,15 +4985,6 @@ type ReceiveHookJSONBody map[string]interface{}
 type ReceiveHookParams struct {
 	XRunyardSignature *string `json:"X-Runyard-Signature,omitempty"`
 	XHubSignature256  *string `json:"X-Hub-Signature-256,omitempty"`
-}
-
-// ReadImageLogParams defines parameters for ReadImageLog.
-type ReadImageLogParams struct {
-	// From The first byte wanted.
-	From *int64 `form:"from,omitempty" json:"from,omitempty"`
-
-	// Follow Keep the body open and write what happens next.
-	Follow *Follow `form:"follow,omitempty" json:"follow,omitempty"`
 }
 
 // GetInfrastructureItemParams defines parameters for GetInfrastructureItem.
@@ -5444,12 +5287,6 @@ type ConnectTokenFormdataRequestBody = ConnectTokenRequest
 // ReceiveHookJSONRequestBody defines body for ReceiveHook for application/json ContentType.
 type ReceiveHookJSONRequestBody ReceiveHookJSONBody
 
-// BuildImageJSONRequestBody defines body for BuildImage for application/json ContentType.
-type BuildImageJSONRequestBody = ImageRequest
-
-// PutImageNameJSONRequestBody defines body for PutImageName for application/json ContentType.
-type PutImageNameJSONRequestBody = ImageName
-
 // CreateInvitationJSONRequestBody defines body for CreateInvitation for application/json ContentType.
 type CreateInvitationJSONRequestBody = NewInvitation
 
@@ -5476,9 +5313,6 @@ type PutMcpConnectorUsersJSONRequestBody = Users
 
 // PutProfileJSONRequestBody defines body for PutProfile for application/json ContentType.
 type PutProfileJSONRequestBody = ProfileSpec
-
-// PutProfileRecipeJSONRequestBody defines body for PutProfileRecipe for application/json ContentType.
-type PutProfileRecipeJSONRequestBody = ProfileRecipe
 
 // PutProfileUsersJSONRequestBody defines body for PutProfileUsers for application/json ContentType.
 type PutProfileUsersJSONRequestBody = Users
@@ -6391,25 +6225,6 @@ type ClientInterface interface {
 
 	ReceiveHook(ctx context.Context, triggerId TriggerId, params *ReceiveHookParams, body ReceiveHookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListImages request
-	ListImages(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// BuildImageWithBody request with any body
-	BuildImageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	BuildImage(ctx context.Context, body BuildImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetImage request
-	GetImage(ctx context.Context, imageId ImageId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ReadImageLog request
-	ReadImageLog(ctx context.Context, imageId ImageId, params *ReadImageLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PutImageNameWithBody request with any body
-	PutImageNameWithBody(ctx context.Context, imageId ImageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PutImageName(ctx context.Context, imageId ImageId, body PutImageNameJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetInfo request
 	GetInfo(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6502,11 +6317,6 @@ type ClientInterface interface {
 	PutProfileWithBody(ctx context.Context, profileId ProfileId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PutProfile(ctx context.Context, profileId ProfileId, body PutProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PutProfileRecipeWithBody request with any body
-	PutProfileRecipeWithBody(ctx context.Context, profileId ProfileId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PutProfileRecipe(ctx context.Context, profileId ProfileId, body PutProfileRecipeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PutProfileUsersWithBody request with any body
 	PutProfileUsersWithBody(ctx context.Context, profileId ProfileId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7157,90 +6967,6 @@ func (c *Client) ReceiveHook(ctx context.Context, triggerId TriggerId, params *R
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListImages(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListImagesRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) BuildImageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuildImageRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) BuildImage(ctx context.Context, body BuildImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuildImageRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetImage(ctx context.Context, imageId ImageId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetImageRequest(c.Server, imageId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ReadImageLog(ctx context.Context, imageId ImageId, params *ReadImageLogParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReadImageLogRequest(c.Server, imageId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PutImageNameWithBody(ctx context.Context, imageId ImageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPutImageNameRequestWithBody(c.Server, imageId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PutImageName(ctx context.Context, imageId ImageId, body PutImageNameJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPutImageNameRequest(c.Server, imageId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) GetInfo(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetInfoRequest(c.Server)
 	if err != nil {
@@ -7639,30 +7365,6 @@ func (c *Client) PutProfileWithBody(ctx context.Context, profileId ProfileId, co
 
 func (c *Client) PutProfile(ctx context.Context, profileId ProfileId, body PutProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPutProfileRequest(c.Server, profileId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PutProfileRecipeWithBody(ctx context.Context, profileId ProfileId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPutProfileRecipeRequestWithBody(c.Server, profileId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PutProfileRecipe(ctx context.Context, profileId ProfileId, body PutProfileRecipeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPutProfileRecipeRequest(c.Server, profileId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9976,226 +9678,6 @@ func NewReceiveHookRequestWithBody(server string, triggerId TriggerId, params *R
 	return req, nil
 }
 
-// NewListImagesRequest generates requests for ListImages
-func NewListImagesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/images")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewBuildImageRequest calls the generic BuildImage builder with application/json body
-func NewBuildImageRequest(server string, body BuildImageJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewBuildImageRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewBuildImageRequestWithBody generates requests for BuildImage with any type of body
-func NewBuildImageRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/images")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetImageRequest generates requests for GetImage
-func NewGetImageRequest(server string, imageId ImageId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "imageId", runtime.ParamLocationPath, imageId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/images/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewReadImageLogRequest generates requests for ReadImageLog
-func NewReadImageLogRequest(server string, imageId ImageId, params *ReadImageLogParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "imageId", runtime.ParamLocationPath, imageId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/images/%s/log", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.From != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "from", runtime.ParamLocationQuery, *params.From); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Follow != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "follow", runtime.ParamLocationQuery, *params.Follow); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPutImageNameRequest calls the generic PutImageName builder with application/json body
-func NewPutImageNameRequest(server string, imageId ImageId, body PutImageNameJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPutImageNameRequestWithBody(server, imageId, "application/json", bodyReader)
-}
-
-// NewPutImageNameRequestWithBody generates requests for PutImageName with any type of body
-func NewPutImageNameRequestWithBody(server string, imageId ImageId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "imageId", runtime.ParamLocationPath, imageId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/images/%s/name", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewGetInfoRequest generates requests for GetInfo
 func NewGetInfoRequest(server string) (*http.Request, error) {
 	var err error
@@ -11224,53 +10706,6 @@ func NewPutProfileRequestWithBody(server string, profileId ProfileId, contentTyp
 	}
 
 	operationPath := fmt.Sprintf("/v1/profiles/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewPutProfileRecipeRequest calls the generic PutProfileRecipe builder with application/json body
-func NewPutProfileRecipeRequest(server string, profileId ProfileId, body PutProfileRecipeJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPutProfileRecipeRequestWithBody(server, profileId, "application/json", bodyReader)
-}
-
-// NewPutProfileRecipeRequestWithBody generates requests for PutProfileRecipe with any type of body
-func NewPutProfileRecipeRequestWithBody(server string, profileId ProfileId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "profileId", runtime.ParamLocationPath, profileId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/profiles/%s/recipe", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15595,25 +15030,6 @@ type ClientWithResponsesInterface interface {
 
 	ReceiveHookWithResponse(ctx context.Context, triggerId TriggerId, params *ReceiveHookParams, body ReceiveHookJSONRequestBody, reqEditors ...RequestEditorFn) (*ReceiveHookResponse, error)
 
-	// ListImagesWithResponse request
-	ListImagesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListImagesResponse, error)
-
-	// BuildImageWithBodyWithResponse request with any body
-	BuildImageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuildImageResponse, error)
-
-	BuildImageWithResponse(ctx context.Context, body BuildImageJSONRequestBody, reqEditors ...RequestEditorFn) (*BuildImageResponse, error)
-
-	// GetImageWithResponse request
-	GetImageWithResponse(ctx context.Context, imageId ImageId, reqEditors ...RequestEditorFn) (*GetImageResponse, error)
-
-	// ReadImageLogWithResponse request
-	ReadImageLogWithResponse(ctx context.Context, imageId ImageId, params *ReadImageLogParams, reqEditors ...RequestEditorFn) (*ReadImageLogResponse, error)
-
-	// PutImageNameWithBodyWithResponse request with any body
-	PutImageNameWithBodyWithResponse(ctx context.Context, imageId ImageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutImageNameResponse, error)
-
-	PutImageNameWithResponse(ctx context.Context, imageId ImageId, body PutImageNameJSONRequestBody, reqEditors ...RequestEditorFn) (*PutImageNameResponse, error)
-
 	// GetInfoWithResponse request
 	GetInfoWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetInfoResponse, error)
 
@@ -15706,11 +15122,6 @@ type ClientWithResponsesInterface interface {
 	PutProfileWithBodyWithResponse(ctx context.Context, profileId ProfileId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutProfileResponse, error)
 
 	PutProfileWithResponse(ctx context.Context, profileId ProfileId, body PutProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*PutProfileResponse, error)
-
-	// PutProfileRecipeWithBodyWithResponse request with any body
-	PutProfileRecipeWithBodyWithResponse(ctx context.Context, profileId ProfileId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutProfileRecipeResponse, error)
-
-	PutProfileRecipeWithResponse(ctx context.Context, profileId ProfileId, body PutProfileRecipeJSONRequestBody, reqEditors ...RequestEditorFn) (*PutProfileRecipeResponse, error)
 
 	// PutProfileUsersWithBodyWithResponse request with any body
 	PutProfileUsersWithBodyWithResponse(ctx context.Context, profileId ProfileId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutProfileUsersResponse, error)
@@ -16583,137 +15994,6 @@ func (r ReceiveHookResponse) StatusCode() int {
 	return 0
 }
 
-type ListImagesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ImageList
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON502      *Upstream
-}
-
-// Status returns HTTPResponse.Status
-func (r ListImagesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListImagesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type BuildImageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Image
-	JSON202      *Image
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON422      *RecipeInvalid
-	JSON502      *Upstream
-}
-
-// Status returns HTTPResponse.Status
-func (r BuildImageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r BuildImageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetImageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Image
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetImageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetImageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ReadImageLogResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ReadImageLogResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ReadImageLogResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PutImageNameResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Image
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r PutImageNameResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PutImageNameResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type GetInfoResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -17330,7 +16610,6 @@ type PutProfileResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
-	JSON422      *RecipeInvalid
 	JSON502      *Upstream
 }
 
@@ -17344,34 +16623,6 @@ func (r PutProfileResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PutProfileResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PutProfileRecipeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Profile
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON422      *RecipeInvalid
-	JSON502      *Upstream
-}
-
-// Status returns HTTPResponse.Status
-func (r PutProfileRecipeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PutProfileRecipeResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17890,7 +17141,6 @@ type StartSessionResponse struct {
 	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
-	JSON422      *RecipeInvalid
 	JSON502      *Upstream
 	JSON503      *Capacity
 	JSON507      *DiskBudget
@@ -18000,7 +17250,6 @@ type CreateSessionResponse struct {
 	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
-	JSON422      *RecipeInvalid
 	JSON502      *Upstream
 	JSON503      *Capacity
 	JSON507      *DiskBudget
@@ -19910,67 +19159,6 @@ func (c *ClientWithResponses) ReceiveHookWithResponse(ctx context.Context, trigg
 	return ParseReceiveHookResponse(rsp)
 }
 
-// ListImagesWithResponse request returning *ListImagesResponse
-func (c *ClientWithResponses) ListImagesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListImagesResponse, error) {
-	rsp, err := c.ListImages(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListImagesResponse(rsp)
-}
-
-// BuildImageWithBodyWithResponse request with arbitrary body returning *BuildImageResponse
-func (c *ClientWithResponses) BuildImageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuildImageResponse, error) {
-	rsp, err := c.BuildImageWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseBuildImageResponse(rsp)
-}
-
-func (c *ClientWithResponses) BuildImageWithResponse(ctx context.Context, body BuildImageJSONRequestBody, reqEditors ...RequestEditorFn) (*BuildImageResponse, error) {
-	rsp, err := c.BuildImage(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseBuildImageResponse(rsp)
-}
-
-// GetImageWithResponse request returning *GetImageResponse
-func (c *ClientWithResponses) GetImageWithResponse(ctx context.Context, imageId ImageId, reqEditors ...RequestEditorFn) (*GetImageResponse, error) {
-	rsp, err := c.GetImage(ctx, imageId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetImageResponse(rsp)
-}
-
-// ReadImageLogWithResponse request returning *ReadImageLogResponse
-func (c *ClientWithResponses) ReadImageLogWithResponse(ctx context.Context, imageId ImageId, params *ReadImageLogParams, reqEditors ...RequestEditorFn) (*ReadImageLogResponse, error) {
-	rsp, err := c.ReadImageLog(ctx, imageId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReadImageLogResponse(rsp)
-}
-
-// PutImageNameWithBodyWithResponse request with arbitrary body returning *PutImageNameResponse
-func (c *ClientWithResponses) PutImageNameWithBodyWithResponse(ctx context.Context, imageId ImageId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutImageNameResponse, error) {
-	rsp, err := c.PutImageNameWithBody(ctx, imageId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePutImageNameResponse(rsp)
-}
-
-func (c *ClientWithResponses) PutImageNameWithResponse(ctx context.Context, imageId ImageId, body PutImageNameJSONRequestBody, reqEditors ...RequestEditorFn) (*PutImageNameResponse, error) {
-	rsp, err := c.PutImageName(ctx, imageId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePutImageNameResponse(rsp)
-}
-
 // GetInfoWithResponse request returning *GetInfoResponse
 func (c *ClientWithResponses) GetInfoWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetInfoResponse, error) {
 	rsp, err := c.GetInfo(ctx, reqEditors...)
@@ -20266,23 +19454,6 @@ func (c *ClientWithResponses) PutProfileWithResponse(ctx context.Context, profil
 		return nil, err
 	}
 	return ParsePutProfileResponse(rsp)
-}
-
-// PutProfileRecipeWithBodyWithResponse request with arbitrary body returning *PutProfileRecipeResponse
-func (c *ClientWithResponses) PutProfileRecipeWithBodyWithResponse(ctx context.Context, profileId ProfileId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutProfileRecipeResponse, error) {
-	rsp, err := c.PutProfileRecipeWithBody(ctx, profileId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePutProfileRecipeResponse(rsp)
-}
-
-func (c *ClientWithResponses) PutProfileRecipeWithResponse(ctx context.Context, profileId ProfileId, body PutProfileRecipeJSONRequestBody, reqEditors ...RequestEditorFn) (*PutProfileRecipeResponse, error) {
-	rsp, err := c.PutProfileRecipe(ctx, profileId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePutProfileRecipeResponse(rsp)
 }
 
 // PutProfileUsersWithBodyWithResponse request with arbitrary body returning *PutProfileUsersResponse
@@ -22344,283 +21515,6 @@ func ParseReceiveHookResponse(rsp *http.Response) (*ReceiveHookResponse, error) 
 	return response, nil
 }
 
-// ParseListImagesResponse parses an HTTP response from a ListImagesWithResponse call
-func ParseListImagesResponse(rsp *http.Response) (*ListImagesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListImagesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ImageList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
-		var dest Upstream
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON502 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseBuildImageResponse parses an HTTP response from a BuildImageWithResponse call
-func ParseBuildImageResponse(rsp *http.Response) (*BuildImageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &BuildImageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Image
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Image
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest RecipeInvalid
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON422 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
-		var dest Upstream
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON502 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetImageResponse parses an HTTP response from a GetImageWithResponse call
-func ParseGetImageResponse(rsp *http.Response) (*GetImageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetImageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Image
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseReadImageLogResponse parses an HTTP response from a ReadImageLogWithResponse call
-func ParseReadImageLogResponse(rsp *http.Response) (*ReadImageLogResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ReadImageLogResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePutImageNameResponse parses an HTTP response from a PutImageNameWithResponse call
-func ParsePutImageNameResponse(rsp *http.Response) (*PutImageNameResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PutImageNameResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Image
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseGetInfoResponse parses an HTTP response from a GetInfoWithResponse call
 func ParseGetInfoResponse(rsp *http.Response) (*GetInfoResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -23830,81 +22724,6 @@ func ParsePutProfileResponse(rsp *http.Response) (*PutProfileResponse, error) {
 		}
 		response.JSON404 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest RecipeInvalid
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON422 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
-		var dest Upstream
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON502 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePutProfileRecipeResponse parses an HTTP response from a PutProfileRecipeWithResponse call
-func ParsePutProfileRecipeResponse(rsp *http.Response) (*PutProfileRecipeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PutProfileRecipeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Profile
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest RecipeInvalid
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON422 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
 		var dest Upstream
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -24922,13 +23741,6 @@ func ParseStartSessionResponse(rsp *http.Response) (*StartSessionResponse, error
 		}
 		response.JSON409 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest RecipeInvalid
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON422 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
 		var dest Upstream
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -25179,13 +23991,6 @@ func ParseCreateSessionResponse(rsp *http.Response) (*CreateSessionResponse, err
 			return nil, err
 		}
 		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest RecipeInvalid
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
 		var dest Upstream
