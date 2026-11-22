@@ -23,7 +23,6 @@ Name | Type
 `charge` | [CostCharge](CostCharge.md)
 `cost` | number
 `session` | [CostResourceSession](CostResourceSession.md)
-`deployment` | string
 
 ## Example
 
@@ -48,7 +47,6 @@ const example = {
   "charge": null,
   "cost": null,
   "session": null,
-  "deployment": null,
 } satisfies CostResource
 
 console.log(example)

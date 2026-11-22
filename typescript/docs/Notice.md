@@ -11,7 +11,6 @@ Name | Type
 `level` | string
 `title` | string
 `text` | string
-`href` | string
 
 ## Example
 
@@ -24,7 +23,6 @@ const example = {
   "level": null,
   "title": null,
   "text": null,
-  "href": /deployments,
 } satisfies Notice
 
 console.log(example)

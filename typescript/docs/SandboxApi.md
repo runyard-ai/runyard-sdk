@@ -10,6 +10,7 @@ All URIs are relative to *http://127.0.0.1:8140*
 | [**getSandboxUsageHistory**](SandboxApi.md#getsandboxusagehistory) | **GET** /v1/sessions/{sessionId}/sandbox/usage/history | What the session\&#39;s machine has been using, and what it was given |
 | [**listEgressRules**](SandboxApi.md#listegressrules) | **GET** /v1/sessions/{sessionId}/egress | What the session\&#39;s sandbox may reach |
 | [**listFiles**](SandboxApi.md#listfiles) | **GET** /v1/sessions/{sessionId}/files | A directory of the session\&#39;s disk |
+| [**listOwnTunnels**](SandboxApi.md#listowntunnels) | **GET** /v1/tunnels | Every tunnel of the caller\&#39;s sessions |
 | [**listSandboxProcesses**](SandboxApi.md#listsandboxprocesses) | **GET** /v1/sessions/{sessionId}/sandbox/processes | What is running in the session\&#39;s machine |
 | [**listTunnels**](SandboxApi.md#listtunnels) | **GET** /v1/sessions/{sessionId}/tunnels | The ports the session published, and their addresses |
 | [**readFile**](SandboxApi.md#readfile) | **GET** /v1/sessions/{sessionId}/files/content | A file\&#39;s bytes |
@@ -500,6 +501,77 @@ example().catch(console.error);
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 | **404** | Nothing by that id. |  -  |
 | **409** | Not in the state this needs (&#x60;conflict&#x60;), a different spec under an id already used (&#x60;spec_conflict&#x60;), or still used by something (&#x60;in_use&#x60;).  |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## listOwnTunnels
+
+> TunnelList listOwnTunnels()
+
+Every tunnel of the caller\&#39;s sessions
+
+A person\&#39;s own — their sessions\&#39; sandboxes\&#39; — and every one for an admin. 
+
+### Example
+
+```ts
+import {
+  Configuration,
+  SandboxApi,
+} from '@runyard-ai/runyard-sdk';
+import type { ListOwnTunnelsRequest } from '@runyard-ai/runyard-sdk';
+
+async function example() {
+  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
+  const config = new Configuration({ 
+    // To configure API key authorization: console
+    apiKey: "YOUR API KEY",
+    // Configure HTTP bearer authorization: apiKey
+    accessToken: "YOUR BEARER TOKEN",
+    // Configure HTTP bearer authorization: platform
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new SandboxApi(config);
+
+  try {
+    const data = await api.listOwnTunnels();
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**TunnelList**](TunnelList.md)
+
+### Authorization
+
+[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | The tunnels. |  -  |
+| **401** | No key, or not a working one — one answer for every cause. |  -  |
+| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
+| **502** | Somebody else\&#39;s server answered badly, or not at all (&#x60;provider_error&#x60;, &#x60;upstream_error&#x60;). |  -  |
+| **404** | Nothing by that id. |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

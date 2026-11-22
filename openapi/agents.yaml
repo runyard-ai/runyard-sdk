@@ -109,7 +109,7 @@ info:
     ### One workspace
 
     A server serves one **workspace**: its sessions, triggers, profiles,
-    images, deployments, providers, brokers, MCP connectors, people, keys,
+    images, providers, brokers, MCP connectors, people, keys,
     usage and activity. What the workspace itself is comes from how the
     server is started, never from this API: its name and title
     (`--workspace`, `--workspace-title`), the runyard-sandboxes server it works
@@ -187,12 +187,7 @@ tags:
   - name: Brokers
     description: APIs a session reaches without holding their credentials.
   - name: Images
-    description: Images built from recipes — on a harness's image, for what a session's sandbox boots, or on any image, for a deployment.
-  - name: Deployments
-    description: A sealed sandbox booted from an image, that nothing can run a command in — published by tunnels, read by its logs, stopped when it expires.
-  - name: Secrets
-    description: >-
-      A person's values a deployment needs — an OAuth client's secret, an API key — kept here sealed, never read back, and handed to a deployment's machine as files when it boots.
+    description: Images built from recipes, for what a session's sandbox boots.
   - name: MCP connectors
     description: MCP servers, their credentials held here, served to a session through a broker.
   - name: Sessions
@@ -1397,12 +1392,11 @@ paths:
         cost over a window, hour by hour or day by day, and what each costs
         an hour now: its sandboxes server's, as runyard-sandboxes meters them every
         minute and keeps them, at the rates its configuration names. What is
-        gone — a session deleted, a deployment let go — is listed with what it
-        cost, `live: false`.
+        gone — a session deleted — is listed with what it cost,
+        `live: false`.
 
-        Its sessions' sandboxes and volumes say which session each is, and its
-        deployments' sandboxes which deployment. An admin's, with
-        `sessions.read`, as the workspace's usage is.
+        Its sessions' sandboxes and volumes say which session each is. An
+        admin's, with `sessions.read`, as the workspace's usage is.
 
         Not the sessions' calls to their models, which are
         `GET /v1/usage`.
@@ -1735,13 +1729,12 @@ paths:
       operationId: listImages
       x-public: true
       tags: [Images]
-      summary: The images the caller's profiles, sessions and deployments use
+      summary: The images the caller's profiles and sessions use
       description: |
         An image is named by what it is made of and is nobody's, so what a
         person is shown is what is theirs uses: their profiles' recipes,
-        their sessions' images, and their deployments', and the images they
-        named. An admin is shown every image this server knows. Newest
-        first.
+        their sessions' images, and the images they named. An admin is shown
+        every image this server knows. Newest first.
       responses:
         "200":
           description: The images.
@@ -1762,8 +1755,8 @@ paths:
         `FROM harness/<name>` — `FROM harness/claude-code` — is built on the
         image of that harness, which holds what a session of it runs: what a
         profile's or a session's `sandbox.recipe` is. One that starts `FROM`
-        any other image is built on it, for a deployment
-        (`POST /v1/deployments`).
+        any other image is built on it, and a session boots it with its
+        harness mounted beside it.
         Every `RUN` says what it may reach, for that step alone —
         `--allow=<host>,…` and `--broker=<name>` — and nothing else is
         reached. The runyard-sandboxes daemon builds it, each step in a
@@ -1876,515 +1869,15 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
-  /v1/secrets:
-    get:
-      operationId: listSecrets
-      x-public: true
-      tags: [Secrets]
-      summary: The caller's person's secrets, by name
-      description: |
-        Names and when they were set, never a value: nothing reads a value
-        back. A person's own alone, an admin's too, and a session sees its
-        person's, to name them in a deployment it asks for.
-      responses:
-        "200":
-          description: The secrets.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/SecretList"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-  /v1/secrets/{secretName}:
-    parameters:
-      - $ref: "#/components/parameters/SecretName"
-    put:
-      operationId: putSecret
-      x-public: true
-      tags: [Secrets]
-      summary: Set one of the caller's secrets, or replace its value
-      description: |
-        A person's alone to set: a session is refused (`403`), so a value is
-        never in a session's context. A deployment already made keeps the
-        value it was made with; one made after has the new one.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/SecretValue"}
-      responses:
-        "200":
-          description: Replaced.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Secret"}
-        "201":
-          description: Set.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Secret"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-    delete:
-      operationId: deleteSecret
-      x-public: true
-      tags: [Secrets]
-      summary: Forget one of the caller's secrets
-      description: |
-        A person's alone. Deployments made with it keep the value they were
-        made with; an approval still waiting that names it fails when it is
-        approved.
-      responses:
-        "204":
-          description: Forgotten.
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-  /v1/deployment-approvals:
-    get:
-      operationId: listDeploymentApprovals
-      x-public: true
-      tags: [Deployments]
-      summary: Deployments the caller's sessions asked for, waiting or decided
-      description: |
-        A person's, newest first: those still waiting, and those decided in
-        the last week. A session sees those it asked for.
-      responses:
-        "200":
-          description: The approvals.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/DeploymentApprovalList"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-    post:
-      operationId: requestDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Ask the caller's person to make a deployment
-      description: |
-        How a session gets a deployment that has its person's `secrets`: the
-        image it built could send them to any host it reaches, so its person
-        decides, seeing the image, the hosts and the secrets together. They
-        are told in their notices. Nothing is made until they approve, and
-        it is then made as if they had asked, with this session as the one
-        that made it.
-
-        What is asked is checked now as `POST …/deployments` checks it, the
-        image and the secrets included; and again when it is approved.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/DeploymentRequest"}
-      responses:
-        "202":
-          description: Waiting for the person.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/DeploymentApproval"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-  /v1/deployment-approvals/{approvalId}:
-    parameters:
-      - $ref: "#/components/parameters/ApprovalId"
-    get:
-      operationId: getDeploymentApproval
-      x-public: true
-      tags: [Deployments]
-      summary: A deployment asked for, and what was decided
-      responses:
-        "200":
-          description: The approval.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/DeploymentApproval"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-  /v1/deployment-approvals/{approvalId}/approve:
-    parameters:
-      - $ref: "#/components/parameters/ApprovalId"
-    post:
-      operationId: approveDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Make the deployment a session asked for
-      description: |
-        Its person's alone: a session is refused (`403`), and so is anybody
-        else. The deployment is made now; one that cannot be — its image
-        gone, a secret forgotten — is answered as `POST …/deployments`
-        answers it, and the approval stays waiting.
-      responses:
-        "200":
-          description: Approved; `deploymentId` is the deployment.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/DeploymentApproval"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-        "502": {$ref: "#/components/responses/Upstream"}
-        "503": {$ref: "#/components/responses/Capacity"}
-  /v1/deployment-approvals/{approvalId}/refuse:
-    parameters:
-      - $ref: "#/components/parameters/ApprovalId"
-    post:
-      operationId: refuseDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Refuse the deployment a session asked for
-      description: Its person's alone, as approving is.
-      responses:
-        "200":
-          description: Refused.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/DeploymentApproval"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-  /v1/deployments:
-    get:
-      operationId: listDeployments
-      x-public: true
-      tags: [Deployments]
-      summary: The caller's deployments
-      description: |
-        A person's own, whichever of their sessions made them, and every one
-        for an admin. Newest first.
-      responses:
-        "200":
-          description: The deployments.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/DeploymentList"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "502": {$ref: "#/components/responses/Upstream"}
-        "404": {$ref: "#/components/responses/NotFound"}
-    post:
-      operationId: createDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Boot a sealed sandbox from a built image
-      description: |
-        The sandbox runs the image's own `ENTRYPOINT`/`CMD` and nothing else:
-        it is **sealed**, so the sandboxes daemon refuses every command, file
-        write and terminal in it, to everyone, until it is unsealed — and
-        the first after that makes it `tainted` for good. Its
-        logs are read (`…/logs`) and its ports published (`…/tunnels`); it
-        reaches nothing on the internet but the hosts it is made with
-        (`allow`).
-
-        With `secrets`, a session is refused (`403`): it asks its person
-        through `POST …/deployment-approvals`.
-
-        It is the caller's person's, and stays theirs when the session that
-        made it is deleted. It is stopped once `expiresAt` passes — a day
-        from now unless `ttlSeconds` says otherwise, a week at most — and
-        `POST …/start` boots it again on the disk it had.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/DeploymentRequest"}
-      responses:
-        "202":
-          description: Booting.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Deployment"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-        "502": {$ref: "#/components/responses/Upstream"}
-        "503": {$ref: "#/components/responses/Capacity"}
-  /v1/deployments/{deploymentId}:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    get:
-      operationId: getDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: A deployment
-      responses:
-        "200":
-          description: The deployment.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Deployment"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "502": {$ref: "#/components/responses/Upstream"}
-    delete:
-      operationId: deleteDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Delete a deployment, its sandbox, disk and tunnels
-      responses:
-        "204": {description: Deleted.}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/stop:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    post:
-      operationId: stopDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Switch it off, its disk kept
-      responses:
-        "200":
-          description: Stopped.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Deployment"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/start:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    post:
-      operationId: startDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Boot a stopped or expired deployment again
-      description: |
-        On the disk it had, until `ttlSeconds` from now — a day unless it
-        says otherwise. Starting one that runs only moves its expiry.
-      requestBody:
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/DeploymentLease"}
-      responses:
-        "200":
-          description: Booting, or running.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Deployment"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/extend:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    post:
-      operationId: extendDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Move its expiry to ttlSeconds from now
-      description: A week from now at most. It does not boot one that is stopped.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/DeploymentLease"}
-      responses:
-        "200":
-          description: Its new expiry.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Deployment"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/unseal:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    post:
-      operationId: unsealDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Let commands and a terminal into it
-      description: |
-        For debugging one that does not do what its recipe says. Nothing has
-        run yet: the first command or terminal after it makes the
-        deployment `tainted` for good — whoever runs it, a session or a
-        person — and sealing it again does not take that away.
-      responses:
-        "200":
-          description: Unsealed, or already.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Deployment"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/seal:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    post:
-      operationId: sealDeployment
-      x-public: true
-      tags: [Deployments]
-      summary: Refuse commands and terminals in it from now on
-      description: |
-        A terminal open on it is hung up. What runs in it goes on, and a
-        taint stays.
-      responses:
-        "200":
-          description: Sealed, or already.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Deployment"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/commands:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    post:
-      operationId: runDeploymentCommand
-      x-public: true
-      tags: [Deployments]
-      summary: Run a command in an unsealed deployment, and wait for it
-      description: |
-        A sealed one is `409`: unseal it first. The first command taints it
-        for good, and says who ran it.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/DeploymentCommand"}
-      responses:
-        "200":
-          description: It ran; its exit code may say it failed.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/DeploymentCommandResult"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/logs:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    get:
-      operationId: readDeploymentLogs
-      x-public: true
-      tags: [Deployments]
-      summary: What it printed, from a byte offset
-      description: |
-        `stdout` and `stderr` are its entrypoint's, since it last booted;
-        `console` is what its kernel and init wrote while it booted — what
-        there is when it never came up. `from` is a byte offset, so a reader
-        that dropped resumes where it stopped; with `follow` the body stays
-        open while there is more to come.
-      parameters:
-        - name: stream
-          in: query
-          schema: {type: string, enum: [stdout, stderr, console], default: stdout}
-        - name: from
-          in: query
-          description: The first byte wanted.
-          schema: {type: integer, format: int64, minimum: 0, default: 0}
-        - $ref: "#/components/parameters/Follow"
-      responses:
-        "200":
-          description: The bytes.
-          content:
-            text/plain:
-              schema: {type: string}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/tunnels:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-    get:
-      operationId: listDeploymentTunnels
-      x-public: true
-      tags: [Deployments]
-      summary: Its tunnels
-      responses:
-        "200":
-          description: Its tunnels.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/TunnelList"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "502": {$ref: "#/components/responses/Upstream"}
-  /v1/deployments/{deploymentId}/tunnels/{tunnelName}:
-    parameters:
-      - $ref: "#/components/parameters/DeploymentId"
-      - $ref: "#/components/parameters/TunnelName"
-    put:
-      operationId: putDeploymentTunnel
-      x-public: true
-      tags: [Deployments]
-      summary: Publish one of its ports at an address
-      description: |
-        Reached by the people `access` names, signing in at the tunnel
-        gateway — the deployment's owner when it names nobody — and nobody
-        else.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/TunnelSpec"}
-      responses:
-        "200":
-          description: The tunnel.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Tunnel"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "502": {$ref: "#/components/responses/Upstream"}
-    delete:
-      operationId: deleteDeploymentTunnel
-      x-public: true
-      tags: [Deployments]
-      summary: Take a tunnel down
-      responses:
-        "204": {description: Deleted.}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "502": {$ref: "#/components/responses/Upstream"}
   /v1/tunnels:
     get:
       operationId: listOwnTunnels
       x-public: true
-      tags: [Deployments]
-      summary: Every tunnel of the caller's deployments and sessions
+      tags: [Sandbox]
+      summary: Every tunnel of the caller's sessions
       description: |
-        A person's own — their deployments' and their sessions' sandboxes' —
-        and every one for an admin.
+        A person's own — their sessions' sandboxes' — and every one for an
+        admin.
       responses:
         "200":
           description: The tunnels.
@@ -3648,8 +3141,8 @@ paths:
         the workspace's costs say. One no longer there is said with what it
         cost.
 
-        One that is a session's or a deployment's, or one of the workspace's
-        own images, says so in `ownedBy`: it is managed from there.
+        One that is a session's, or one of the workspace's own images, says
+        so in `ownedBy`: it is managed from there.
       parameters:
         - name: window
           in: query
@@ -3679,7 +3172,7 @@ paths:
         A sandbox is powered down and deleted, its disk kept as a volume of
         its own; a volume or an image is deleted. One already gone is gone.
 
-        A session's, a deployment's or one of the workspace's images is
+        A session's or one of the workspace's images is
         refused, `409`: it is let go from there, as a deleted session lets its
         go. So are a volume a sandbox holds and an image a sandbox boots
         from, as the daemon refuses them.
@@ -3716,8 +3209,8 @@ paths:
       summary: Stop a sandbox, which then costs only its disk
       description: |
         Its machine is powered down, its disk kept: it costs its disk alone
-        until it is started or deleted. A session's or a deployment's is
-        refused, `409`, as delete refuses it.
+        until it is started or deleted. A session's is refused, `409`, as
+        delete refuses it.
       responses:
         "204": {description: "Stopped, or was already."}
         "401": {$ref: "#/components/responses/Unauthorized"}
@@ -4901,26 +4394,6 @@ components:
       in: path
       required: true
       schema: {$ref: "#/components/schemas/ImageId"}
-    SecretName:
-      name: secretName
-      in: path
-      required: true
-      schema: {$ref: "#/components/schemas/SecretName"}
-    ApprovalId:
-      name: approvalId
-      in: path
-      required: true
-      schema: {type: string, format: uuid}
-    DeploymentId:
-      name: deploymentId
-      in: path
-      required: true
-      schema: {type: string, format: uuid}
-    TunnelName:
-      name: tunnelName
-      in: path
-      required: true
-      schema: {$ref: "#/components/schemas/TunnelName"}
     TriggerId:
       name: triggerId
       in: path
@@ -5533,10 +5006,6 @@ components:
           enum: [warning, error]
         title: {type: string}
         text: {type: string}
-        href:
-          type: string
-          description: Where in the console it is acted on, as a path under `/console`, when somewhere is.
-          example: /deployments
     NoticeList:
       type: object
       required: [items]
@@ -7075,181 +6544,6 @@ components:
           example: 127.0.0.1:5002/runyard/agents/img_4c1e9a7f2b06d3a1@sha256:1805c461…
         createdAt: {type: string, format: date-time}
         finishedAt: {type: string, format: date-time}
-    DeploymentRequest:
-      type: object
-      required: [image, name]
-      additionalProperties: false
-      properties:
-        image:
-          $ref: "#/components/schemas/ImageId"
-        name:
-          type: string
-          pattern: "^[a-z0-9]([a-z0-9-]{0,38}[a-z0-9])?$"
-          description: What it is called, for whoever reads the list.
-          example: preview
-        cpus: {type: integer, minimum: 1, maximum: 16}
-        memory:
-          type: string
-          pattern: "^[0-9]+(Mi|Gi)$"
-          example: 1Gi
-        disk:
-          type: string
-          pattern: "^[0-9]+(Mi|Gi)$"
-          description: |
-            The room it has to write in, what `df /` says inside it; the
-            image's own files do not count against it. The daemon's default
-            when absent. Held against the workspace's disk quota for as long
-            as the deployment exists, stopped or not.
-          example: 100Gi
-        ttlSeconds:
-          type: integer
-          minimum: 60
-          maximum: 604800
-          description: How long it runs before it is stopped. A day when absent.
-        nested:
-          type: boolean
-          description: |
-            Whether it gets a working `/dev/kvm` of its own, to run virtual
-            machines in. Without it, a deployment has none. On a host that
-            cannot give nested virtualisation it is a `400` `not_supported`.
-        allow:
-          type: array
-          maxItems: 64
-          items: {type: string, minLength: 1, maxLength: 253, example: oauth2.googleapis.com}
-          description: |
-            Hosts it reaches on `tcp/443`, from when it boots, by name
-            (`api.anthropic.com`) or suffix (`*.pythonhosted.org`). It reaches
-            nothing else. Set when it is made, and kept for its life: a
-            deployment that needs other hosts is made again. A name of this
-            host or its network (`localhost`, `*.internal`, …), an address,
-            a range, or a wildcard over a public suffix is a `400`.
-        secrets:
-          type: array
-          maxItems: 32
-          uniqueItems: true
-          items: {$ref: "#/components/schemas/SecretName"}
-          description: |
-            The caller's person's secrets it is given, each a file
-            `/run/secrets/<name>` in it before its entrypoint starts, readable
-            by the image's `USER` alone. The values are the ones set now: a
-            secret replaced later is not seen until it is made again. One the
-            person has not set is a `400`.
-    DeploymentLease:
-      type: object
-      additionalProperties: false
-      properties:
-        ttlSeconds:
-          type: integer
-          minimum: 60
-          maximum: 604800
-          description: From now. A day when absent.
-    DeploymentState:
-      type: string
-      description: |
-        | state | what it means |
-        |---|---|
-        | `booting` | its sandbox is being made or booted |
-        | `running` | its entrypoint runs |
-        | `stopped` | switched off, its disk kept; `start` boots it |
-        | `expired` | stopped because `expiresAt` passed; `start` boots it |
-        | `failed` | its sandbox failed; `error` says why |
-      enum: [booting, running, stopped, expired, failed]
-      x-enum-varnames: [DeploymentBooting, DeploymentRunning, DeploymentStopped, DeploymentExpired, DeploymentFailed]
-    Deployment:
-      type: object
-      required: [id, name, image, owner, state, sealed, expiresAt, createdAt]
-      properties:
-        id: {type: string, format: uuid}
-        name: {type: string}
-        image: {$ref: "#/components/schemas/ImageId"}
-        owner:
-          type: string
-          description: The person it is, by address.
-        sessionId:
-          type: string
-          description: The session that made it, when one did — kept after the session is deleted.
-        state: {$ref: "#/components/schemas/DeploymentState"}
-        error: {type: string}
-        cpus: {type: integer}
-        memory: {type: string}
-        disk: {type: string}
-        nested:
-          type: boolean
-          description: Whether it has a `/dev/kvm` of its own.
-        secrets:
-          type: array
-          items: {$ref: "#/components/schemas/SecretName"}
-          description: The secrets it was given, by name.
-        allow:
-          type: array
-          items: {type: string}
-          description: The hosts it reaches.
-        sealed:
-          type: boolean
-          description: Whether commands, file writes and terminals in it are refused now.
-        tainted: {$ref: "#/components/schemas/DeploymentTaint"}
-        expiresAt: {type: string, format: date-time}
-        createdAt: {type: string, format: date-time}
-    DeploymentTaint:
-      type: object
-      description: >-
-        The first command, file write or terminal in a deployment: from then on, what runs in it is not only its recipe. Never taken away.
-      required: [at, by, route]
-      properties:
-        at: {type: string, format: date-time}
-        by:
-          type: string
-          description: The person who ran it, or whose session did.
-        sessionId:
-          type: string
-          description: The session that ran it, when one did.
-        route:
-          type: string
-          description: The sandboxes daemon's route it came through.
-    DeploymentCommand:
-      type: object
-      required: [argv]
-      additionalProperties: false
-      properties:
-        argv:
-          type: array
-          minItems: 1
-          maxItems: 256
-          items: {type: string, maxLength: 65536}
-          description: Already split; not a shell line.
-        dir: {type: string, maxLength: 4096}
-        env:
-          type: object
-          maxProperties: 64
-          additionalProperties: {type: string, maxLength: 65536}
-        user:
-          type: string
-          maxLength: 64
-          description: "`name` or `uid:gid`; the image's own `USER` when absent."
-        timeoutSeconds: {type: integer, minimum: 1, maximum: 600}
-    DeploymentCommandResult:
-      type: object
-      required: [exitCode, stdout, stderr, truncated, durationMs]
-      properties:
-        exitCode: {type: integer}
-        stdout: {type: string}
-        stderr: {type: string}
-        truncated:
-          type: boolean
-          description: Its output hit the daemon's cap; this is the beginning of it.
-        durationMs: {type: integer, format: int64}
-    SecretName:
-      type: string
-      pattern: "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
-      example: google-client-secret
-    Secret:
-      type: object
-      required: [name, createdAt, updatedAt]
-      description: A secret, never its value.
-      properties:
-        name: {$ref: "#/components/schemas/SecretName"}
-        createdAt: {type: string, format: date-time}
-        updatedAt: {type: string, format: date-time}
     DeletedLater:
       type: object
       description: |
@@ -7258,82 +6552,6 @@ components:
       required: [waitingFor]
       properties:
         waitingFor: {$ref: "#/components/schemas/InfrastructureRunner"}
-    SecretList:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items: {$ref: "#/components/schemas/Secret"}
-    SecretValue:
-      type: object
-      required: [value]
-      additionalProperties: false
-      properties:
-        value:
-          type: string
-          minLength: 1
-          maxLength: 65536
-          description: The value, as the file in a deployment will hold it.
-    DeploymentApprovalState:
-      type: string
-      description: |
-        | state | what it means |
-        |---|---|
-        | `pending` | waiting for the person |
-        | `approved` | made: `deploymentId` is it |
-        | `refused` | the person said no |
-      enum: [pending, approved, refused]
-      x-enum-varnames: [ApprovalPending, ApprovalApproved, ApprovalRefused]
-    DeploymentApproval:
-      type: object
-      required: [id, owner, sessionId, request, state, createdAt]
-      properties:
-        id: {type: string, format: uuid}
-        owner:
-          type: string
-          description: The person who decides, by address.
-        sessionId:
-          type: string
-          description: The session that asked.
-        request: {$ref: "#/components/schemas/DeploymentRequest"}
-        state: {$ref: "#/components/schemas/DeploymentApprovalState"}
-        deploymentId:
-          type: string
-          format: uuid
-          description: Once approved, the deployment made.
-        createdAt: {type: string, format: date-time}
-        decidedAt: {type: string, format: date-time}
-    DeploymentApprovalList:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items: {$ref: "#/components/schemas/DeploymentApproval"}
-    DeploymentList:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items: {$ref: "#/components/schemas/Deployment"}
-    TunnelName:
-      type: string
-      pattern: "^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$"
-      example: web
-    TunnelSpec:
-      type: object
-      required: [port]
-      additionalProperties: false
-      properties:
-        port: {type: integer, minimum: 1, maximum: 65535, example: 8080}
-        description: {type: string, maxLength: 200}
-        emails:
-          type: array
-          maxItems: 64
-          description: Who may reach it by signing in. Its owner when empty.
-          items: {type: string, format: email, maxLength: 254}
     TunnelList:
       type: object
       required: [items]
@@ -7368,7 +6586,7 @@ components:
         | `egress` | the internet, one host at a time, as the session asks — the server's own |
         | `tunnels` | publishing its ports as addresses — the server's own |
         | `sessions` | this server, as its session — to start and talk to other sessions — the server's own |
-        | `images` | this server, as its session — to build images from recipes, and deploy them: boot sealed sandboxes, read their logs, publish their ports — the server's own |
+        | `images` | this server, as its session — to build images from recipes — the server's own |
         | `shared` | a broker declared here, which the sandboxes daemon dials at its `url` with the machine's certificate, and this server serves nothing — so it keeps working while this server restarts |
       enum: [llm, egress, tunnels, sessions, images, shared]
     BrokerSpec:
@@ -7946,9 +7164,6 @@ components:
           properties:
             id: {$ref: "#/components/schemas/Id"}
             title: {type: string}
-        deployment:
-          type: string
-          description: The deployment it is, by name, for a deployment's sandbox.
     InfrastructureKind:
       type: string
       enum: [sandbox, volume, image]
@@ -7969,7 +7184,7 @@ components:
           description: Its cost over the window, and an hour now; absent when it was not metered in it.
           allOf: [{$ref: "#/components/schemas/CostResource"}]
         ownedBy:
-          description: What it is part of, which manages it; absent for what is no session's, deployment's or workspace image.
+          description: What it is part of, which manages it; absent for what is no session's or workspace image.
           allOf: [{$ref: "#/components/schemas/InfrastructureOwner"}]
         madeBy: {type: string, description: "Who made it, and with which key."}
         createdAt: {type: string, format: date-time}
@@ -7980,7 +7195,6 @@ components:
       type: object
       properties:
         session: {$ref: "#/components/schemas/SessionRef"}
-        deployment: {type: string, description: The deployment's id.}
         image: {type: string, description: The workspace's image's id.}
     SessionRef:
       type: object
@@ -8410,12 +7624,12 @@ components:
           allOf: [{$ref: "#/components/schemas/Id"}]
           description: |
             The session whose machine sent it. Absent for a gateway entry of a
-            sandbox that is no session's — a deployment a person made, an
-            image's build, one the server never knew — which is its
-            person's to read, or an admin's when it is nobody's.
+            sandbox that is no session's — an image's build, one the server
+            never knew — which is its person's to read, or an admin's when it
+            is nobody's.
         owner:
           allOf: [{$ref: "#/components/schemas/Owner"}]
-          description: The session's owner, or the deployment's. Absent when it is nobody's.
+          description: The session's owner. Absent when it is nobody's.
         broker:
           type: string
           description: "The broker's name in the machine; empty for a call to this server's API (`kind: api`)."
@@ -8960,9 +8174,6 @@ components:
           type: array
           items: {type: string}
           description: Who may reach it by signing in at the gateway.
-        deploymentId:
-          type: string
-          description: In `GET /v1/tunnels`, the deployment it publishes.
         sessionId:
           type: string
           description: In `GET /v1/tunnels`, the session whose sandbox it publishes.

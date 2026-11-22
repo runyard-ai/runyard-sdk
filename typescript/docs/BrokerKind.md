@@ -1,7 +1,7 @@
 
 # BrokerKind
 
-| kind | what the session reaches | |---|---| | `llm` | the model providers, with their credentials — the server\'s own | | `egress` | the internet, one host at a time, as the session asks — the server\'s own | | `tunnels` | publishing its ports as addresses — the server\'s own | | `sessions` | this server, as its session — to start and talk to other sessions — the server\'s own | | `images` | this server, as its session — to build images from recipes, and deploy them: boot sealed sandboxes, read their logs, publish their ports — the server\'s own | | `shared` | a broker declared here, which the sandboxes daemon dials at its `url` with the machine\'s certificate, and this server serves nothing — so it keeps working while this server restarts | 
+| kind | what the session reaches | |---|---| | `llm` | the model providers, with their credentials — the server\'s own | | `egress` | the internet, one host at a time, as the session asks — the server\'s own | | `tunnels` | publishing its ports as addresses — the server\'s own | | `sessions` | this server, as its session — to start and talk to other sessions — the server\'s own | | `images` | this server, as its session — to build images from recipes — the server\'s own | | `shared` | a broker declared here, which the sandboxes daemon dials at its `url` with the machine\'s certificate, and this server serves nothing — so it keeps working while this server restarts | 
 
 ## Properties
 

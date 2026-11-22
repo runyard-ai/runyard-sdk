@@ -19,7 +19,7 @@ All URIs are relative to *http://127.0.0.1:8140*
 
 Let it go, and what it costs with it
 
-A sandbox is powered down and deleted, its disk kept as a volume of its own; a volume or an image is deleted. One already gone is gone.  A session\&#39;s, a deployment\&#39;s or one of the workspace\&#39;s images is refused, &#x60;409&#x60;: it is let go from there, as a deleted session lets its go. So are a volume a sandbox holds and an image a sandbox boots from, as the daemon refuses them.  A sandbox or a volume on a runner that is away is deleted once that runner is back: &#x60;202&#x60;, naming the runner, and it is listed &#x60;deleting&#x60; until then. 
+A sandbox is powered down and deleted, its disk kept as a volume of its own; a volume or an image is deleted. One already gone is gone.  A session\&#39;s or one of the workspace\&#39;s images is refused, &#x60;409&#x60;: it is let go from there, as a deleted session lets its go. So are a volume a sandbox holds and an image a sandbox boots from, as the daemon refuses them.  A sandbox or a volume on a runner that is away is deleted once that runner is back: &#x60;202&#x60;, naming the runner, and it is listed &#x60;deleting&#x60; until then. 
 
 ### Example
 
@@ -103,7 +103,7 @@ example().catch(console.error);
 
 One thing of the workspace\&#39;s sandboxes server, and what it costs
 
-One sandbox, volume or image of the workspace\&#39;s sandboxes server: what it is now, who made it, what it costs an hour and cost over the window, as the workspace\&#39;s costs say. One no longer there is said with what it cost.  One that is a session\&#39;s or a deployment\&#39;s, or one of the workspace\&#39;s own images, says so in &#x60;ownedBy&#x60;: it is managed from there. 
+One sandbox, volume or image of the workspace\&#39;s sandboxes server: what it is now, who made it, what it costs an hour and cost over the window, as the workspace\&#39;s costs say. One no longer there is said with what it cost.  One that is a session\&#39;s, or one of the workspace\&#39;s own images, says so in &#x60;ownedBy&#x60;: it is managed from there. 
 
 ### Example
 
@@ -272,7 +272,7 @@ example().catch(console.error);
 
 What the workspace\&#39;s infrastructure has cost
 
-What the workspace\&#39;s sandboxes, volumes, images and tunnels used and cost over a window, hour by hour or day by day, and what each costs an hour now: its sandboxes server\&#39;s, as runyard-sandboxes meters them every minute and keeps them, at the rates its configuration names. What is gone — a session deleted, a deployment let go — is listed with what it cost, &#x60;live: false&#x60;.  Its sessions\&#39; sandboxes and volumes say which session each is, and its deployments\&#39; sandboxes which deployment. An admin\&#39;s, with &#x60;sessions.read&#x60;, as the workspace\&#39;s usage is.  Not the sessions\&#39; calls to their models, which are &#x60;GET /v1/usage&#x60;. 
+What the workspace\&#39;s sandboxes, volumes, images and tunnels used and cost over a window, hour by hour or day by day, and what each costs an hour now: its sandboxes server\&#39;s, as runyard-sandboxes meters them every minute and keeps them, at the rates its configuration names. What is gone — a session deleted — is listed with what it cost, &#x60;live: false&#x60;.  Its sessions\&#39; sandboxes and volumes say which session each is. An admin\&#39;s, with &#x60;sessions.read&#x60;, as the workspace\&#39;s usage is.  Not the sessions\&#39; calls to their models, which are &#x60;GET /v1/usage&#x60;. 
 
 ### Example
 
@@ -422,7 +422,7 @@ This endpoint does not need any parameter.
 
 Stop a sandbox, which then costs only its disk
 
-Its machine is powered down, its disk kept: it costs its disk alone until it is started or deleted. A session\&#39;s or a deployment\&#39;s is refused, &#x60;409&#x60;, as delete refuses it. 
+Its machine is powered down, its disk kept: it costs its disk alone until it is started or deleted. A session\&#39;s is refused, &#x60;409&#x60;, as delete refuses it. 
 
 ### Example
 

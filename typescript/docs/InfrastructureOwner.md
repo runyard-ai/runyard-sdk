@@ -7,7 +7,6 @@
 Name | Type
 ------------ | -------------
 `session` | [SessionRef](SessionRef.md)
-`deployment` | string
 `image` | string
 
 ## Example
@@ -18,7 +17,6 @@ import type { InfrastructureOwner } from '@runyard-ai/runyard-sdk'
 // TODO: Update the object below with actual values
 const example = {
   "session": null,
-  "deployment": null,
   "image": null,
 } satisfies InfrastructureOwner
 

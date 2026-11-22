@@ -13,7 +13,6 @@ Name | Type
 `message` | string
 `description` | string
 `emails` | Array&lt;string&gt;
-`deploymentId` | string
 `sessionId` | string
 
 ## Example
@@ -30,7 +29,6 @@ const example = {
   "message": null,
   "description": null,
   "emails": null,
-  "deploymentId": null,
   "sessionId": null,
 } satisfies Tunnel
 

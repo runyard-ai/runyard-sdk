@@ -6,7 +6,7 @@ All URIs are relative to *http://127.0.0.1:8140*
 |------------- | ------------- | -------------|
 | [**buildImage**](ImagesApi.md#buildimage) | **POST** /v1/images | The image a recipe makes, built if it is not yet |
 | [**getImage**](ImagesApi.md#getimage) | **GET** /v1/images/{imageId} | An image, and where its build is |
-| [**listImages**](ImagesApi.md#listimages) | **GET** /v1/images | The images the caller\&#39;s profiles, sessions and deployments use |
+| [**listImages**](ImagesApi.md#listimages) | **GET** /v1/images | The images the caller\&#39;s profiles and sessions use |
 | [**putImageName**](ImagesApi.md#putimagename) | **PUT** /v1/images/{imageId}/name | Name an image, and say what it is for |
 | [**readImageLog**](ImagesApi.md#readimagelog) | **GET** /v1/images/{imageId}/log | What its build printed, from a byte offset |
 
@@ -18,7 +18,7 @@ All URIs are relative to *http://127.0.0.1:8140*
 
 The image a recipe makes, built if it is not yet
 
-A recipe is a Dockerfile of one stage. One that starts &#x60;FROM harness/&lt;name&gt;&#x60; — &#x60;FROM harness/claude-code&#x60; — is built on the image of that harness, which holds what a session of it runs: what a profile\&#39;s or a session\&#39;s &#x60;sandbox.recipe&#x60; is. One that starts &#x60;FROM&#x60; any other image is built on it, for a deployment (&#x60;POST /v1/deployments&#x60;). Every &#x60;RUN&#x60; says what it may reach, for that step alone — &#x60;--allow&#x3D;&lt;host&gt;,…&#x60; and &#x60;--broker&#x3D;&lt;name&gt;&#x60; — and nothing else is reached. The runyard-sandboxes daemon builds it, each step in a sandbox of its own.  An image is identified by what it is made of — the recipe, its harness\&#39;s image in place of &#x60;harness/&lt;name&gt;&#x60; — so the same recipe again is the same image: built once, &#x60;200&#x60; while it builds and after. A recipe whose build failed is built again. A server whose harness image changes builds every recipe again, on the new one.  A profile or a session whose &#x60;sandbox.recipe&#x60; is set asks for its image when it is saved; a session waits for it before its first wake.  Its &#x60;name&#x60;, and what it is for, are what people pick it by: they name the image as &#x60;PUT …/images/{imageId}/name&#x60; does. 
+A recipe is a Dockerfile of one stage. One that starts &#x60;FROM harness/&lt;name&gt;&#x60; — &#x60;FROM harness/claude-code&#x60; — is built on the image of that harness, which holds what a session of it runs: what a profile\&#39;s or a session\&#39;s &#x60;sandbox.recipe&#x60; is. One that starts &#x60;FROM&#x60; any other image is built on it, and a session boots it with its harness mounted beside it. Every &#x60;RUN&#x60; says what it may reach, for that step alone — &#x60;--allow&#x3D;&lt;host&gt;,…&#x60; and &#x60;--broker&#x3D;&lt;name&gt;&#x60; — and nothing else is reached. The runyard-sandboxes daemon builds it, each step in a sandbox of its own.  An image is identified by what it is made of — the recipe, its harness\&#39;s image in place of &#x60;harness/&lt;name&gt;&#x60; — so the same recipe again is the same image: built once, &#x60;200&#x60; while it builds and after. A recipe whose build failed is built again. A server whose harness image changes builds every recipe again, on the new one.  A profile or a session whose &#x60;sandbox.recipe&#x60; is set asks for its image when it is saved; a session waits for it before its first wake.  Its &#x60;name&#x60;, and what it is for, are what people pick it by: they name the image as &#x60;PUT …/images/{imageId}/name&#x60; does. 
 
 ### Example
 
@@ -174,9 +174,9 @@ example().catch(console.error);
 
 > ImageList listImages()
 
-The images the caller\&#39;s profiles, sessions and deployments use
+The images the caller\&#39;s profiles and sessions use
 
-An image is named by what it is made of and is nobody\&#39;s, so what a person is shown is what is theirs uses: their profiles\&#39; recipes, their sessions\&#39; images, and their deployments\&#39;, and the images they named. An admin is shown every image this server knows. Newest first. 
+An image is named by what it is made of and is nobody\&#39;s, so what a person is shown is what is theirs uses: their profiles\&#39; recipes, their sessions\&#39; images, and the images they named. An admin is shown every image this server knows. Newest first. 
 
 ### Example
 

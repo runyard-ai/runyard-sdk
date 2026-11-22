@@ -63,63 +63,6 @@ func (r *ConnectTokenResponse) Raw() []byte { return r.Body }
 func (r *GetWorkspaceCostsResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
-func (r *ListDeploymentApprovalsResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *RequestDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *GetDeploymentApprovalResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *ApproveDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *RefuseDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *ListDeploymentsResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *CreateDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *DeleteDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *GetDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *RunDeploymentCommandResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *ExtendDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *ReadDeploymentLogsResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *SealDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *StartDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *StopDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *ListDeploymentTunnelsResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *DeleteDeploymentTunnelResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *PutDeploymentTunnelResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *UnsealDeploymentResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
 func (r *ListHarnessesResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
@@ -256,15 +199,6 @@ func (r *GetWorkspaceQuotaResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *SearchSessionsResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *ListSecretsResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *DeleteSecretResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *PutSecretResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *GetSelfResponse) Raw() []byte { return r.Body }
