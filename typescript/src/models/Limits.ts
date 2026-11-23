@@ -28,7 +28,7 @@ import {
  */
 export interface Limits {
     /**
-     * 
+     * The most a session's machine may be given, as the server's --max-cpus, --max-memory and --max-disk say. A field that is absent has no limit.
      */
     maxResources: Resources;
     /**

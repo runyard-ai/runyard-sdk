@@ -2385,7 +2385,7 @@ type Limits struct {
 	MaxLineage   int   `json:"maxLineage"`
 	MaxPageLimit int   `json:"maxPageLimit"`
 
-	// MaxResources A sandbox's size. Absent fields are the default; more than `limits.maxResources` is `400`.
+	// MaxResources The most a session's machine may be given, as the server's --max-cpus, --max-memory and --max-disk say. A field that is absent has no limit.
 	MaxResources Resources `json:"maxResources"`
 
 	// UploadTtlSeconds How long an upload no turn names is kept.

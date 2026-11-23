@@ -6,7 +6,7 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "@runyard-ai/runyard-sdk": "0.61.2",
+    "@runyard-ai/runyard-sdk": "0.62.0",
     "express": "^5.1.0"
   }
 }

@@ -4587,7 +4587,9 @@ components:
       type: object
       required: [maxResources, maxPageLimit, eventsKept, changesKept, maxLineage, maxFileBytes, maxDepth, uploadTtlSeconds]
       properties:
-        maxResources: {$ref: "#/components/schemas/Resources"}
+        maxResources:
+          description: The most a session's machine may be given, as the server's --max-cpus, --max-memory and --max-disk say. A field that is absent has no limit.
+          allOf: [{$ref: "#/components/schemas/Resources"}]
         maxPageLimit: {type: integer, example: 500}
         eventsKept:
           type: integer
