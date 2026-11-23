@@ -10,7 +10,6 @@ Name | Type
 `name` | string
 `title` | string
 `namespace` | string
-`sandboxesCa` | string
 
 ## Example
 
@@ -23,7 +22,6 @@ const example = {
   "name": acme,
   "title": null,
   "namespace": null,
-  "sandboxesCa": null,
 } satisfies ConnectGrantWorkspace
 
 console.log(example)

@@ -1435,10 +1435,7 @@ type ConnectGrant struct {
 		// does not break. Read `name`.
 		// Deprecated:
 		Namespace string `json:"namespace"`
-
-		// SandboxesCa The CA (PEM) of the workspace's sandboxes server, which signs its sandboxes' identities.
-		SandboxesCa string `json:"sandboxesCa"`
-		Title       string `json:"title"`
+		Title     string `json:"title"`
 	} `json:"workspace"`
 }
 

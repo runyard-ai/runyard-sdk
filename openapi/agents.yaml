@@ -871,12 +871,9 @@ paths:
         approved an application may hold. The link is recorded, with who
         approved it: listed and revoked at `/v1/connect/links`.
 
-        `workspace.sandboxesCa` is the certificate authority of the
-        workspace's runyard-sandboxes server, read from it now with the
-        workspace's key: an application serving its own broker
-        to the workspace's sessions trusts it to know their sandboxes. A CA
-        that cannot be read fails the exchange (`500 server_error`) before
-        anything is minted.
+        An application serving its own broker to the workspace's sessions
+        knows their sandboxes by `GET /v1/trust-bundle`, which it follows
+        as it rotates, and not by anything handed here once.
 
         Errors are OAuth's (RFC 6749 §5.2): `401 invalid_client` for an
         unknown application or a wrong secret; `400 invalid_grant` for a
@@ -5305,7 +5302,7 @@ components:
           example: lnk_4f7k2m9q1x8c
         workspace:
           type: object
-          required: [id, name, title, namespace, sandboxesCa]
+          required: [id, name, title, namespace]
           properties:
             id:
               type: string
@@ -5321,9 +5318,6 @@ components:
                 workspaces; since each has a server of its own there is none,
                 and it is kept, as the name, so that a client reading it
                 does not break. Read `name`.
-            sandboxesCa:
-              type: string
-              description: The CA (PEM) of the workspace's sandboxes server, which signs its sandboxes' identities.
         sessions:
           type: object
           required: [url, publicUrl, key]

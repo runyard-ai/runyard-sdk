@@ -1,6 +1,6 @@
 {
   "name": "@runyard-ai/runyard-sdk",
-  "version": "0.61.1",
+  "version": "0.61.2",
   "description": "The TypeScript client of runyard-agents",
   "repository": {
     "type": "git",

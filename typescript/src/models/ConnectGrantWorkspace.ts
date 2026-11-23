@@ -41,10 +41,6 @@ export interface ConnectGrantWorkspace {
      * @deprecated
      */
     namespace: string;
-    /**
-     * The CA (PEM) of the workspace's sandboxes server, which signs its sandboxes' identities.
-     */
-    sandboxesCa: string;
 }
 
 /**
@@ -55,7 +51,6 @@ export function instanceOfConnectGrantWorkspace(value: object): value is Connect
     if (!('name' in value) || value['name'] === undefined) return false;
     if (!('title' in value) || value['title'] === undefined) return false;
     if (!('namespace' in value) || value['namespace'] === undefined) return false;
-    if (!('sandboxesCa' in value) || value['sandboxesCa'] === undefined) return false;
     return true;
 }
 
@@ -73,7 +68,6 @@ export function ConnectGrantWorkspaceFromJSONTyped(json: any, ignoreDiscriminato
         'name': json['name'],
         'title': json['title'],
         'namespace': json['namespace'],
-        'sandboxesCa': json['sandboxesCa'],
     };
 }
 
@@ -92,7 +86,6 @@ export function ConnectGrantWorkspaceToJSONTyped(value?: ConnectGrantWorkspace |
         'name': value['name'],
         'title': value['title'],
         'namespace': value['namespace'],
-        'sandboxesCa': value['sandboxesCa'],
     };
 }
 
