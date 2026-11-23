@@ -11,6 +11,7 @@ All URIs are relative to *http://127.0.0.1:8140*
 | [**getSelf**](MetaApi.md#getself) | **GET** /v1/self | The key, person, session or platform calling |
 | [**getSelfDirectory**](MetaApi.md#getselfdirectory) | **GET** /v1/self/directory | The orgs and workspaces the caller\&#39;s person may reach |
 | [**getSelfPicture**](MetaApi.md#getselfpicture) | **GET** /v1/self/picture | The person\&#39;s profile picture |
+| [**getTrustBundle**](MetaApi.md#gettrustbundle) | **GET** /v1/trust-bundle | The workspace\&#39;s trust bundle, for any broker serving its sandboxes |
 | [**getWorkspaceSettings**](MetaApi.md#getworkspacesettings) | **GET** /v1/settings | The workspace\&#39;s settings |
 | [**health**](MetaApi.md#health) | **GET** /healthz | Whether the server is up |
 | [**listNotices**](MetaApi.md#listnotices) | **GET** /v1/self/notices | What the caller should know and act on |
@@ -501,6 +502,76 @@ example().catch(console.error);
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
 | **404** | Nothing by that id. |  -  |
 | **502** | Somebody else\&#39;s server answered badly, or not at all (&#x60;provider_error&#x60;, &#x60;upstream_error&#x60;). |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## getTrustBundle
+
+> GetTrustBundle200Response getTrustBundle(ifNoneMatch)
+
+The workspace\&#39;s trust bundle, for any broker serving its sandboxes
+
+What a broker verifies the workspace\&#39;s sandboxes with: runyard-sandboxes\&#39; &#x60;GET /v1/trust-bundle&#x60;, passed through as it is, for a broker outside the workspace\&#39;s cluster, an application\&#39;s or a customer\&#39;s own, which reaches this server and not the sandboxes server. A SPIFFE bundle (a JWK Set): certificates and public keys, and no runner named, so it asks for no key.  Its workspace roots rotate daily, the next listed twelve hours before it signs, so a broker fetches it again at &#x60;spiffe_refresh_hint&#x60; (five minutes) and holds every CA it lists; a runner added later changes nothing it trusts. &#x60;spiffe_sequence&#x60; only moves forward. Conditional: asked with the &#x60;ETag&#x60; it was answered, an unchanged bundle is &#x60;304&#x60;. 
+
+### Example
+
+```ts
+import {
+  Configuration,
+  MetaApi,
+} from '@runyard-ai/runyard-sdk';
+import type { GetTrustBundleRequest } from '@runyard-ai/runyard-sdk';
+
+async function example() {
+  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
+  const api = new MetaApi();
+
+  const body = {
+    // string | The ETag of the bundle the caller holds. (optional)
+    ifNoneMatch: ifNoneMatch_example,
+  } satisfies GetTrustBundleRequest;
+
+  try {
+    const data = await api.getTrustBundle(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **ifNoneMatch** | `string` | The ETag of the bundle the caller holds. | [Optional] [Defaults to `undefined`] |
+
+### Return type
+
+[**GetTrustBundle200Response**](GetTrustBundle200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | The trust bundle. |  * ETag - The sandboxes server\&#39;s, naming the bundle\&#39;s sequence. <br>  |
+| **304** | Still the bundle &#x60;If-None-Match&#x60; names. No body. |  -  |
+| **501** | The sandboxes server publishes no trust bundle (one before runyard-sandboxes 0.52.0). |  -  |
+| **502** | The sandboxes server could not be reached, or answered what is not a trust bundle. Code &#x60;upstream_error&#x60;. |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

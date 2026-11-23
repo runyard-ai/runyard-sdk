@@ -7,7 +7,7 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@runyard-ai/runyard-react": "0.61.0",
+    "@runyard-ai/runyard-react": "0.61.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

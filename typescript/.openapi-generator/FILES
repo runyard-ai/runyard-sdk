@@ -78,6 +78,7 @@ docs/FiringPage.md
 docs/ForkRequest.md
 docs/GapError.md
 docs/GapErrorError.md
+docs/GetTrustBundle200Response.md
 docs/Harness.md
 docs/HarnessFeature.md
 docs/HarnessModel.md
@@ -358,6 +359,7 @@ src/models/FiringPage.ts
 src/models/ForkRequest.ts
 src/models/GapError.ts
 src/models/GapErrorError.ts
+src/models/GetTrustBundle200Response.ts
 src/models/Harness.ts
 src/models/HarnessFeature.ts
 src/models/HarnessModel.ts

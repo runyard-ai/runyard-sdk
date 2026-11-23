@@ -5238,6 +5238,12 @@ type ListFiringsParams struct {
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// GetTrustBundleParams defines parameters for GetTrustBundle.
+type GetTrustBundleParams struct {
+	// IfNoneMatch The ETag of the bundle the caller holds.
+	IfNoneMatch *string `json:"If-None-Match,omitempty"`
+}
+
 // CreateUploadParams defines parameters for CreateUpload.
 type CreateUploadParams struct {
 	// Name The file's name, without a slash. Where it goes on the session's disk.
@@ -6601,6 +6607,9 @@ type ClientInterface interface {
 
 	// ListFirings request
 	ListFirings(ctx context.Context, triggerId TriggerId, params *ListFiringsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetTrustBundle request
+	GetTrustBundle(ctx context.Context, params *GetTrustBundleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOwnTunnels request
 	ListOwnTunnels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8589,6 +8598,18 @@ func (c *Client) FireTrigger(ctx context.Context, triggerId TriggerId, body Fire
 
 func (c *Client) ListFirings(ctx context.Context, triggerId TriggerId, params *ListFiringsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListFiringsRequest(c.Server, triggerId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTrustBundle(ctx context.Context, params *GetTrustBundleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTrustBundleRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -14527,6 +14548,48 @@ func NewListFiringsRequest(server string, triggerId TriggerId, params *ListFirin
 	return req, nil
 }
 
+// NewGetTrustBundleRequest generates requests for GetTrustBundle
+func NewGetTrustBundleRequest(server string, params *GetTrustBundleParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/trust-bundle")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.IfNoneMatch != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "If-None-Match", runtime.ParamLocationHeader, *params.IfNoneMatch)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("If-None-Match", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewListOwnTunnelsRequest generates requests for ListOwnTunnels
 func NewListOwnTunnelsRequest(server string) (*http.Request, error) {
 	var err error
@@ -15406,6 +15469,9 @@ type ClientWithResponsesInterface interface {
 
 	// ListFiringsWithResponse request
 	ListFiringsWithResponse(ctx context.Context, triggerId TriggerId, params *ListFiringsParams, reqEditors ...RequestEditorFn) (*ListFiringsResponse, error)
+
+	// GetTrustBundleWithResponse request
+	GetTrustBundleWithResponse(ctx context.Context, params *GetTrustBundleParams, reqEditors ...RequestEditorFn) (*GetTrustBundleResponse, error)
 
 	// ListOwnTunnelsWithResponse request
 	ListOwnTunnelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOwnTunnelsResponse, error)
@@ -18703,6 +18769,36 @@ func (r ListFiringsResponse) StatusCode() int {
 	return 0
 }
 
+type GetTrustBundleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Keys                 []map[string]interface{} `json:"keys"`
+		RunyardTenant        *string                  `json:"runyard_tenant,omitempty"`
+		SpiffeRefreshHint    *int64                   `json:"spiffe_refresh_hint,omitempty"`
+		SpiffeSequence       *int64                   `json:"spiffe_sequence,omitempty"`
+		AdditionalProperties map[string]interface{}   `json:"-"`
+	}
+	JSON501 *Error
+	JSON502 *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTrustBundleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTrustBundleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListOwnTunnelsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -20350,6 +20446,15 @@ func (c *ClientWithResponses) ListFiringsWithResponse(ctx context.Context, trigg
 		return nil, err
 	}
 	return ParseListFiringsResponse(rsp)
+}
+
+// GetTrustBundleWithResponse request returning *GetTrustBundleResponse
+func (c *ClientWithResponses) GetTrustBundleWithResponse(ctx context.Context, params *GetTrustBundleParams, reqEditors ...RequestEditorFn) (*GetTrustBundleResponse, error) {
+	rsp, err := c.GetTrustBundle(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTrustBundleResponse(rsp)
 }
 
 // ListOwnTunnelsWithResponse request returning *ListOwnTunnelsResponse
@@ -26906,6 +27011,52 @@ func ParseListFiringsResponse(rsp *http.Response) (*ListFiringsResponse, error) 
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetTrustBundleResponse parses an HTTP response from a GetTrustBundleWithResponse call
+func ParseGetTrustBundleResponse(rsp *http.Response) (*GetTrustBundleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTrustBundleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Keys                 []map[string]interface{} `json:"keys"`
+			RunyardTenant        *string                  `json:"runyard_tenant,omitempty"`
+			SpiffeRefreshHint    *int64                   `json:"spiffe_refresh_hint,omitempty"`
+			SpiffeSequence       *int64                   `json:"spiffe_sequence,omitempty"`
+			AdditionalProperties map[string]interface{}   `json:"-"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 501:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON501 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON502 = &dest
 
 	}
 

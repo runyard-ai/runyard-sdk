@@ -384,6 +384,9 @@ func (r *FireTriggerResponse) Raw() []byte { return r.Body }
 func (r *ListFiringsResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
+func (r *GetTrustBundleResponse) Raw() []byte { return r.Body }
+
+// Raw is the body the answer was read from.
 func (r *ListOwnTunnelsResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.

@@ -710,6 +710,64 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Error"}
+  /v1/trust-bundle:
+    get:
+      operationId: getTrustBundle
+      x-public: true
+      tags: [Meta]
+      summary: The workspace's trust bundle, for any broker serving its sandboxes
+      security: []
+      description: |
+        What a broker verifies the workspace's sandboxes with: runyard-sandboxes'
+        `GET /v1/trust-bundle`, passed through as it is, for a broker outside
+        the workspace's cluster, an application's or a customer's own, which
+        reaches this server and not the sandboxes server. A SPIFFE bundle (a
+        JWK Set): certificates and public keys, and no runner named, so it
+        asks for no key.
+
+        Its workspace roots rotate daily, the next listed twelve hours before
+        it signs, so a broker fetches it again at `spiffe_refresh_hint`
+        (five minutes) and holds every CA it lists; a runner added later
+        changes nothing it trusts. `spiffe_sequence` only moves forward.
+        Conditional: asked with the `ETag` it was answered, an unchanged
+        bundle is `304`.
+      parameters:
+        - name: If-None-Match
+          in: header
+          description: The ETag of the bundle the caller holds.
+          schema: {type: string}
+      responses:
+        "200":
+          description: The trust bundle.
+          headers:
+            ETag:
+              description: The sandboxes server's, naming the bundle's sequence.
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [keys]
+                properties:
+                  keys:
+                    type: array
+                    items: {type: object, additionalProperties: true}
+                  spiffe_sequence: {type: integer, format: int64}
+                  spiffe_refresh_hint: {type: integer, format: int64}
+                  runyard_tenant: {type: string}
+                additionalProperties: true
+        "304":
+          description: Still the bundle `If-None-Match` names. No body.
+        "501":
+          description: The sandboxes server publishes no trust bundle (one before runyard-sandboxes 0.52.0).
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "502":
+          description: The sandboxes server could not be reached, or answered what is not a trust bundle. Code `upstream_error`.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
   /v1/connect/consent:
     get:
       operationId: getConnectConsent

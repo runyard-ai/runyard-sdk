@@ -76,6 +76,7 @@ export * from './FiringPage.js';
 export * from './ForkRequest.js';
 export * from './GapError.js';
 export * from './GapErrorError.js';
+export * from './GetTrustBundle200Response.js';
 export * from './Harness.js';
 export * from './HarnessFeature.js';
 export * from './HarnessModel.js';

@@ -24,6 +24,11 @@ import {
     ConfirmSignInToJSON,
 } from '../models/ConfirmSignIn.js';
 import {
+    type GetTrustBundle200Response,
+    GetTrustBundle200ResponseFromJSON,
+    GetTrustBundle200ResponseToJSON,
+} from '../models/GetTrustBundle200Response.js';
+import {
     type Info,
     InfoFromJSON,
     InfoToJSON,
@@ -59,6 +64,13 @@ export interface ConfirmSignInRequest {
 export interface GetSelfPictureRequest {
     /**
      * 
+     */
+    ifNoneMatch?: string;
+}
+
+export interface GetTrustBundleRequest {
+    /**
+     * The ETag of the bundle the caller holds.
      */
     ifNoneMatch?: string;
 }
@@ -239,6 +251,30 @@ export interface MetaApiInterface {
      * The person\'s profile picture
      */
     getSelfPicture(requestParameters: GetSelfPictureRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.HttpFile>;
+
+    /**
+     * Creates request options for getTrustBundle without sending the request
+     * @param {string} [ifNoneMatch] The ETag of the bundle the caller holds.
+     * @throws {RequiredError}
+     * @memberof MetaApiInterface
+     */
+    getTrustBundleRequestOpts(requestParameters: GetTrustBundleRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     * What a broker verifies the workspace\'s sandboxes with: runyard-sandboxes\' `GET /v1/trust-bundle`, passed through as it is, for a broker outside the workspace\'s cluster, an application\'s or a customer\'s own, which reaches this server and not the sandboxes server. A SPIFFE bundle (a JWK Set): certificates and public keys, and no runner named, so it asks for no key.  Its workspace roots rotate daily, the next listed twelve hours before it signs, so a broker fetches it again at `spiffe_refresh_hint` (five minutes) and holds every CA it lists; a runner added later changes nothing it trusts. `spiffe_sequence` only moves forward. Conditional: asked with the `ETag` it was answered, an unchanged bundle is `304`. 
+     * @summary The workspace\'s trust bundle, for any broker serving its sandboxes
+     * @param {string} [ifNoneMatch] The ETag of the bundle the caller holds.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof MetaApiInterface
+     */
+    getTrustBundleRaw(requestParameters: GetTrustBundleRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GetTrustBundle200Response>>;
+
+    /**
+     * What a broker verifies the workspace\'s sandboxes with: runyard-sandboxes\' `GET /v1/trust-bundle`, passed through as it is, for a broker outside the workspace\'s cluster, an application\'s or a customer\'s own, which reaches this server and not the sandboxes server. A SPIFFE bundle (a JWK Set): certificates and public keys, and no runner named, so it asks for no key.  Its workspace roots rotate daily, the next listed twelve hours before it signs, so a broker fetches it again at `spiffe_refresh_hint` (five minutes) and holds every CA it lists; a runner added later changes nothing it trusts. `spiffe_sequence` only moves forward. Conditional: asked with the `ETag` it was answered, an unchanged bundle is `304`. 
+     * The workspace\'s trust bundle, for any broker serving its sandboxes
+     */
+    getTrustBundle(requestParameters: GetTrustBundleRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GetTrustBundle200Response>;
 
     /**
      * Creates request options for getWorkspaceSettings without sending the request
@@ -739,6 +775,49 @@ export class MetaApi extends runtime.BaseAPI implements MetaApiInterface {
      */
     async getSelfPicture(requestParameters: GetSelfPictureRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.HttpFile> {
         const response = await this.getSelfPictureRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getTrustBundle without sending the request
+     */
+    async getTrustBundleRequestOpts(requestParameters: GetTrustBundleRequest): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['ifNoneMatch'] != null) {
+            headerParameters['If-None-Match'] = String(requestParameters['ifNoneMatch']);
+        }
+
+
+        let urlPath = `/v1/trust-bundle`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * What a broker verifies the workspace\'s sandboxes with: runyard-sandboxes\' `GET /v1/trust-bundle`, passed through as it is, for a broker outside the workspace\'s cluster, an application\'s or a customer\'s own, which reaches this server and not the sandboxes server. A SPIFFE bundle (a JWK Set): certificates and public keys, and no runner named, so it asks for no key.  Its workspace roots rotate daily, the next listed twelve hours before it signs, so a broker fetches it again at `spiffe_refresh_hint` (five minutes) and holds every CA it lists; a runner added later changes nothing it trusts. `spiffe_sequence` only moves forward. Conditional: asked with the `ETag` it was answered, an unchanged bundle is `304`. 
+     * The workspace\'s trust bundle, for any broker serving its sandboxes
+     */
+    async getTrustBundleRaw(requestParameters: GetTrustBundleRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GetTrustBundle200Response>> {
+        const requestOptions = await this.getTrustBundleRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => GetTrustBundle200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * What a broker verifies the workspace\'s sandboxes with: runyard-sandboxes\' `GET /v1/trust-bundle`, passed through as it is, for a broker outside the workspace\'s cluster, an application\'s or a customer\'s own, which reaches this server and not the sandboxes server. A SPIFFE bundle (a JWK Set): certificates and public keys, and no runner named, so it asks for no key.  Its workspace roots rotate daily, the next listed twelve hours before it signs, so a broker fetches it again at `spiffe_refresh_hint` (five minutes) and holds every CA it lists; a runner added later changes nothing it trusts. `spiffe_sequence` only moves forward. Conditional: asked with the `ETag` it was answered, an unchanged bundle is `304`. 
+     * The workspace\'s trust bundle, for any broker serving its sandboxes
+     */
+    async getTrustBundle(requestParameters: GetTrustBundleRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GetTrustBundle200Response> {
+        const response = await this.getTrustBundleRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
