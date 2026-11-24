@@ -54,8 +54,7 @@ export interface WorkspacePolicy {
      * host (`registry.npmjs.org`) or a leading `*.` for everything
      * under a domain (`*.pypi.org`, which does not cover `pypi.org`
      * itself); no other wildcard, address, range, scheme, port or
-     * path, and no wildcard over a public suffix (`*.com`). Image
-     * builds are not given them.
+     * path, and no wildcard over a public suffix (`*.com`).
      * 
      */
     egress?: Array<string>;

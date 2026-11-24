@@ -10,7 +10,8 @@ Name | Type
 `kind` | [ProviderKind](ProviderKind.md)
 `title` | string
 `secret` | string
-`baseUrl` | string
+`placement` | [Placement](Placement.md)
+`models` | [Array&lt;ModelWrite&gt;](ModelWrite.md)
 
 ## Example
 
@@ -23,7 +24,8 @@ const example = {
   "kind": null,
   "title": null,
   "secret": null,
-  "baseUrl": null,
+  "placement": null,
+  "models": null,
 } satisfies ProviderApiKey
 
 console.log(example)

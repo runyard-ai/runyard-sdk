@@ -14,58 +14,72 @@
 
 import { mapValues } from '../runtime.js';
 /**
- * 
+ * A model a provider offers, as its admin declares it.
  * @export
- * @interface ExchangeCost
+ * @interface ModelWrite
  */
-export interface ExchangeCost {
+export interface ModelWrite {
     /**
-     * What the call's tokens cost at the provider's list prices.
+     * What a turn names to run on it, as the provider spells it.
      */
-    usd: number;
+    id: string;
     /**
-     * False when the server has no price for the model, and `usd` is 0.
+     * Its name to show; its `id` when absent.
      */
-    priced: boolean;
+    title?: string;
+    /**
+     * How many tokens its context holds — what opencode is told, so
+     * that it compacts in time: a server of chat completions says
+     * nothing of it.
+     * 
+     */
+    contextWindow?: number;
+    /**
+     * How many tokens one answer may be.
+     */
+    maxOutput?: number;
 }
 
 /**
- * Check if a given object implements the ExchangeCost interface.
+ * Check if a given object implements the ModelWrite interface.
  */
-export function instanceOfExchangeCost(value: object): value is ExchangeCost {
-    if (!('usd' in value) || value['usd'] === undefined) return false;
-    if (!('priced' in value) || value['priced'] === undefined) return false;
+export function instanceOfModelWrite(value: object): value is ModelWrite {
+    if (!('id' in value) || value['id'] === undefined) return false;
     return true;
 }
 
-export function ExchangeCostFromJSON(json: any): ExchangeCost {
-    return ExchangeCostFromJSONTyped(json, false);
+export function ModelWriteFromJSON(json: any): ModelWrite {
+    return ModelWriteFromJSONTyped(json, false);
 }
 
-export function ExchangeCostFromJSONTyped(json: any, ignoreDiscriminator: boolean): ExchangeCost {
+export function ModelWriteFromJSONTyped(json: any, ignoreDiscriminator: boolean): ModelWrite {
     if (json == null) {
         return json;
     }
     return {
         
-        'usd': json['usd'],
-        'priced': json['priced'],
+        'id': json['id'],
+        'title': json['title'] == null ? undefined : json['title'],
+        'contextWindow': json['contextWindow'] == null ? undefined : json['contextWindow'],
+        'maxOutput': json['maxOutput'] == null ? undefined : json['maxOutput'],
     };
 }
 
-export function ExchangeCostToJSON(json: any): ExchangeCost {
-    return ExchangeCostToJSONTyped(json, false);
+export function ModelWriteToJSON(json: any): ModelWrite {
+    return ModelWriteToJSONTyped(json, false);
 }
 
-export function ExchangeCostToJSONTyped(value?: ExchangeCost | null, ignoreDiscriminator: boolean = false): any {
+export function ModelWriteToJSONTyped(value?: ModelWrite | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
 
     return {
         
-        'usd': value['usd'],
-        'priced': value['priced'],
+        'id': value['id'],
+        'title': value['title'],
+        'contextWindow': value['contextWindow'],
+        'maxOutput': value['maxOutput'],
     };
 }
 

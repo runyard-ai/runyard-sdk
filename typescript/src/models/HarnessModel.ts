@@ -32,19 +32,19 @@ export interface HarnessModel {
      */
     id: string;
     /**
-     * The provider's name for it; its `id` when the provider has none.
+     * Its name to show; its `id` when none was given.
      */
     title: string;
     /**
-     * How many tokens its context holds, when the provider says.
+     * How many tokens its context holds, when it was said.
      */
     contextWindow?: number;
     /**
-     * How many tokens one answer may be, when the provider says.
+     * How many tokens one answer may be, when it was said.
      */
     maxOutput?: number;
     /**
-     * When the provider released it, when it says.
+     * When it was released, when it was said.
      */
     createdAt?: Date;
     /**

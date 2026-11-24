@@ -13,6 +13,21 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { Placement } from './Placement.js';
+import {
+    PlacementFromJSON,
+    PlacementFromJSONTyped,
+    PlacementToJSON,
+    PlacementToJSONTyped,
+} from './Placement.js';
+import type { ModelWrite } from './ModelWrite.js';
+import {
+    ModelWriteFromJSON,
+    ModelWriteFromJSONTyped,
+    ModelWriteToJSON,
+    ModelWriteToJSONTyped,
+} from './ModelWrite.js';
+
 /**
  * 
  * @export
@@ -35,6 +50,14 @@ export interface ProviderUpdate {
      * Replaces them all; each a person of the workspace, or it is `400`.
      */
     users?: Array<string>;
+    /**
+     * Replaces where it runs (`Provider.placement`); no labels is any runner.
+     */
+    placement?: Placement;
+    /**
+     * Replaces the models it offers (`Provider.models`); empty is none.
+     */
+    models?: Array<ModelWrite>;
 }
 
 /**
@@ -58,6 +81,8 @@ export function ProviderUpdateFromJSONTyped(json: any, ignoreDiscriminator: bool
         'isDefault': json['isDefault'] == null ? undefined : json['isDefault'],
         'everyone': json['everyone'] == null ? undefined : json['everyone'],
         'users': json['users'] == null ? undefined : json['users'],
+        'placement': json['placement'] == null ? undefined : PlacementFromJSON(json['placement']),
+        'models': json['models'] == null ? undefined : ((json['models'] as Array<any>).map(ModelWriteFromJSON)),
     };
 }
 
@@ -76,6 +101,8 @@ export function ProviderUpdateToJSONTyped(value?: ProviderUpdate | null, ignoreD
         'isDefault': value['isDefault'],
         'everyone': value['everyone'],
         'users': value['users'],
+        'placement': PlacementToJSON(value['placement']),
+        'models': value['models'] == null ? undefined : ((value['models'] as Array<any>).map(ModelWriteToJSON)),
     };
 }
 

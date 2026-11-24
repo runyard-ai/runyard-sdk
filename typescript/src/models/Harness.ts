@@ -64,10 +64,8 @@ export interface Harness {
      */
     providerTypes: Array<ProviderType>;
     /**
-     * What the providers of those types listed when last asked,
-     * each once, newest first (`createdAt`; those without one last,
-     * by `id`). Empty while there is no such provider, or none has
-     * answered yet.
+     * What the providers of those types declare, each once, in the
+     * order they declare them. Empty while none declares any.
      * 
      */
     models: Array<HarnessModel>;
@@ -80,9 +78,10 @@ export interface Harness {
     defaultProvider?: string;
     /**
      * What a session on it runs when it names no model: the server's
-     * configured model for the harness, if `defaultProvider` lists
-     * it or has listed nothing yet, or else the newest of
-     * `defaultProvider`'s models. Absent when there is neither.
+     * configured model for the harness, if `defaultProvider`
+     * declares it or declares none, or else the first of
+     * `defaultProvider`'s models. Absent when there is neither, and
+     * the harness runs its own default.
      * 
      */
     defaultModel?: string;
@@ -105,9 +104,6 @@ export interface Harness {
      *   events, `…/alarms`, and `nextAlarmAt`.
      * - `partials`: what the session writes streams live, as partials
      *   of the events stream, before it is an event.
-     * - `title`: the session's title is summarized from its
-     *   conversation, as its harness would — `…/retitle`, and
-     *   `autoTitle`.
      * 
      * An operation of a feature the session's harness lacks is `400
      * not_supported` — not `409`, which is a session that could do it

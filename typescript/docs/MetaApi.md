@@ -7,7 +7,6 @@ All URIs are relative to *http://127.0.0.1:8140*
 | [**confirmSignIn**](MetaApi.md#confirmsignin) | **POST** /v1/signin/confirm | Confirm it is you, with your password again |
 | [**getContract**](MetaApi.md#getcontract) | **GET** /v1/openapi.yaml | This document, as the server serves it |
 | [**getInfo**](MetaApi.md#getinfo) | **GET** /v1/info | The workspace, and the server\&#39;s defaults and limits |
-| [**getPreferences**](MetaApi.md#getpreferences) | **GET** /v1/self/preferences | The person\&#39;s own choices |
 | [**getSelf**](MetaApi.md#getself) | **GET** /v1/self | The key, person, session or platform calling |
 | [**getSelfDirectory**](MetaApi.md#getselfdirectory) | **GET** /v1/self/directory | The orgs and workspaces the caller\&#39;s person may reach |
 | [**getSelfPicture**](MetaApi.md#getselfpicture) | **GET** /v1/self/picture | The person\&#39;s profile picture |
@@ -15,7 +14,6 @@ All URIs are relative to *http://127.0.0.1:8140*
 | [**getWorkspaceSettings**](MetaApi.md#getworkspacesettings) | **GET** /v1/settings | The workspace\&#39;s settings |
 | [**health**](MetaApi.md#health) | **GET** /healthz | Whether the server is up |
 | [**listNotices**](MetaApi.md#listnotices) | **GET** /v1/self/notices | What the caller should know and act on |
-| [**putPreferences**](MetaApi.md#putpreferences) | **PUT** /v1/self/preferences | Change the person\&#39;s own choices |
 | [**putWorkspaceSettings**](MetaApi.md#putworkspacesettings) | **PUT** /v1/settings | Change the workspace\&#39;s settings |
 
 
@@ -217,75 +215,6 @@ This endpoint does not need any parameter.
 |-------------|-------------|------------------|
 | **200** | The workspace, defaults and limits. |  -  |
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
-## getPreferences
-
-> Preferences getPreferences()
-
-The person\&#39;s own choices
-
-What the caller\&#39;s person chose for themselves, as opposed to what the workspace\&#39;s admins chose for everybody (&#x60;/v1/settings&#x60;): a key\&#39;s are its person\&#39;s. A person who never chose has the defaults. Needs &#x60;sessions.read&#x60;, and &#x60;sessions.write&#x60; to change them: they are of the person\&#39;s sessions. A session calling through its brokers has none: &#x60;403&#x60;. 
-
-### Example
-
-```ts
-import {
-  Configuration,
-  MetaApi,
-} from '@runyard-ai/runyard-sdk';
-import type { GetPreferencesRequest } from '@runyard-ai/runyard-sdk';
-
-async function example() {
-  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: console
-    apiKey: "YOUR API KEY",
-    // Configure HTTP bearer authorization: apiKey
-    accessToken: "YOUR BEARER TOKEN",
-    // Configure HTTP bearer authorization: platform
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new MetaApi(config);
-
-  try {
-    const data = await api.getPreferences();
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-This endpoint does not need any parameter.
-
-### Return type
-
-[**Preferences**](Preferences.md)
-
-### Authorization
-
-[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** | The preferences. |  -  |
-| **401** | No key, or not a working one — one answer for every cause. |  -  |
-| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
@@ -766,84 +695,6 @@ This endpoint does not need any parameter.
 |-------------|-------------|------------------|
 | **200** | The notices, the errors first. |  -  |
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
-## putPreferences
-
-> Preferences putPreferences(preferences)
-
-Change the person\&#39;s own choices
-
-Replaces them all, as &#x60;PUT /v1/settings&#x60; does the workspace\&#39;s.
-
-### Example
-
-```ts
-import {
-  Configuration,
-  MetaApi,
-} from '@runyard-ai/runyard-sdk';
-import type { PutPreferencesRequest } from '@runyard-ai/runyard-sdk';
-
-async function example() {
-  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: console
-    apiKey: "YOUR API KEY",
-    // Configure HTTP bearer authorization: apiKey
-    accessToken: "YOUR BEARER TOKEN",
-    // Configure HTTP bearer authorization: platform
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new MetaApi(config);
-
-  const body = {
-    // Preferences
-    preferences: ...,
-  } satisfies PutPreferencesRequest;
-
-  try {
-    const data = await api.putPreferences(body);
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **preferences** | [Preferences](Preferences.md) |  | |
-
-### Return type
-
-[**Preferences**](Preferences.md)
-
-### Authorization
-
-[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
-
-### HTTP request headers
-
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** | The preferences, changed. |  -  |
-| **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
-| **401** | No key, or not a working one — one answer for every cause. |  -  |
-| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

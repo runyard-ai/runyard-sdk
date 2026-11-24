@@ -15,18 +15,14 @@ Name | Type
 `users` | Array&lt;string&gt;
 `type` | [ProviderType](ProviderType.md)
 `kind` | [ProviderKind](ProviderKind.md)
-`baseUrl` | string
 `status` | string
 `account` | string
 `plan` | string
 `isDefault` | boolean
 `expiresAt` | Date
 `renewedAt` | Date
-`checkedAt` | Date
-`limits` | [RateLimits](RateLimits.md)
+`placement` | [Placement](Placement.md)
 `models` | [Array&lt;Model&gt;](Model.md)
-`modelsReadAt` | Date
-`modelsError` | string
 
 ## Example
 
@@ -43,18 +39,14 @@ const example = {
   "users": null,
   "type": null,
   "kind": null,
-  "baseUrl": http://192.168.1.20:8080,
   "status": null,
   "account": null,
   "plan": max,
   "isDefault": null,
   "expiresAt": null,
   "renewedAt": null,
-  "checkedAt": null,
-  "limits": null,
+  "placement": null,
   "models": null,
-  "modelsReadAt": null,
-  "modelsError": null,
 } satisfies Provider
 
 console.log(example)

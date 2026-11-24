@@ -49,14 +49,15 @@ export interface ProfileSpec {
      */
     provider?: string;
     /**
-     * One of its provider's `models`, as the provider spells it. When
-     * absent, and nothing it is started from names one: that of the
-     * session that started it, as it runs now, if on the same harness
-     * and its provider lists it; else the server's configured model
-     * for the harness, if its provider lists it; else its provider's
-     * newest. One the provider has not
-     * listed is not refused here — the provider is the judge, at the
-     * turn.
+     * The model, as the provider spells it: one of its provider's
+     * `models`, or any other. When absent, and nothing it is started
+     * from names one: that of the session that started it, as it runs
+     * now, if on the same harness and its provider declares it or
+     * declares none; else
+     * the server's configured model for the harness, if its provider
+     * declares it or declares none; else its provider's first. One
+     * the provider does not declare is not refused here — the
+     * provider is the judge, at the turn.
      * 
      */
     model?: string;

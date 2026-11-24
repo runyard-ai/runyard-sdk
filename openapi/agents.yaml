@@ -277,47 +277,6 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/NoticeList"}
         "401": {$ref: "#/components/responses/Unauthorized"}
-  /v1/self/preferences:
-    get:
-      operationId: getPreferences
-      x-public: true
-      tags: [Meta]
-      summary: The person's own choices
-      description: |
-        What the caller's person chose for themselves, as opposed to what
-        the workspace's admins chose for everybody (`/v1/settings`): a
-        key's are its person's. A person who never chose has the defaults.
-        Needs `sessions.read`, and `sessions.write` to change them: they are of
-        the person's sessions. A session calling through its brokers has none:
-        `403`.
-      responses:
-        "200":
-          description: The preferences.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Preferences"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-    put:
-      operationId: putPreferences
-      x-public: true
-      tags: [Meta]
-      summary: Change the person's own choices
-      description: Replaces them all, as `PUT /v1/settings` does the workspace's.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/Preferences"}
-      responses:
-        "200":
-          description: The preferences, changed.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Preferences"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
   /v1/self/directory:
     get:
       operationId: getSelfDirectory
@@ -1137,10 +1096,10 @@ paths:
       description: |
         `claude-code` (Claude Code, on `anthropic` providers), `codex`
         (OpenAI's Codex, on `openai` providers) and `opencode` (opencode,
-        on `openai_compatible` providers). A harness's models are
-        not a list this server keeps: they are what its providers' APIs
-        answered when last asked, so a harness with no provider of a type
-        it runs on has none.
+        on `openai_compatible` providers). A harness's models are its
+        providers' `models`, as their admins declared them: a harness none
+        of whose providers declares any has none, and a session on it runs
+        the model it names, or its harness's own default.
       responses:
         "200":
           description: The harnesses.
@@ -1175,9 +1134,12 @@ paths:
         first by name they may — and a member is shown only those, an admin
         every one.
 
-        Each provider's models are asked of its API, with its own
-        credential, when it is made or signed in, every hour after, and on
-        `POST …/models`.
+        Nothing here calls a provider's API: every call to a model is a
+        session's harness's, made from its sandbox through the `llm` broker
+        its runner provides, which this server lends the provider's
+        credential for each turn. A provider's models are what its admin
+        declared (`models`), and a provider that only some runners reach
+        says which (`placement`).
 
         An application sees its own, each end user's among them.
       parameters:
@@ -1209,16 +1171,21 @@ paths:
       summary: Make a provider of an API key, or replace one with it
       description: |
         Kept encrypted here, and never sent to a sandbox: the session reaches
-        the provider through the `llm` broker, which puts it on. The server
-        tries it before answering, says what the provider said, and reads
-        the provider's models with it. A provider of that name, a key or a
-        subscription, is replaced — by an admin or whoever made it; another
-        person's is `409`. A provider made is for its maker alone.
+        the provider through the `llm` broker its runner provides, which is
+        lent the credential for each turn. It is not tried here — this server
+        calls no provider: a session's first call is what tries it. A
+        provider of that name, a key or a subscription, is replaced — by an
+        admin or whoever made it; another person's is `409`. A provider made
+        is for its maker alone.
 
         An `openai_compatible` provider is a server of OpenAI's chat
-        completions — llama.cpp's llama-server, vLLM — at `baseUrl`, which
-        this server reaches: its key is optional, since such a server often
-        takes none.
+        completions — Ollama, llama.cpp's llama-server, vLLM — that the
+        runners reach: where it is is each runner's to say, its `llm`
+        broker's `-chat-completions-upstream`, never this server's. Its key
+        is optional, since such a server often takes none. One that only
+        some runners reach — one on a runner's own network — says which in
+        `placement`, and declares its `models`, which such a server says
+        nothing of a harness needs: their context windows.
       requestBody:
         required: true
         content:
@@ -1226,12 +1193,12 @@ paths:
             schema: {$ref: "#/components/schemas/ProviderApiKey"}
       responses:
         "200":
-          description: Replaced, and tried.
+          description: Replaced.
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Provider"}
         "201":
-          description: Made, and tried.
+          description: Made.
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Provider"}
@@ -1243,9 +1210,11 @@ paths:
       operationId: updateProvider
       x-public: true
       tags: [Models]
-      summary: Retitle a provider, say who may use it, or make it the default
+      summary: Retitle a provider, say who may use it, where it runs and its models, or make it the default
       description: |
-        Absent fields are left as they are. `isDefault: true` makes it the
+        Absent fields are left as they are; `placement` replaces the one it
+        had, and one of no labels places it anywhere; `models` replaces
+        them all. `isDefault: true` makes it the
         default and the one that was stops being; `false` is `400`, since
         exactly one is: make another the default instead. Whoever made it
         retitles it and says who may use it; only an admin makes it the
@@ -1307,9 +1276,9 @@ paths:
           that address, pasted from the browser's address bar
           (`redirectUrl`), makes the provider.
 
-        The server keeps the refresh token, renews the access token before
-        it expires, and reads the provider's models once signed in. An
-        `openai_compatible` provider has no subscription: `400`.
+        The server keeps the refresh token, and renews the access token
+        before it expires. An `openai_compatible` provider has no
+        subscription: `400`.
       requestBody:
         required: true
         content:
@@ -1363,28 +1332,6 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
         "502": {$ref: "#/components/responses/Upstream"}
-  /v1/providers/{provider}/models:
-    parameters:
-      - $ref: "#/components/parameters/ProviderName"
-    post:
-      operationId: refreshProviderModels
-      x-public: true
-      tags: [Models]
-      summary: Read a provider's models again, now
-      description: |
-        Asks the provider's API for its models with the provider's
-        credential, as the server does every hour. A failure keeps the
-        list read last and says why in `modelsError`: the answer is the
-        provider either way, `modelsReadAt` saying when its list was read.
-      responses:
-        "200":
-          description: The provider, its models read again or why they could not be.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Provider"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
   /v1/usage:
     get:
       operationId: getUsage
@@ -2924,39 +2871,6 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
         "409": {$ref: "#/components/responses/Conflict"}
-  /v1/sessions/{sessionId}/retitle:
-    parameters:
-      - $ref: "#/components/parameters/SessionId"
-    post:
-      operationId: retitle
-      x-public: true
-      tags: [Sessions]
-      summary: Title the session from its conversation now
-      description: |
-        Asks the session's provider for a title of what its conversation is
-        about, and gives the session it: `titleSource` is `summary`. The call
-        is made by the server, not the session's machine, but as the session's
-        harness makes its own — its request, its prompt, its model — and is
-        paid for as the session's (`…/costs`). It is not one of the session's
-        exchanges: it is in the activity (`GET /v1/activity`), a `one_off`.
-
-        `403` when the workspace's `titleSummaries` are off; `400
-        not_supported` when the session's harness does not title (its
-        `features` lack `title`); `409` when it has not called its model
-        yet, or the conversation has nothing to title; `502` when the
-        provider failed or answered no title.
-      responses:
-        "200":
-          description: The session, titled.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Session"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "409": {$ref: "#/components/responses/Conflict"}
-        "502": {$ref: "#/components/responses/Upstream"}
   /v1/sessions/{sessionId}/rewind:
     parameters:
       - $ref: "#/components/parameters/SessionId"
@@ -3229,85 +3143,6 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
         "409": {$ref: "#/components/responses/Gapped"}
         "404": {$ref: "#/components/responses/NotFound"}
-  /v1/sessions/{sessionId}/exchanges:
-    parameters:
-      - $ref: "#/components/parameters/SessionId"
-    get:
-      operationId: listExchanges
-      x-public: true
-      tags: [Sessions]
-      summary: The calls the session's harness made to the model, newest first
-      description: |
-        The record of what the harness sent: every call the session's `llm`
-        broker carried to the provider and back — an *exchange* — kept for
-        a while (`--exchanges-kept`, a week by default) and then forgotten,
-        and with the session when it is deleted. Calls that count tokens
-        and that list the models are kept too, told apart by `path`.
-
-        This is a summary of each, newest first by when it was sent;
-        `GET …/exchanges/{exchangeId}` is one whole: the request as sent,
-        and the answer.
-      parameters:
-        - $ref: "#/components/parameters/Limit"
-        - $ref: "#/components/parameters/Cursor"
-        - name: model
-          in: query
-          description: One model's calls.
-          schema: {type: string, example: claude-opus-5-5}
-        - name: status
-          in: query
-          description: |
-            `ok`, the calls the provider answered with a status below 400;
-            `error`, those it answered with 400 or more.
-          schema:
-            type: string
-            enum: [ok, error]
-      responses:
-        "200":
-          description: The exchanges.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/ExchangePage"}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
-  /v1/sessions/{sessionId}/exchanges/{exchangeId}:
-    parameters:
-      - $ref: "#/components/parameters/SessionId"
-      - name: exchangeId
-        in: path
-        required: true
-        schema: {type: string}
-    get:
-      operationId: getExchange
-      x-public: true
-      tags: [Sessions]
-      summary: One call the session's harness made to the model, whole
-      description: |
-        What the session sent — the request body as it went to the provider:
-        the system prompt, the messages, the tool definitions, thinking,
-        `max_tokens`, `metadata` and the rest — with the headers that change
-        its meaning (`anthropic-beta`, `anthropic-version`, `openai-beta`, …), and what the
-        provider answered. A credential is never kept, and so is never here.
-
-        A streamed answer is the message assembled from its events — what
-        the same call would have answered without `stream` — as far as it
-        got: one cut short has no `stop_reason`, and one the provider ended
-        with an error event carries that `error`. Any other answer is its
-        body; one that is not a JSON object is `{"text": <the body>}`.
-
-        `previousId` and `nextId` are the session's neighbouring exchanges
-        by when they were sent, so a caller can walk them from any one.
-      responses:
-        "200":
-          description: The exchange.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/Exchange"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "404": {$ref: "#/components/responses/NotFound"}
   /v1/activity:
     get:
       operationId: listActivity
@@ -3331,10 +3166,8 @@ paths:
         has one, this server records the brokers it serves itself, and
         nothing else.
 
-        Not here: the `llm` broker's calls, which are the session's
-        exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the
-        server made itself for the session, as its harness would have, which
-        are no part of its conversation: each is here, a `one_off`.
+        The `llm` broker's calls are here as any broker's: each a call its
+        harness made to the model from the session's sandbox.
 
         And beside what sessions did, every call the Runyard platform made to
         this server's API with a platform token: `kind: api`,
@@ -4561,9 +4394,8 @@ components:
     Model:
       type: object
       description: |
-        A model as its provider's API lists it. What the API does not say
-        is absent, never guessed: OpenAI's `/v1/models` says no context
-        window, for one.
+        A model a provider offers, as its admin declared it. What was not
+        said is absent, never guessed.
       required: [id, title]
       properties:
         id:
@@ -4572,20 +4404,49 @@ components:
           example: claude-opus-5-5
         title:
           type: string
-          description: The provider's name for it; its `id` when the provider has none.
+          description: Its name to show; its `id` when none was given.
           example: Claude Opus 5.5
         contextWindow:
           type: integer
-          description: How many tokens its context holds, when the provider says.
+          description: How many tokens its context holds, when it was said.
           example: 1000000
         maxOutput:
           type: integer
-          description: How many tokens one answer may be, when the provider says.
+          description: How many tokens one answer may be, when it was said.
           example: 128000
         createdAt:
           type: string
           format: date-time
-          description: When the provider released it, when it says.
+          description: When it was released, when it was said.
+    ModelWrite:
+      type: object
+      additionalProperties: false
+      description: A model a provider offers, as its admin declares it.
+      required: [id]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: What a turn names to run on it, as the provider spells it.
+          example: qwen3:32b
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Its name to show; its `id` when absent.
+        contextWindow:
+          type: integer
+          minimum: 1
+          description: |
+            How many tokens its context holds — what opencode is told, so
+            that it compacts in time: a server of chat completions says
+            nothing of it.
+          example: 32768
+        maxOutput:
+          type: integer
+          minimum: 1
+          description: How many tokens one answer may be.
     HarnessModel:
       description: A model a harness may run, and the providers that offer it.
       allOf:
@@ -4980,10 +4841,9 @@ components:
       type: string
       description: |
         Where the session's title came from: `default`, none was had;
-        `first_turn`, the first line of its first turn; `summary`, its
-        provider summarized its conversation; `given`, a person or a
-        program gave it. Absent on a session made before it was kept.
-      enum: [default, first_turn, summary, given]
+        `first_turn`, the first line of its first turn; `given`, a person
+        or a program gave it. Absent on a session made before it was kept.
+      enum: [default, first_turn, given]
     Identity:
       type: object
       required: [mode]
@@ -5514,10 +5374,8 @@ components:
         models:
           type: array
           description: |
-            What the providers of those types listed when last asked,
-            each once, newest first (`createdAt`; those without one last,
-            by `id`). Empty while there is no such provider, or none has
-            answered yet.
+            What the providers of those types declare, each once, in the
+            order they declare them. Empty while none declares any.
           items: {$ref: "#/components/schemas/HarnessModel"}
         defaultProvider:
           allOf: [{$ref: "#/components/schemas/Name"}]
@@ -5529,9 +5387,10 @@ components:
           type: string
           description: |
             What a session on it runs when it names no model: the server's
-            configured model for the harness, if `defaultProvider` lists
-            it or has listed nothing yet, or else the newest of
-            `defaultProvider`'s models. Absent when there is neither.
+            configured model for the harness, if `defaultProvider`
+            declares it or declares none, or else the first of
+            `defaultProvider`'s models. Absent when there is neither, and
+            the harness runs its own default.
           example: claude-opus-5-5
         features:
           type: array
@@ -5554,9 +5413,6 @@ components:
               events, `…/alarms`, and `nextAlarmAt`.
             - `partials`: what the session writes streams live, as partials
               of the events stream, before it is an event.
-            - `title`: the session's title is summarized from its
-              conversation, as its harness would — `…/retitle`, and
-              `autoTitle`.
 
             An operation of a feature the session's harness lacks is `400
             not_supported` — not `409`, which is a session that could do it
@@ -5564,14 +5420,14 @@ components:
           items: {$ref: "#/components/schemas/HarnessFeature"}
     HarnessFeature:
       type: string
-      enum: [interrupt, compact, rewind, fork, subagents, background_tasks, task_list, alarms, partials, title]
+      enum: [interrupt, compact, rewind, fork, subagents, background_tasks, task_list, alarms, partials]
     ProviderType:
       type: string
       description: |
         Whose API a provider reaches. A harness says which types it runs
         on. `openai_compatible` is a server of OpenAI's chat completions
-        that is not OpenAI's — llama.cpp's llama-server, vLLM — at the
-        provider's `baseUrl`.
+        that is not OpenAI's — llama.cpp's llama-server, vLLM — that the
+        runners reach.
       enum: [anthropic, openai, openai_compatible]
     Provider:
       type: object
@@ -5595,21 +5451,14 @@ components:
           items: {type: string, format: email}
         type: {$ref: "#/components/schemas/ProviderType"}
         kind: {$ref: "#/components/schemas/ProviderKind"}
-        baseUrl:
-          type: string
-          format: uri
-          description: |
-            An `openai_compatible` provider's server, under which its API
-            is (`/v1/chat/completions`, `/v1/models`). Absent for the
-            other types.
-          example: http://192.168.1.20:8080
         status:
           type: string
-          enum: [ok, rejected, unreachable, needs_signin]
+          enum: [ok, needs_signin]
           description: |
-            What the provider said the last time the credential was tried
-            or renewed. `needs_signin` is a subscription whose renewal the
-            provider refused: sign it in again.
+            `needs_signin` is a subscription whose renewal the provider
+            refused: sign it in again. Nothing else is tried here — this
+            server calls no provider — so what a key's provider says of it is
+            what its sessions' calls are answered.
         account:
           type: string
           description: Who the subscription is, when the provider says.
@@ -5628,90 +5477,22 @@ components:
           type: string
           format: date-time
           description: When a subscription's access token was last renewed.
-        checkedAt: {type: string, format: date-time}
-        limits: {$ref: "#/components/schemas/RateLimits"}
+        placement:
+          allOf: [{$ref: "#/components/schemas/Placement"}]
+          description: |
+            The runners that reach it: a session on it is placed only on a
+            runner with every one of these labels, as well as its own
+            `sandbox.placement`'s, and fails to start when it names a label
+            otherwise — a model on one runner's own network, say. Absent is
+            any runner.
         models:
           type: array
           description: |
-            What the provider's API listed with this credential when last
-            asked — the models it may run, newest first. Empty until it has
-            answered once; a failure since keeps the list, and says so in
-            `modelsError`.
+            The models it offers, as its admin declared them, in that
+            order: what a session on it is offered to pick, the first its
+            default. Empty is none declared — a session on it names its
+            model, or runs its harness's default.
           items: {$ref: "#/components/schemas/Model"}
-        modelsReadAt:
-          type: string
-          format: date-time
-          description: When `models` was read. Absent until it has been.
-        modelsError:
-          type: string
-          description: Why the last time the models were asked failed; absent when it did not.
-    RateLimits:
-      type: object
-      required: [observedAt]
-      description: |
-        The provider's latest word on how much of the credential's limits
-        is spent, read off its answers to the sessions' calls: Anthropic's
-        `anthropic-ratelimit-unified-*` headers for a Claude plan, the
-        `x-codex-*` ones for a ChatGPT plan, and `x-ratelimit-*` for an
-        API key. Absent until a call has been made.
-      properties:
-        status:
-          type: string
-          description: The provider's own word for it, as it said it.
-          example: allowed
-        fiveHour:
-          allOf: [{$ref: "#/components/schemas/RateLimitWindow"}]
-          description: |
-            A plan's short window, of five hours: a Claude plan's, or a
-            ChatGPT plan's of 300 minutes. Also in `windows`.
-        sevenDay:
-          allOf: [{$ref: "#/components/schemas/RateLimitWindow"}]
-          description: |
-            A plan's long window, of a week: a Claude plan's, or a ChatGPT
-            plan's of 10080 minutes. Also in `windows`.
-        windows:
-          type: array
-          description: |
-            Every window the provider's last answer reported, as it named
-            them: a plan's (`five_hour`, `seven_day`, `primary`,
-            `secondary`, and any limit family of a model's), an API key's
-            per-minute `requests` and `tokens`.
-          items: {$ref: "#/components/schemas/RateLimitWindow"}
-        credits: {$ref: "#/components/schemas/RateLimitCredits"}
-        observedAt:
-          type: string
-          format: date-time
-          description: The answer it was read off.
-    RateLimitWindow:
-      type: object
-      required: [utilization]
-      properties:
-        name:
-          type: string
-          description: The provider's name for the window; absent for `fiveHour` and `sevenDay` when it named none.
-          example: primary
-        windowMinutes:
-          type: integer
-          minimum: 0
-          description: How long the window is, when the provider says.
-          example: 300
-        utilization:
-          type: number
-          format: double
-          minimum: 0
-          description: How much of the window's limit is spent, 1 being all of it.
-          example: 0.42
-        resetsAt: {type: string, format: date-time}
-    RateLimitCredits:
-      type: object
-      required: [hasCredits, unlimited]
-      description: A ChatGPT plan's credits, spent when its windows are, as the provider last said.
-      properties:
-        hasCredits: {type: boolean}
-        unlimited: {type: boolean}
-        balance:
-          type: string
-          description: As the provider wrote it.
     SignInFlow:
       type: object
       required: [flowId, method, expiresAt]
@@ -5752,11 +5533,11 @@ components:
         An `openai_compatible` provider is an `api_key`, whether or not
         it was given one.
 
-        When the workspace's shared broker `llm` is one its runners provide
-        (declared `url: runner` on the sandboxes server), a session on an
-        `anthropic` or `openai` provider reaches the model through its
-        runner's `llm` broker, which this server lends the credential to
-        for each turn alone, and takes it back from when the turn ends.
+        A session reaches the model through the `llm` broker its runner
+        provides — the workspace's shared broker `llm`, declared `url:
+        runner` on the sandboxes server — which this server lends the
+        credential to for each turn alone, and takes it back from when the
+        turn ends.
     ProviderApiKey:
       type: object
       required: [type]
@@ -5778,13 +5559,14 @@ components:
           description: |
             The API key. Required, but for `openai_compatible`, whose
             server may take none.
-        baseUrl:
-          type: string
-          format: uri
-          description: |
-            `openai_compatible`'s, and required for it: its server, http
-            or https, as `http://192.168.1.20:8080`; a `/v1` at its end is
-            taken off. `400` for the other types.
+        placement:
+          allOf: [{$ref: "#/components/schemas/Placement"}]
+          description: The runners that reach it (`Provider.placement`); any when absent.
+        models:
+          type: array
+          description: The models it offers (`Provider.models`); none when absent.
+          maxItems: 500
+          items: {$ref: "#/components/schemas/ModelWrite"}
     ProviderSignIn:
       type: object
       required: [type]
@@ -5833,6 +5615,14 @@ components:
           description: Replaces them all; each a person of the workspace, or it is `400`.
           maxItems: 1000
           items: {type: string, format: email}
+        placement:
+          allOf: [{$ref: "#/components/schemas/Placement"}]
+          description: Replaces where it runs (`Provider.placement`); no labels is any runner.
+        models:
+          type: array
+          description: Replaces the models it offers (`Provider.models`); empty is none.
+          maxItems: 500
+          items: {$ref: "#/components/schemas/ModelWrite"}
     Role:
       type: string
       enum: [admin, member]
@@ -5911,8 +5701,7 @@ components:
             host (`registry.npmjs.org`) or a leading `*.` for everything
             under a domain (`*.pypi.org`, which does not cover `pypi.org`
             itself); no other wildcard, address, range, scheme, port or
-            path, and no wildcard over a public suffix (`*.com`). Image
-            builds are not given them.
+            path, and no wildcard over a public suffix (`*.com`).
     User:
       type: object
       description: A person of the workspace, in their role in it.
@@ -6256,14 +6045,15 @@ components:
         model:
           type: string
           description: |
-            One of its provider's `models`, as the provider spells it. When
-            absent, and nothing it is started from names one: that of the
-            session that started it, as it runs now, if on the same harness
-            and its provider lists it; else the server's configured model
-            for the harness, if its provider lists it; else its provider's
-            newest. One the provider has not
-            listed is not refused here — the provider is the judge, at the
-            turn.
+            The model, as the provider spells it: one of its provider's
+            `models`, or any other. When absent, and nothing it is started
+            from names one: that of the session that started it, as it runs
+            now, if on the same harness and its provider declares it or
+            declares none; else
+            the server's configured model for the harness, if its provider
+            declares it or declares none; else its provider's first. One
+            the provider does not declare is not refused here — the
+            provider is the judge, at the turn.
           example: claude-opus-5-5
         systemPrompt:
           type: string
@@ -6669,12 +6459,6 @@ components:
               type: string
               maxLength: 200
               description: Made from the first turn when absent — the one in `firstTurn`, or the first sent.
-            autoTitle:
-              type: boolean
-              description: |
-                Title the session from its conversation once its first answer
-                has begun (`autoTitle`). Absent, its owner's preference
-                (`/v1/self/preferences`).
             endUser:
               allOf: [{$ref: "#/components/schemas/EndUser"}]
               description: |
@@ -6696,9 +6480,6 @@ components:
       type: object
       properties:
         title: {type: string, maxLength: 200}
-        autoTitle:
-          type: boolean
-          description: Title it from its conversation, or stop to.
         labels:
           type: object
           description: Replaces them all.
@@ -7056,24 +6837,6 @@ components:
       required: [sessionRetention]
       properties:
         sessionRetention: {$ref: "#/components/schemas/SessionRetention"}
-        titleSummaries:
-          type: boolean
-          description: |
-            Whether sessions' titles may be summarized by their providers —
-            as each person chooses for their sessions (`autoTitle`), and on
-            asking (`…/retitle`). Absent is `true`: each summary is a call
-            to the session's provider, paid for as the session's, which an
-            admin may want none of.
-    Preferences:
-      type: object
-      properties:
-        autoTitle:
-          type: boolean
-          default: false
-          description: |
-            Whether the person's new sessions are titled from their
-            conversation (`autoTitle`), where the workspace's
-            `titleSummaries` allow it.
     SessionRetention:
       type: object
       description: |
@@ -7264,92 +7027,6 @@ components:
           type: string
           description: Absent when the session is gone.
         totals: {$ref: "#/components/schemas/UsageTotals"}
-    ExchangeSummary:
-      type: object
-      required: [id, at, durationMs, provider, path, status, usage, cost, messageCount, toolCount, systemChars]
-      description: One call a session's harness made to the model, in short.
-      properties:
-        id:
-          type: string
-          description: The server's, opaque.
-        at:
-          type: string
-          format: date-time
-          description: When the call was sent to the provider.
-        durationMs:
-          type: integer
-          format: int64
-          description: From then until the answer ended, or was cut.
-        provider: {$ref: "#/components/schemas/Name"}
-        path:
-          type: string
-          description: The API's path the call was to — `/v1/messages` for Anthropic, `/responses` for Codex.
-          example: /v1/messages
-        model:
-          type: string
-          description: What the call asked for; absent when it named none.
-          example: claude-opus-5-5
-        status:
-          type: integer
-          description: The provider's answer's.
-          example: 200
-        stopReason:
-          type: string
-          description: Why the model stopped; absent when it did not say.
-          example: tool_use
-        usage: {$ref: "#/components/schemas/UsageTokens"}
-        cost: {$ref: "#/components/schemas/ExchangeCost"}
-        messageCount:
-          type: integer
-          description: The messages the request carried — of an OpenAI Responses call, its `input` items.
-        toolCount:
-          type: integer
-          description: The tool definitions the request carried.
-        systemChars:
-          type: integer
-          description: The length of the request's system prompt, every block of it, in characters — of a Responses call, its `instructions`.
-    ExchangeCost:
-      type: object
-      required: [usd, priced]
-      properties:
-        usd:
-          type: number
-          format: double
-          description: What the call's tokens cost at the provider's list prices.
-        priced:
-          type: boolean
-          description: False when the server has no price for the model, and `usd` is 0.
-    Exchange:
-      description: |
-        One call a session's harness made to the model, whole: the record of
-        what it sent, and what it was answered.
-      allOf:
-        - $ref: "#/components/schemas/ExchangeSummary"
-        - type: object
-          required: [request, requestHeaders, response, responseHeaders]
-          properties:
-            request:
-              type: object
-              additionalProperties: true
-              description: The body as sent; `{}` for a call that had none.
-            requestHeaders:
-              type: object
-              additionalProperties: {type: string}
-              description: The headers sent that change what the body means (`anthropic-beta`, `anthropic-version`, `openai-beta`, …), by lower-case name. Never a credential.
-            response:
-              type: object
-              additionalProperties: true
-              description: The answer — of a stream, the message assembled from its events.
-            responseHeaders:
-              type: object
-              additionalProperties: {type: string}
-              description: The answer's rate-limit and request-id headers, by lower-case name.
-            previousId:
-              type: string
-              description: The session's exchange sent just before this one; absent for its first.
-            nextId:
-              type: string
-              description: The session's exchange sent just after this one; absent for its last.
     ActivitySummary:
       type: object
       description: |
@@ -7381,15 +7058,12 @@ components:
             token (`kind: api`). Absent for everything a session sent.
         kind:
           type: string
-          enum: [mcp, egress, tunnels, sessions, images, gateway, one_off, api, exec]
+          enum: [mcp, egress, tunnels, sessions, images, gateway, api, exec]
           description: |
             What the broker is, which says how its requests are read.
             `gateway` is the sandboxes daemon's record of the request,
             through whatever broker: its `action` is what the broker said it
             was (`Runyard-Activity`), or the method, path and status.
-            `one_off` is a call the server made for the session through its
-            `llm` broker, as its harness would have — `summarize title`,
-            say — and not one its machine sent: its `target` is the model.
             `api` is a call made to this server's own API by `actor`: its
             `action` is the method and the path.
             `exec` is a program the session's machine ran, through no broker
@@ -7511,15 +7185,6 @@ components:
             items:
               type: array
               items: {$ref: "#/components/schemas/ActivitySummary"}
-    ExchangePage:
-      allOf:
-        - $ref: "#/components/schemas/Page"
-        - type: object
-          required: [items]
-          properties:
-            items:
-              type: array
-              items: {$ref: "#/components/schemas/ExchangeSummary"}
     Session:
       type: object
       required: [id, title, owner, state, config, sandbox, lineage, labels, work, usage, firstSeq, lastSeq, createdAt, lastActivityAt]
@@ -7527,14 +7192,6 @@ components:
         id: {$ref: "#/components/schemas/Id"}
         title: {type: string}
         titleSource: {$ref: "#/components/schemas/TitleSource"}
-        autoTitle:
-          type: boolean
-          description: |
-            Whether its title is summarized from its conversation, as its
-            harness would, a few seconds after its first answer begins —
-            once, and never over a title a person gave it. Only where its
-            harness has the `title` feature and the workspace's
-            `titleSummaries` allow it.
         owner:
           allOf: [{$ref: "#/components/schemas/Owner"}]
           description: Whose it is — who steers it, shares it and opens its tunnels, and what it may use.

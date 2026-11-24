@@ -41,7 +41,6 @@ const (
 	ActivityKindGateway  ActivityKind = "gateway"
 	ActivityKindImages   ActivityKind = "images"
 	ActivityKindMcp      ActivityKind = "mcp"
-	ActivityKindOneOff   ActivityKind = "one_off"
 	ActivityKindSessions ActivityKind = "sessions"
 	ActivityKindTunnels  ActivityKind = "tunnels"
 )
@@ -68,7 +67,6 @@ const (
 	ActivitySummaryKindGateway  ActivitySummaryKind = "gateway"
 	ActivitySummaryKindImages   ActivitySummaryKind = "images"
 	ActivitySummaryKindMcp      ActivitySummaryKind = "mcp"
-	ActivitySummaryKindOneOff   ActivitySummaryKind = "one_off"
 	ActivitySummaryKindSessions ActivitySummaryKind = "sessions"
 	ActivitySummaryKindTunnels  ActivitySummaryKind = "tunnels"
 )
@@ -333,7 +331,6 @@ const (
 	HarnessFeatureRewind          HarnessFeature = "rewind"
 	HarnessFeatureSubagents       HarnessFeature = "subagents"
 	HarnessFeatureTaskList        HarnessFeature = "task_list"
-	HarnessFeatureTitle           HarnessFeature = "title"
 )
 
 // Defines values for IdentityMode.
@@ -408,8 +405,6 @@ const (
 const (
 	ProviderStatusNeedsSignin ProviderStatus = "needs_signin"
 	ProviderStatusOk          ProviderStatus = "ok"
-	ProviderStatusRejected    ProviderStatus = "rejected"
-	ProviderStatusUnreachable ProviderStatus = "unreachable"
 )
 
 // Defines values for ProviderKind.
@@ -561,7 +556,6 @@ const (
 	Default   TitleSource = "default"
 	FirstTurn TitleSource = "first_turn"
 	Given     TitleSource = "given"
-	Summary   TitleSource = "summary"
 )
 
 // Defines values for ToolCallEventType.
@@ -680,12 +674,6 @@ const (
 	Mine ListSessionsParamsWhose = "mine"
 )
 
-// Defines values for ListExchangesParamsStatus.
-const (
-	ListExchangesParamsStatusError ListExchangesParamsStatus = "error"
-	ListExchangesParamsStatusOk    ListExchangesParamsStatus = "ok"
-)
-
 // Defines values for GetUsageParamsRange.
 const (
 	GetUsageParamsRangeN1d  GetUsageParamsRange = "1d"
@@ -742,9 +730,6 @@ type Activity struct {
 	// `gateway` is the sandboxes daemon's record of the request,
 	// through whatever broker: its `action` is what the broker said it
 	// was (`Runyard-Activity`), or the method, path and status.
-	// `one_off` is a call the server made for the session through its
-	// `llm` broker, as its harness would have — `summarize title`,
-	// say — and not one its machine sent: its `target` is the model.
 	// `api` is a call made to this server's own API by `actor`: its
 	// `action` is the method and the path.
 	// `exec` is a program the session's machine ran, through no broker
@@ -789,9 +774,6 @@ type ActivityActor string
 // `gateway` is the sandboxes daemon's record of the request,
 // through whatever broker: its `action` is what the broker said it
 // was (`Runyard-Activity`), or the method, path and status.
-// `one_off` is a call the server made for the session through its
-// `llm` broker, as its harness would have — `summarize title`,
-// say — and not one its machine sent: its `target` is the model.
 // `api` is a call made to this server's own API by `actor`: its
 // `action` is the method and the path.
 // `exec` is a program the session's machine ran, through no broker
@@ -921,9 +903,6 @@ type ActivitySummary struct {
 	// `gateway` is the sandboxes daemon's record of the request,
 	// through whatever broker: its `action` is what the broker said it
 	// was (`Runyard-Activity`), or the method, path and status.
-	// `one_off` is a call the server made for the session through its
-	// `llm` broker, as its harness would have — `summarize title`,
-	// say — and not one its machine sent: its `target` is the model.
 	// `api` is a call made to this server's own API by `actor`: its
 	// `action` is the method and the path.
 	// `exec` is a program the session's machine ran, through no broker
@@ -962,9 +941,6 @@ type ActivitySummaryActor string
 // `gateway` is the sandboxes daemon's record of the request,
 // through whatever broker: its `action` is what the broker said it
 // was (`Runyard-Activity`), or the method, path and status.
-// `one_off` is a call the server made for the session through its
-// `llm` broker, as its harness would have — `summarize title`,
-// say — and not one its machine sent: its `target` is the model.
 // `api` is a call made to this server's own API by `actor`: its
 // `action` is the method and the path.
 // `exec` is a program the session's machine ran, through no broker
@@ -1819,123 +1795,6 @@ type EventsLine struct {
 	union json.RawMessage
 }
 
-// Exchange defines model for Exchange.
-type Exchange struct {
-	// At When the call was sent to the provider.
-	At   time.Time    `json:"at"`
-	Cost ExchangeCost `json:"cost"`
-
-	// DurationMs From then until the answer ended, or was cut.
-	DurationMs int64 `json:"durationMs"`
-
-	// Id The server's, opaque.
-	Id string `json:"id"`
-
-	// MessageCount The messages the request carried — of an OpenAI Responses call, its `input` items.
-	MessageCount int `json:"messageCount"`
-
-	// Model What the call asked for; absent when it named none.
-	Model *string `json:"model,omitempty"`
-
-	// NextId The session's exchange sent just after this one; absent for its last.
-	NextId *string `json:"nextId,omitempty"`
-
-	// Path The API's path the call was to — `/v1/messages` for Anthropic, `/responses` for Codex.
-	Path string `json:"path"`
-
-	// PreviousId The session's exchange sent just before this one; absent for its first.
-	PreviousId *string `json:"previousId,omitempty"`
-	Provider   Name    `json:"provider"`
-
-	// Request The body as sent; `{}` for a call that had none.
-	Request map[string]interface{} `json:"request"`
-
-	// RequestHeaders The headers sent that change what the body means (`anthropic-beta`, `anthropic-version`, `openai-beta`, …), by lower-case name. Never a credential.
-	RequestHeaders map[string]string `json:"requestHeaders"`
-
-	// Response The answer — of a stream, the message assembled from its events.
-	Response map[string]interface{} `json:"response"`
-
-	// ResponseHeaders The answer's rate-limit and request-id headers, by lower-case name.
-	ResponseHeaders map[string]string `json:"responseHeaders"`
-
-	// Status The provider's answer's.
-	Status int `json:"status"`
-
-	// StopReason Why the model stopped; absent when it did not say.
-	StopReason *string `json:"stopReason,omitempty"`
-
-	// SystemChars The length of the request's system prompt, every block of it, in characters — of a Responses call, its `instructions`.
-	SystemChars int `json:"systemChars"`
-
-	// ToolCount The tool definitions the request carried.
-	ToolCount int `json:"toolCount"`
-
-	// Usage The same four for every provider. `input` is what was not read from
-	// the cache — OpenAI's `input_tokens` less its cached ones, which are
-	// `cacheRead`; OpenAI caches without charging a write, so its
-	// `cacheWrite` is 0.
-	Usage UsageTokens `json:"usage"`
-}
-
-// ExchangeCost defines model for ExchangeCost.
-type ExchangeCost struct {
-	// Priced False when the server has no price for the model, and `usd` is 0.
-	Priced bool `json:"priced"`
-
-	// Usd What the call's tokens cost at the provider's list prices.
-	Usd float64 `json:"usd"`
-}
-
-// ExchangePage defines model for ExchangePage.
-type ExchangePage struct {
-	Items []ExchangeSummary `json:"items"`
-
-	// NextCursor The next page's cursor. Absent means the end.
-	NextCursor *string `json:"nextCursor,omitempty"`
-}
-
-// ExchangeSummary One call a session's harness made to the model, in short.
-type ExchangeSummary struct {
-	// At When the call was sent to the provider.
-	At   time.Time    `json:"at"`
-	Cost ExchangeCost `json:"cost"`
-
-	// DurationMs From then until the answer ended, or was cut.
-	DurationMs int64 `json:"durationMs"`
-
-	// Id The server's, opaque.
-	Id string `json:"id"`
-
-	// MessageCount The messages the request carried — of an OpenAI Responses call, its `input` items.
-	MessageCount int `json:"messageCount"`
-
-	// Model What the call asked for; absent when it named none.
-	Model *string `json:"model,omitempty"`
-
-	// Path The API's path the call was to — `/v1/messages` for Anthropic, `/responses` for Codex.
-	Path     string `json:"path"`
-	Provider Name   `json:"provider"`
-
-	// Status The provider's answer's.
-	Status int `json:"status"`
-
-	// StopReason Why the model stopped; absent when it did not say.
-	StopReason *string `json:"stopReason,omitempty"`
-
-	// SystemChars The length of the request's system prompt, every block of it, in characters — of a Responses call, its `instructions`.
-	SystemChars int `json:"systemChars"`
-
-	// ToolCount The tool definitions the request carried.
-	ToolCount int `json:"toolCount"`
-
-	// Usage The same four for every provider. `input` is what was not read from
-	// the cache — OpenAI's `input_tokens` less its cached ones, which are
-	// `cacheRead`; OpenAI caches without charging a write, so its
-	// `cacheWrite` is 0.
-	Usage UsageTokens `json:"usage"`
-}
-
 // FileEntry defines model for FileEntry.
 type FileEntry struct {
 	Kind       FileEntryKind `json:"kind"`
@@ -2032,9 +1891,10 @@ type Harness struct {
 	Bundle *string `json:"bundle,omitempty"`
 
 	// DefaultModel What a session on it runs when it names no model: the server's
-	// configured model for the harness, if `defaultProvider` lists
-	// it or has listed nothing yet, or else the newest of
-	// `defaultProvider`'s models. Absent when there is neither.
+	// configured model for the harness, if `defaultProvider`
+	// declares it or declares none, or else the first of
+	// `defaultProvider`'s models. Absent when there is neither, and
+	// the harness runs its own default.
 	DefaultModel *string `json:"defaultModel,omitempty"`
 
 	// DefaultProvider What a session on it runs on when it names no provider: the
@@ -2060,19 +1920,14 @@ type Harness struct {
 	//   events, `…/alarms`, and `nextAlarmAt`.
 	// - `partials`: what the session writes streams live, as partials
 	//   of the events stream, before it is an event.
-	// - `title`: the session's title is summarized from its
-	//   conversation, as its harness would — `…/retitle`, and
-	//   `autoTitle`.
 	//
 	// An operation of a feature the session's harness lacks is `400
 	// not_supported` — not `409`, which is a session that could do it
 	// in another state; the lists of one it lacks are empty.
 	Features []HarnessFeature `json:"features"`
 
-	// Models What the providers of those types listed when last asked,
-	// each once, newest first (`createdAt`; those without one last,
-	// by `id`). Empty while there is no such provider, or none has
-	// answered yet.
+	// Models What the providers of those types declare, each once, in the
+	// order they declare them. Empty while none declares any.
 	Models []HarnessModel `json:"models"`
 
 	// Name `claude-code`, `codex` or `opencode`.
@@ -2088,28 +1943,28 @@ type HarnessFeature string
 
 // HarnessModel defines model for HarnessModel.
 type HarnessModel struct {
-	// ContextWindow How many tokens its context holds, when the provider says.
+	// ContextWindow How many tokens its context holds, when it was said.
 	ContextWindow *int `json:"contextWindow,omitempty"`
 
-	// CreatedAt When the provider released it, when it says.
+	// CreatedAt When it was released, when it was said.
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 
 	// Id What a turn names to run on it, as the provider spells it.
 	Id string `json:"id"`
 
-	// MaxOutput How many tokens one answer may be, when the provider says.
+	// MaxOutput How many tokens one answer may be, when it was said.
 	MaxOutput *int `json:"maxOutput,omitempty"`
 
 	// ProviderType Whose API a provider reaches. A harness says which types it runs
 	// on. `openai_compatible` is a server of OpenAI's chat completions
-	// that is not OpenAI's — llama.cpp's llama-server, vLLM — at the
-	// provider's `baseUrl`.
+	// that is not OpenAI's — llama.cpp's llama-server, vLLM — that the
+	// runners reach.
 	ProviderType ProviderType `json:"providerType"`
 
 	// Providers The providers whose list has it, by name. A turn naming the model runs on one of these.
 	Providers []Name `json:"providers"`
 
-	// Title The provider's name for it; its `id` when the provider has none.
+	// Title Its name to show; its `id` when none was given.
 	Title string `json:"title"`
 }
 
@@ -2641,23 +2496,22 @@ type MintedKey struct {
 	Suspended *KeySuspension `json:"suspended,omitempty"`
 }
 
-// Model A model as its provider's API lists it. What the API does not say
-// is absent, never guessed: OpenAI's `/v1/models` says no context
-// window, for one.
+// Model A model a provider offers, as its admin declared it. What was not
+// said is absent, never guessed.
 type Model struct {
-	// ContextWindow How many tokens its context holds, when the provider says.
+	// ContextWindow How many tokens its context holds, when it was said.
 	ContextWindow *int `json:"contextWindow,omitempty"`
 
-	// CreatedAt When the provider released it, when it says.
+	// CreatedAt When it was released, when it was said.
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 
 	// Id What a turn names to run on it, as the provider spells it.
 	Id string `json:"id"`
 
-	// MaxOutput How many tokens one answer may be, when the provider says.
+	// MaxOutput How many tokens one answer may be, when it was said.
 	MaxOutput *int `json:"maxOutput,omitempty"`
 
-	// Title The provider's name for it; its `id` when the provider has none.
+	// Title Its name to show; its `id` when none was given.
 	Title string `json:"title"`
 }
 
@@ -2665,6 +2519,23 @@ type Model struct {
 type ModelUsage struct {
 	Model  string      `json:"model"`
 	Totals UsageTotals `json:"totals"`
+}
+
+// ModelWrite A model a provider offers, as its admin declares it.
+type ModelWrite struct {
+	// ContextWindow How many tokens its context holds — what opencode is told, so
+	// that it compacts in time: a server of chat completions says
+	// nothing of it.
+	ContextWindow *int `json:"contextWindow,omitempty"`
+
+	// Id What a turn names to run on it, as the provider spells it.
+	Id string `json:"id"`
+
+	// MaxOutput How many tokens one answer may be.
+	MaxOutput *int `json:"maxOutput,omitempty"`
+
+	// Title Its name to show; its `id` when absent.
+	Title *string `json:"title,omitempty"`
 }
 
 // Name defines model for Name.
@@ -2794,14 +2665,6 @@ type Placement struct {
 	Labels *map[string]string `json:"labels,omitempty"`
 }
 
-// Preferences defines model for Preferences.
-type Preferences struct {
-	// AutoTitle Whether the person's new sessions are titled from their
-	// conversation (`autoTitle`), where the workspace's
-	// `titleSummaries` allow it.
-	AutoTitle *bool `json:"autoTitle,omitempty"`
-}
-
 // Profile defines model for Profile.
 type Profile struct {
 	// Brokers The brokers the session is given, by name. `llm` always is; absent, the server's own four.
@@ -2825,14 +2688,15 @@ type Profile struct {
 	// McpConnectors The MCP connectors the session is given, by name.
 	McpConnectors *[]Name `json:"mcpConnectors,omitempty"`
 
-	// Model One of its provider's `models`, as the provider spells it. When
-	// absent, and nothing it is started from names one: that of the
-	// session that started it, as it runs now, if on the same harness
-	// and its provider lists it; else the server's configured model
-	// for the harness, if its provider lists it; else its provider's
-	// newest. One the provider has not
-	// listed is not refused here — the provider is the judge, at the
-	// turn.
+	// Model The model, as the provider spells it: one of its provider's
+	// `models`, or any other. When absent, and nothing it is started
+	// from names one: that of the session that started it, as it runs
+	// now, if on the same harness and its provider declares it or
+	// declares none; else
+	// the server's configured model for the harness, if its provider
+	// declares it or declares none; else its provider's first. One
+	// the provider does not declare is not refused here — the
+	// provider is the judge, at the turn.
 	Model *string `json:"model,omitempty"`
 
 	// Owner Who made it, who may use it always.
@@ -2893,14 +2757,15 @@ type ProfileSpec struct {
 	// McpConnectors The MCP connectors the session is given, by name.
 	McpConnectors *[]Name `json:"mcpConnectors,omitempty"`
 
-	// Model One of its provider's `models`, as the provider spells it. When
-	// absent, and nothing it is started from names one: that of the
-	// session that started it, as it runs now, if on the same harness
-	// and its provider lists it; else the server's configured model
-	// for the harness, if its provider lists it; else its provider's
-	// newest. One the provider has not
-	// listed is not refused here — the provider is the judge, at the
-	// turn.
+	// Model The model, as the provider spells it: one of its provider's
+	// `models`, or any other. When absent, and nothing it is started
+	// from names one: that of the session that started it, as it runs
+	// now, if on the same harness and its provider declares it or
+	// declares none; else
+	// the server's configured model for the harness, if its provider
+	// declares it or declares none; else its provider's first. One
+	// the provider does not declare is not refused here — the
+	// provider is the judge, at the turn.
 	Model *string `json:"model,omitempty"`
 
 	// Provider The provider it runs on, by name, of a type its harness runs on
@@ -2932,12 +2797,6 @@ type Provider struct {
 	// Account Who the subscription is, when the provider says.
 	Account *string `json:"account,omitempty"`
 
-	// BaseUrl An `openai_compatible` provider's server, under which its API
-	// is (`/v1/chat/completions`, `/v1/models`). Absent for the
-	// other types.
-	BaseUrl   *string    `json:"baseUrl,omitempty"`
-	CheckedAt *time.Time `json:"checkedAt,omitempty"`
-
 	// EndUser For an application's provider, the end user whose own it is.
 	EndUser *EndUser `json:"endUser,omitempty"`
 
@@ -2955,35 +2814,29 @@ type Provider struct {
 	// An `openai_compatible` provider is an `api_key`, whether or not
 	// it was given one.
 	//
-	// When the workspace's shared broker `llm` is one its runners provide
-	// (declared `url: runner` on the sandboxes server), a session on an
-	// `anthropic` or `openai` provider reaches the model through its
-	// runner's `llm` broker, which this server lends the credential to
-	// for each turn alone, and takes it back from when the turn ends.
+	// A session reaches the model through the `llm` broker its runner
+	// provides — the workspace's shared broker `llm`, declared `url:
+	// runner` on the sandboxes server — which this server lends the
+	// credential to for each turn alone, and takes it back from when the
+	// turn ends.
 	Kind ProviderKind `json:"kind"`
 
-	// Limits The provider's latest word on how much of the credential's limits
-	// is spent, read off its answers to the sessions' calls: Anthropic's
-	// `anthropic-ratelimit-unified-*` headers for a Claude plan, the
-	// `x-codex-*` ones for a ChatGPT plan, and `x-ratelimit-*` for an
-	// API key. Absent until a call has been made.
-	Limits *RateLimits `json:"limits,omitempty"`
-
-	// Models What the provider's API listed with this credential when last
-	// asked — the models it may run, newest first. Empty until it has
-	// answered once; a failure since keeps the list, and says so in
-	// `modelsError`.
+	// Models The models it offers, as its admin declared them, in that
+	// order: what a session on it is offered to pick, the first its
+	// default. Empty is none declared — a session on it names its
+	// model, or runs its harness's default.
 	Models []Model `json:"models"`
-
-	// ModelsError Why the last time the models were asked failed; absent when it did not.
-	ModelsError *string `json:"modelsError,omitempty"`
-
-	// ModelsReadAt When `models` was read. Absent until it has been.
-	ModelsReadAt *time.Time `json:"modelsReadAt,omitempty"`
-	Name         Name       `json:"name"`
+	Name   Name    `json:"name"`
 
 	// Owner Who made it, who may use it always.
 	Owner Owner `json:"owner"`
+
+	// Placement The runners that reach it: a session on it is placed only on a
+	// runner with every one of these labels, as well as its own
+	// `sandbox.placement`'s, and fails to start when it names a label
+	// otherwise — a model on one runner's own network, say. Absent is
+	// any runner.
+	Placement *Placement `json:"placement,omitempty"`
 
 	// Plan The subscription's plan, when the provider says.
 	Plan *string `json:"plan,omitempty"`
@@ -2991,37 +2844,40 @@ type Provider struct {
 	// RenewedAt When a subscription's access token was last renewed.
 	RenewedAt *time.Time `json:"renewedAt,omitempty"`
 
-	// Status What the provider said the last time the credential was tried
-	// or renewed. `needs_signin` is a subscription whose renewal the
-	// provider refused: sign it in again.
+	// Status `needs_signin` is a subscription whose renewal the provider
+	// refused: sign it in again. Nothing else is tried here — this
+	// server calls no provider — so what a key's provider says of it is
+	// what its sessions' calls are answered.
 	Status ProviderStatus `json:"status"`
 	Title  string         `json:"title"`
 
 	// Type Whose API a provider reaches. A harness says which types it runs
 	// on. `openai_compatible` is a server of OpenAI's chat completions
-	// that is not OpenAI's — llama.cpp's llama-server, vLLM — at the
-	// provider's `baseUrl`.
+	// that is not OpenAI's — llama.cpp's llama-server, vLLM — that the
+	// runners reach.
 	Type ProviderType `json:"type"`
 
 	// Users The people besides its owner who may use it, by address, sorted.
 	Users []openapi_types.Email `json:"users"`
 }
 
-// ProviderStatus What the provider said the last time the credential was tried
-// or renewed. `needs_signin` is a subscription whose renewal the
-// provider refused: sign it in again.
+// ProviderStatus `needs_signin` is a subscription whose renewal the provider
+// refused: sign it in again. Nothing else is tried here — this
+// server calls no provider — so what a key's provider says of it is
+// what its sessions' calls are answered.
 type ProviderStatus string
 
 // ProviderApiKey defines model for ProviderApiKey.
 type ProviderApiKey struct {
-	// BaseUrl `openai_compatible`'s, and required for it: its server, http
-	// or https, as `http://192.168.1.20:8080`; a `/v1` at its end is
-	// taken off. `400` for the other types.
-	BaseUrl *string `json:"baseUrl,omitempty"`
-
 	// Kind `api_key`, the default. `subscription` is `400`: one is signed
 	// in (`…/signin`).
 	Kind *ProviderKind `json:"kind,omitempty"`
+
+	// Models The models it offers (`Provider.models`); none when absent.
+	Models *[]ModelWrite `json:"models,omitempty"`
+
+	// Placement The runners that reach it (`Provider.placement`); any when absent.
+	Placement *Placement `json:"placement,omitempty"`
 
 	// Secret The API key. Required, but for `openai_compatible`, whose
 	// server may take none.
@@ -3032,8 +2888,8 @@ type ProviderApiKey struct {
 
 	// Type Whose API a provider reaches. A harness says which types it runs
 	// on. `openai_compatible` is a server of OpenAI's chat completions
-	// that is not OpenAI's — llama.cpp's llama-server, vLLM — at the
-	// provider's `baseUrl`.
+	// that is not OpenAI's — llama.cpp's llama-server, vLLM — that the
+	// runners reach.
 	Type ProviderType `json:"type"`
 }
 
@@ -3042,11 +2898,11 @@ type ProviderApiKey struct {
 // An `openai_compatible` provider is an `api_key`, whether or not
 // it was given one.
 //
-// When the workspace's shared broker `llm` is one its runners provide
-// (declared `url: runner` on the sandboxes server), a session on an
-// `anthropic` or `openai` provider reaches the model through its
-// runner's `llm` broker, which this server lends the credential to
-// for each turn alone, and takes it back from when the turn ends.
+// A session reaches the model through the `llm` broker its runner
+// provides — the workspace's shared broker `llm`, declared `url:
+// runner` on the sandboxes server — which this server lends the
+// credential to for each turn alone, and takes it back from when the
+// turn ends.
 type ProviderKind string
 
 // ProviderSignIn defines model for ProviderSignIn.
@@ -3066,8 +2922,8 @@ type ProviderSignIn struct {
 
 	// Type Whose API a provider reaches. A harness says which types it runs
 	// on. `openai_compatible` is a server of OpenAI's chat completions
-	// that is not OpenAI's — llama.cpp's llama-server, vLLM — at the
-	// provider's `baseUrl`.
+	// that is not OpenAI's — llama.cpp's llama-server, vLLM — that the
+	// runners reach.
 	Type ProviderType `json:"type"`
 }
 
@@ -3082,8 +2938,8 @@ type ProviderSignInFinish struct {
 
 // ProviderType Whose API a provider reaches. A harness says which types it runs
 // on. `openai_compatible` is a server of OpenAI's chat completions
-// that is not OpenAI's — llama.cpp's llama-server, vLLM — at the
-// provider's `baseUrl`.
+// that is not OpenAI's — llama.cpp's llama-server, vLLM — that the
+// runners reach.
 type ProviderType string
 
 // ProviderUpdate defines model for ProviderUpdate.
@@ -3091,8 +2947,14 @@ type ProviderUpdate struct {
 	Everyone *bool `json:"everyone,omitempty"`
 
 	// IsDefault `true` makes it the default; `false` is `400`.
-	IsDefault *bool   `json:"isDefault,omitempty"`
-	Title     *string `json:"title,omitempty"`
+	IsDefault *bool `json:"isDefault,omitempty"`
+
+	// Models Replaces the models it offers (`Provider.models`); empty is none.
+	Models *[]ModelWrite `json:"models,omitempty"`
+
+	// Placement Replaces where it runs (`Provider.placement`); no labels is any runner.
+	Placement *Placement `json:"placement,omitempty"`
+	Title     *string    `json:"title,omitempty"`
 
 	// Users Replaces them all; each a person of the workspace, or it is `400`.
 	Users *[]openapi_types.Email `json:"users,omitempty"`
@@ -3137,57 +2999,6 @@ type QuotaAmounts struct {
 	Cpus        *int64 `json:"cpus,omitempty"`
 	DiskBytes   *int64 `json:"diskBytes,omitempty"`
 	MemoryBytes *int64 `json:"memoryBytes,omitempty"`
-}
-
-// RateLimitCredits A ChatGPT plan's credits, spent when its windows are, as the provider last said.
-type RateLimitCredits struct {
-	// Balance As the provider wrote it.
-	Balance    *string `json:"balance,omitempty"`
-	HasCredits bool    `json:"hasCredits"`
-	Unlimited  bool    `json:"unlimited"`
-}
-
-// RateLimitWindow defines model for RateLimitWindow.
-type RateLimitWindow struct {
-	// Name The provider's name for the window; absent for `fiveHour` and `sevenDay` when it named none.
-	Name     *string    `json:"name,omitempty"`
-	ResetsAt *time.Time `json:"resetsAt,omitempty"`
-
-	// Utilization How much of the window's limit is spent, 1 being all of it.
-	Utilization float64 `json:"utilization"`
-
-	// WindowMinutes How long the window is, when the provider says.
-	WindowMinutes *int `json:"windowMinutes,omitempty"`
-}
-
-// RateLimits The provider's latest word on how much of the credential's limits
-// is spent, read off its answers to the sessions' calls: Anthropic's
-// `anthropic-ratelimit-unified-*` headers for a Claude plan, the
-// `x-codex-*` ones for a ChatGPT plan, and `x-ratelimit-*` for an
-// API key. Absent until a call has been made.
-type RateLimits struct {
-	// Credits A ChatGPT plan's credits, spent when its windows are, as the provider last said.
-	Credits *RateLimitCredits `json:"credits,omitempty"`
-
-	// FiveHour A plan's short window, of five hours: a Claude plan's, or a
-	// ChatGPT plan's of 300 minutes. Also in `windows`.
-	FiveHour *RateLimitWindow `json:"fiveHour,omitempty"`
-
-	// ObservedAt The answer it was read off.
-	ObservedAt time.Time `json:"observedAt"`
-
-	// SevenDay A plan's long window, of a week: a Claude plan's, or a ChatGPT
-	// plan's of 10080 minutes. Also in `windows`.
-	SevenDay *RateLimitWindow `json:"sevenDay,omitempty"`
-
-	// Status The provider's own word for it, as it said it.
-	Status *string `json:"status,omitempty"`
-
-	// Windows Every window the provider's last answer reported, as it named
-	// them: a plan's (`five_hour`, `seven_day`, `primary`,
-	// `secondary`, and any limit family of a model's), an API key's
-	// per-minute `requests` and `tokens`.
-	Windows *[]RateLimitWindow `json:"windows,omitempty"`
 }
 
 // RegisteredConnectApp defines model for RegisteredConnectApp.
@@ -3462,13 +3273,6 @@ type SelfDirectory struct {
 type Session struct {
 	ArchivedAt *time.Time `json:"archivedAt,omitempty"`
 
-	// AutoTitle Whether its title is summarized from its conversation, as its
-	// harness would, a few seconds after its first answer begins —
-	// once, and never over a title a person gave it. Only where its
-	// harness has the `title` feature and the workspace's
-	// `titleSummaries` allow it.
-	AutoTitle *bool `json:"autoTitle,omitempty"`
-
 	// Config What it runs with, its profile's and its overrides resolved, and
 	// its turns' choices since: `provider` and `model` always say
 	// what it is on.
@@ -3573,9 +3377,8 @@ type Session struct {
 	Title string       `json:"title"`
 
 	// TitleSource Where the session's title came from: `default`, none was had;
-	// `first_turn`, the first line of its first turn; `summary`, its
-	// provider summarized its conversation; `given`, a person or a
-	// program gave it. Absent on a session made before it was kept.
+	// `first_turn`, the first line of its first turn; `given`, a person
+	// or a program gave it. Absent on a session made before it was kept.
 	TitleSource *TitleSource `json:"titleSource,omitempty"`
 
 	// Usage Summed over the session's turns — its sub-agents' included — but
@@ -3614,14 +3417,15 @@ type SessionConfig struct {
 	// McpConnectors The MCP connectors the session is given, by name.
 	McpConnectors *[]Name `json:"mcpConnectors,omitempty"`
 
-	// Model One of its provider's `models`, as the provider spells it. When
-	// absent, and nothing it is started from names one: that of the
-	// session that started it, as it runs now, if on the same harness
-	// and its provider lists it; else the server's configured model
-	// for the harness, if its provider lists it; else its provider's
-	// newest. One the provider has not
-	// listed is not refused here — the provider is the judge, at the
-	// turn.
+	// Model The model, as the provider spells it: one of its provider's
+	// `models`, or any other. When absent, and nothing it is started
+	// from names one: that of the session that started it, as it runs
+	// now, if on the same harness and its provider declares it or
+	// declares none; else
+	// the server's configured model for the harness, if its provider
+	// declares it or declares none; else its provider's first. One
+	// the provider does not declare is not refused here — the
+	// provider is the judge, at the turn.
 	Model *string `json:"model,omitempty"`
 
 	// Provider The provider it runs on, by name, of a type its harness runs on
@@ -3897,11 +3701,6 @@ type SessionSource string
 
 // SessionSpec defines model for SessionSpec.
 type SessionSpec struct {
-	// AutoTitle Title the session from its conversation once its first answer
-	// has begun (`autoTitle`). Absent, its owner's preference
-	// (`/v1/self/preferences`).
-	AutoTitle *bool `json:"autoTitle,omitempty"`
-
 	// Brokers The brokers the session is given, by name. `llm` always is; absent, the server's own four.
 	// Built-ins the workspace's policy does not allow are dropped, as kept and as read.
 	Brokers *[]Name `json:"brokers,omitempty"`
@@ -3923,14 +3722,15 @@ type SessionSpec struct {
 	// McpConnectors The MCP connectors the session is given, by name.
 	McpConnectors *[]Name `json:"mcpConnectors,omitempty"`
 
-	// Model One of its provider's `models`, as the provider spells it. When
-	// absent, and nothing it is started from names one: that of the
-	// session that started it, as it runs now, if on the same harness
-	// and its provider lists it; else the server's configured model
-	// for the harness, if its provider lists it; else its provider's
-	// newest. One the provider has not
-	// listed is not refused here — the provider is the judge, at the
-	// turn.
+	// Model The model, as the provider spells it: one of its provider's
+	// `models`, or any other. When absent, and nothing it is started
+	// from names one: that of the session that started it, as it runs
+	// now, if on the same harness and its provider declares it or
+	// declares none; else
+	// the server's configured model for the harness, if its provider
+	// declares it or declares none; else its provider's first. One
+	// the provider does not declare is not refused here — the
+	// provider is the judge, at the turn.
 	Model *string `json:"model,omitempty"`
 
 	// ParentId The session that started this one. Only a session calling
@@ -4129,9 +3929,7 @@ type SessionTool struct {
 
 // SessionUpdate defines model for SessionUpdate.
 type SessionUpdate struct {
-	// AutoTitle Title it from its conversation, or stop to.
-	AutoTitle *bool   `json:"autoTitle,omitempty"`
-	Brokers   *[]Name `json:"brokers,omitempty"`
+	Brokers *[]Name `json:"brokers,omitempty"`
 
 	// Labels Replaces them all.
 	Labels *map[string]string `json:"labels,omitempty"`
@@ -4347,9 +4145,8 @@ type ThinkingEvent struct {
 type ThinkingEventType string
 
 // TitleSource Where the session's title came from: `default`, none was had;
-// `first_turn`, the first line of its first turn; `summary`, its
-// provider summarized its conversation; `given`, a person or a
-// program gave it. Absent on a session made before it was kept.
+// `first_turn`, the first line of its first turn; `given`, a person
+// or a program gave it. Absent on a session made before it was kept.
 type TitleSource string
 
 // ToolCallEvent A tool the session called, by the harness's own name for it, with
@@ -4870,8 +4667,7 @@ type WorkspacePolicy struct {
 	// host (`registry.npmjs.org`) or a leading `*.` for everything
 	// under a domain (`*.pypi.org`, which does not cover `pypi.org`
 	// itself); no other wildcard, address, range, scheme, port or
-	// path, and no wildcard over a public suffix (`*.com`). Image
-	// builds are not given them.
+	// path, and no wildcard over a public suffix (`*.com`).
 	Egress *[]string `json:"egress,omitempty"`
 }
 
@@ -4899,13 +4695,6 @@ type WorkspaceSettings struct {
 	// without `deleteAfterSeconds` none is deleted. With both, deleting
 	// comes after archiving.
 	SessionRetention SessionRetention `json:"sessionRetention"`
-
-	// TitleSummaries Whether sessions' titles may be summarized by their providers —
-	// as each person chooses for their sessions (`autoTitle`), and on
-	// asking (`…/retitle`). Absent is `true`: each summary is a call
-	// to the session's provider, paid for as the session's, which an
-	// admin may want none of.
-	TitleSummaries *bool `json:"titleSummaries,omitempty"`
 }
 
 // AppId An application's id, its OAuth `client_id`.
@@ -5197,25 +4986,6 @@ type StreamEventsParams struct {
 	Subagent *string `form:"subagent,omitempty" json:"subagent,omitempty"`
 }
 
-// ListExchangesParams defines parameters for ListExchanges.
-type ListExchangesParams struct {
-	// Limit At most this many; the default and ceiling are in `GET /v1/info`.
-	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Cursor From a previous page's `nextCursor`. Opaque; one made up is `400`.
-	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Model One model's calls.
-	Model *string `form:"model,omitempty" json:"model,omitempty"`
-
-	// Status `ok`, the calls the provider answered with a status below 400;
-	// `error`, those it answered with 400 or more.
-	Status *ListExchangesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
-}
-
-// ListExchangesParamsStatus defines parameters for ListExchanges.
-type ListExchangesParamsStatus string
-
 // ListFilesParams defines parameters for ListFiles.
 type ListFilesParams struct {
 	// Path Absolute, or relative to the session's working directory. Never outside the session's disk.
@@ -5401,9 +5171,6 @@ type StartProviderSignInJSONRequestBody = ProviderSignIn
 
 // FinishProviderSignInJSONRequestBody defines body for FinishProviderSignIn for application/json ContentType.
 type FinishProviderSignInJSONRequestBody = ProviderSignInFinish
-
-// PutPreferencesJSONRequestBody defines body for PutPreferences for application/json ContentType.
-type PutPreferencesJSONRequestBody = Preferences
 
 // StartSessionJSONRequestBody defines body for StartSession for application/json ContentType.
 type StartSessionJSONRequestBody = SessionSpec
@@ -6421,9 +6188,6 @@ type ClientInterface interface {
 
 	PutProvider(ctx context.Context, provider ProviderName, body PutProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RefreshProviderModels request
-	RefreshProviderModels(ctx context.Context, provider ProviderName, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// StartProviderSignInWithBody request with any body
 	StartProviderSignInWithBody(ctx context.Context, provider ProviderName, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6451,14 +6215,6 @@ type ClientInterface interface {
 
 	// GetSelfPicture request
 	GetSelfPicture(ctx context.Context, params *GetSelfPictureParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetPreferences request
-	GetPreferences(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PutPreferencesWithBody request with any body
-	PutPreferencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PutPreferences(ctx context.Context, body PutPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSessions request
 	ListSessions(ctx context.Context, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6516,12 +6272,6 @@ type ClientInterface interface {
 	// StreamEvents request
 	StreamEvents(ctx context.Context, sessionId SessionId, params *StreamEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListExchanges request
-	ListExchanges(ctx context.Context, sessionId SessionId, params *ListExchangesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetExchange request
-	GetExchange(ctx context.Context, sessionId SessionId, exchangeId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListFiles request
 	ListFiles(ctx context.Context, sessionId SessionId, params *ListFilesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6578,9 +6328,6 @@ type ClientInterface interface {
 
 	// RestoreSession request
 	RestoreSession(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// Retitle request
-	Retitle(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RewindWithBody request with any body
 	RewindWithBody(ctx context.Context, sessionId SessionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7583,18 +7330,6 @@ func (c *Client) PutProvider(ctx context.Context, provider ProviderName, body Pu
 	return c.Client.Do(req)
 }
 
-func (c *Client) RefreshProviderModels(ctx context.Context, provider ProviderName, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRefreshProviderModelsRequest(c.Server, provider)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) StartProviderSignInWithBody(ctx context.Context, provider ProviderName, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStartProviderSignInRequestWithBody(c.Server, provider, contentType, body)
 	if err != nil {
@@ -7705,42 +7440,6 @@ func (c *Client) ListNotices(ctx context.Context, reqEditors ...RequestEditorFn)
 
 func (c *Client) GetSelfPicture(ctx context.Context, params *GetSelfPictureParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSelfPictureRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetPreferences(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetPreferencesRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PutPreferencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPutPreferencesRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PutPreferences(ctx context.Context, body PutPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPutPreferencesRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7991,30 +7690,6 @@ func (c *Client) StreamEvents(ctx context.Context, sessionId SessionId, params *
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListExchanges(ctx context.Context, sessionId SessionId, params *ListExchangesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListExchangesRequest(c.Server, sessionId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetExchange(ctx context.Context, sessionId SessionId, exchangeId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetExchangeRequest(c.Server, sessionId, exchangeId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListFiles(ctx context.Context, sessionId SessionId, params *ListFilesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListFilesRequest(c.Server, sessionId, params)
 	if err != nil {
@@ -8245,18 +7920,6 @@ func (c *Client) InterruptWithQueuedTurn(ctx context.Context, sessionId SessionI
 
 func (c *Client) RestoreSession(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRestoreSessionRequest(c.Server, sessionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) Retitle(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRetitleRequest(c.Server, sessionId)
 	if err != nil {
 		return nil, err
 	}
@@ -11169,40 +10832,6 @@ func NewPutProviderRequestWithBody(server string, provider ProviderName, content
 	return req, nil
 }
 
-// NewRefreshProviderModelsRequest generates requests for RefreshProviderModels
-func NewRefreshProviderModelsRequest(server string, provider ProviderName) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "provider", runtime.ParamLocationPath, provider)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/providers/%s/models", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewStartProviderSignInRequest calls the generic StartProviderSignIn builder with application/json body
 func NewStartProviderSignInRequest(server string, provider ProviderName, body StartProviderSignInJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -11527,73 +11156,6 @@ func NewGetSelfPictureRequest(server string, params *GetSelfPictureParams) (*htt
 		}
 
 	}
-
-	return req, nil
-}
-
-// NewGetPreferencesRequest generates requests for GetPreferences
-func NewGetPreferencesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/self/preferences")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPutPreferencesRequest calls the generic PutPreferences builder with application/json body
-func NewPutPreferencesRequest(server string, body PutPreferencesJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPutPreferencesRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewPutPreferencesRequestWithBody generates requests for PutPreferences with any type of body
-func NewPutPreferencesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/self/preferences")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -12550,151 +12112,6 @@ func NewStreamEventsRequest(server string, sessionId SessionId, params *StreamEv
 	return req, nil
 }
 
-// NewListExchangesRequest generates requests for ListExchanges
-func NewListExchangesRequest(server string, sessionId SessionId, params *ListExchangesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "sessionId", runtime.ParamLocationPath, sessionId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/sessions/%s/exchanges", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Model != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "model", runtime.ParamLocationQuery, *params.Model); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, *params.Status); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetExchangeRequest generates requests for GetExchange
-func NewGetExchangeRequest(server string, sessionId SessionId, exchangeId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "sessionId", runtime.ParamLocationPath, sessionId)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "exchangeId", runtime.ParamLocationPath, exchangeId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/sessions/%s/exchanges/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewListFilesRequest generates requests for ListFiles
 func NewListFilesRequest(server string, sessionId SessionId, params *ListFilesParams) (*http.Request, error) {
 	var err error
@@ -13458,40 +12875,6 @@ func NewRestoreSessionRequest(server string, sessionId SessionId) (*http.Request
 	}
 
 	operationPath := fmt.Sprintf("/v1/sessions/%s/restore", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewRetitleRequest generates requests for Retitle
-func NewRetitleRequest(server string, sessionId SessionId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "sessionId", runtime.ParamLocationPath, sessionId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/sessions/%s/retitle", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15299,9 +14682,6 @@ type ClientWithResponsesInterface interface {
 
 	PutProviderWithResponse(ctx context.Context, provider ProviderName, body PutProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*PutProviderResponse, error)
 
-	// RefreshProviderModelsWithResponse request
-	RefreshProviderModelsWithResponse(ctx context.Context, provider ProviderName, reqEditors ...RequestEditorFn) (*RefreshProviderModelsResponse, error)
-
 	// StartProviderSignInWithBodyWithResponse request with any body
 	StartProviderSignInWithBodyWithResponse(ctx context.Context, provider ProviderName, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartProviderSignInResponse, error)
 
@@ -15329,14 +14709,6 @@ type ClientWithResponsesInterface interface {
 
 	// GetSelfPictureWithResponse request
 	GetSelfPictureWithResponse(ctx context.Context, params *GetSelfPictureParams, reqEditors ...RequestEditorFn) (*GetSelfPictureResponse, error)
-
-	// GetPreferencesWithResponse request
-	GetPreferencesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPreferencesResponse, error)
-
-	// PutPreferencesWithBodyWithResponse request with any body
-	PutPreferencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutPreferencesResponse, error)
-
-	PutPreferencesWithResponse(ctx context.Context, body PutPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*PutPreferencesResponse, error)
 
 	// ListSessionsWithResponse request
 	ListSessionsWithResponse(ctx context.Context, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*ListSessionsResponse, error)
@@ -15394,12 +14766,6 @@ type ClientWithResponsesInterface interface {
 	// StreamEventsWithResponse request
 	StreamEventsWithResponse(ctx context.Context, sessionId SessionId, params *StreamEventsParams, reqEditors ...RequestEditorFn) (*StreamEventsResponse, error)
 
-	// ListExchangesWithResponse request
-	ListExchangesWithResponse(ctx context.Context, sessionId SessionId, params *ListExchangesParams, reqEditors ...RequestEditorFn) (*ListExchangesResponse, error)
-
-	// GetExchangeWithResponse request
-	GetExchangeWithResponse(ctx context.Context, sessionId SessionId, exchangeId string, reqEditors ...RequestEditorFn) (*GetExchangeResponse, error)
-
 	// ListFilesWithResponse request
 	ListFilesWithResponse(ctx context.Context, sessionId SessionId, params *ListFilesParams, reqEditors ...RequestEditorFn) (*ListFilesResponse, error)
 
@@ -15456,9 +14822,6 @@ type ClientWithResponsesInterface interface {
 
 	// RestoreSessionWithResponse request
 	RestoreSessionWithResponse(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*RestoreSessionResponse, error)
-
-	// RetitleWithResponse request
-	RetitleWithResponse(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*RetitleResponse, error)
 
 	// RewindWithBodyWithResponse request with any body
 	RewindWithBodyWithResponse(ctx context.Context, sessionId SessionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RewindResponse, error)
@@ -16982,31 +16345,6 @@ func (r PutProviderResponse) StatusCode() int {
 	return 0
 }
 
-type RefreshProviderModelsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Provider
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r RefreshProviderModelsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RefreshProviderModelsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type StartProviderSignInResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -17199,55 +16537,6 @@ func (r GetSelfPictureResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetSelfPictureResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetPreferencesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Preferences
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r GetPreferencesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetPreferencesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PutPreferencesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Preferences
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r PutPreferencesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PutPreferencesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17675,57 +16964,6 @@ func (r StreamEventsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r StreamEventsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListExchangesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ExchangePage
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListExchangesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListExchangesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetExchangeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Exchange
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetExchangeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetExchangeResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -18168,34 +17406,6 @@ func (r RestoreSessionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RestoreSessionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type RetitleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Session
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-	JSON502      *Upstream
-}
-
-// Status returns HTTPResponse.Status
-func (r RetitleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RetitleResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -19731,15 +18941,6 @@ func (c *ClientWithResponses) PutProviderWithResponse(ctx context.Context, provi
 	return ParsePutProviderResponse(rsp)
 }
 
-// RefreshProviderModelsWithResponse request returning *RefreshProviderModelsResponse
-func (c *ClientWithResponses) RefreshProviderModelsWithResponse(ctx context.Context, provider ProviderName, reqEditors ...RequestEditorFn) (*RefreshProviderModelsResponse, error) {
-	rsp, err := c.RefreshProviderModels(ctx, provider, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRefreshProviderModelsResponse(rsp)
-}
-
 // StartProviderSignInWithBodyWithResponse request with arbitrary body returning *StartProviderSignInResponse
 func (c *ClientWithResponses) StartProviderSignInWithBodyWithResponse(ctx context.Context, provider ProviderName, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartProviderSignInResponse, error) {
 	rsp, err := c.StartProviderSignInWithBody(ctx, provider, contentType, body, reqEditors...)
@@ -19826,32 +19027,6 @@ func (c *ClientWithResponses) GetSelfPictureWithResponse(ctx context.Context, pa
 		return nil, err
 	}
 	return ParseGetSelfPictureResponse(rsp)
-}
-
-// GetPreferencesWithResponse request returning *GetPreferencesResponse
-func (c *ClientWithResponses) GetPreferencesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPreferencesResponse, error) {
-	rsp, err := c.GetPreferences(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetPreferencesResponse(rsp)
-}
-
-// PutPreferencesWithBodyWithResponse request with arbitrary body returning *PutPreferencesResponse
-func (c *ClientWithResponses) PutPreferencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutPreferencesResponse, error) {
-	rsp, err := c.PutPreferencesWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePutPreferencesResponse(rsp)
-}
-
-func (c *ClientWithResponses) PutPreferencesWithResponse(ctx context.Context, body PutPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*PutPreferencesResponse, error) {
-	rsp, err := c.PutPreferences(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePutPreferencesResponse(rsp)
 }
 
 // ListSessionsWithResponse request returning *ListSessionsResponse
@@ -20030,24 +19205,6 @@ func (c *ClientWithResponses) StreamEventsWithResponse(ctx context.Context, sess
 	return ParseStreamEventsResponse(rsp)
 }
 
-// ListExchangesWithResponse request returning *ListExchangesResponse
-func (c *ClientWithResponses) ListExchangesWithResponse(ctx context.Context, sessionId SessionId, params *ListExchangesParams, reqEditors ...RequestEditorFn) (*ListExchangesResponse, error) {
-	rsp, err := c.ListExchanges(ctx, sessionId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListExchangesResponse(rsp)
-}
-
-// GetExchangeWithResponse request returning *GetExchangeResponse
-func (c *ClientWithResponses) GetExchangeWithResponse(ctx context.Context, sessionId SessionId, exchangeId string, reqEditors ...RequestEditorFn) (*GetExchangeResponse, error) {
-	rsp, err := c.GetExchange(ctx, sessionId, exchangeId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetExchangeResponse(rsp)
-}
-
 // ListFilesWithResponse request returning *ListFilesResponse
 func (c *ClientWithResponses) ListFilesWithResponse(ctx context.Context, sessionId SessionId, params *ListFilesParams, reqEditors ...RequestEditorFn) (*ListFilesResponse, error) {
 	rsp, err := c.ListFiles(ctx, sessionId, params, reqEditors...)
@@ -20223,15 +19380,6 @@ func (c *ClientWithResponses) RestoreSessionWithResponse(ctx context.Context, se
 		return nil, err
 	}
 	return ParseRestoreSessionResponse(rsp)
-}
-
-// RetitleWithResponse request returning *RetitleResponse
-func (c *ClientWithResponses) RetitleWithResponse(ctx context.Context, sessionId SessionId, reqEditors ...RequestEditorFn) (*RetitleResponse, error) {
-	rsp, err := c.Retitle(ctx, sessionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRetitleResponse(rsp)
 }
 
 // RewindWithBodyWithResponse request with arbitrary body returning *RewindResponse
@@ -23316,53 +22464,6 @@ func ParsePutProviderResponse(rsp *http.Response) (*PutProviderResponse, error) 
 	return response, nil
 }
 
-// ParseRefreshProviderModelsResponse parses an HTTP response from a RefreshProviderModelsWithResponse call
-func ParseRefreshProviderModelsResponse(rsp *http.Response) (*RefreshProviderModelsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RefreshProviderModelsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Provider
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseStartProviderSignInResponse parses an HTTP response from a StartProviderSignInWithResponse call
 func ParseStartProviderSignInResponse(rsp *http.Response) (*StartProviderSignInResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -23719,93 +22820,6 @@ func ParseGetSelfPictureResponse(rsp *http.Response) (*GetSelfPictureResponse, e
 			return nil, err
 		}
 		response.JSON502 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetPreferencesResponse parses an HTTP response from a GetPreferencesWithResponse call
-func ParseGetPreferencesResponse(rsp *http.Response) (*GetPreferencesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetPreferencesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Preferences
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePutPreferencesResponse parses an HTTP response from a PutPreferencesWithResponse call
-func ParsePutPreferencesResponse(rsp *http.Response) (*PutPreferencesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PutPreferencesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Preferences
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
 
 	}
 
@@ -24717,107 +23731,6 @@ func ParseStreamEventsResponse(rsp *http.Response) (*StreamEventsResponse, error
 	return response, nil
 }
 
-// ParseListExchangesResponse parses an HTTP response from a ListExchangesWithResponse call
-func ParseListExchangesResponse(rsp *http.Response) (*ListExchangesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListExchangesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ExchangePage
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetExchangeResponse parses an HTTP response from a GetExchangeWithResponse call
-func ParseGetExchangeResponse(rsp *http.Response) (*GetExchangeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetExchangeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Exchange
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListFilesResponse parses an HTTP response from a ListFilesWithResponse call
 func ParseListFilesResponse(rsp *http.Response) (*ListFilesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -25712,74 +24625,6 @@ func ParseRestoreSessionResponse(rsp *http.Response) (*RestoreSessionResponse, e
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRetitleResponse parses an HTTP response from a RetitleWithResponse call
-func ParseRetitleResponse(rsp *http.Response) (*RetitleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RetitleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Session
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
-		var dest Upstream
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON502 = &dest
 
 	}
 

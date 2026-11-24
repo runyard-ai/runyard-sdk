@@ -9,7 +9,6 @@ Name | Type
 `id` | string
 `title` | string
 `titleSource` | [TitleSource](TitleSource.md)
-`autoTitle` | boolean
 `owner` | string
 `endUser` | [EndUser](EndUser.md)
 `state` | [SessionState](SessionState.md)
@@ -45,7 +44,6 @@ const example = {
   "id": 0192f6a4-3c1e-7b2a-9d4e-5f6a7b8c9d0e,
   "title": null,
   "titleSource": null,
-  "autoTitle": null,
   "owner": ada@example.com,
   "endUser": null,
   "state": null,

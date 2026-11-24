@@ -15,16 +15,14 @@
 
 /**
  * Where the session's title came from: `default`, none was had;
- * `first_turn`, the first line of its first turn; `summary`, its
- * provider summarized its conversation; `given`, a person or a
- * program gave it. Absent on a session made before it was kept.
+ * `first_turn`, the first line of its first turn; `given`, a person
+ * or a program gave it. Absent on a session made before it was kept.
  * 
  * @export
  */
 export const TitleSource = {
     Default: 'default',
     FirstTurn: 'first_turn',
-    Summary: 'summary',
     Given: 'given',
 } as const;
 export type TitleSource = typeof TitleSource[keyof typeof TitleSource];

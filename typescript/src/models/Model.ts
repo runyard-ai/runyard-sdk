@@ -14,9 +14,8 @@
 
 import { mapValues, parseDate, parseDateTime, serializeDate, serializeDateTime } from '../runtime.js';
 /**
- * A model as its provider's API lists it. What the API does not say
- * is absent, never guessed: OpenAI's `/v1/models` says no context
- * window, for one.
+ * A model a provider offers, as its admin declared it. What was not
+ * said is absent, never guessed.
  * 
  * @export
  * @interface Model
@@ -27,19 +26,19 @@ export interface Model {
      */
     id: string;
     /**
-     * The provider's name for it; its `id` when the provider has none.
+     * Its name to show; its `id` when none was given.
      */
     title: string;
     /**
-     * How many tokens its context holds, when the provider says.
+     * How many tokens its context holds, when it was said.
      */
     contextWindow?: number;
     /**
-     * How many tokens one answer may be, when the provider says.
+     * How many tokens one answer may be, when it was said.
      */
     maxOutput?: number;
     /**
-     * When the provider released it, when it says.
+     * When it was released, when it was said.
      */
     createdAt?: Date;
 }

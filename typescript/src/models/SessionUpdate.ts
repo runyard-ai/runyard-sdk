@@ -32,10 +32,6 @@ export interface SessionUpdate {
      */
     title?: string;
     /**
-     * Title it from its conversation, or stop to.
-     */
-    autoTitle?: boolean;
-    /**
      * Replaces them all.
      */
     labels?: { [key: string]: string; };
@@ -99,7 +95,6 @@ export function SessionUpdateFromJSONTyped(json: any, ignoreDiscriminator: boole
     return {
         
         'title': json['title'] == null ? undefined : json['title'],
-        'autoTitle': json['autoTitle'] == null ? undefined : json['autoTitle'],
         'labels': json['labels'] == null ? undefined : json['labels'],
         'provider': json['provider'] == null ? undefined : json['provider'],
         'model': json['model'] == null ? undefined : json['model'],
@@ -124,7 +119,6 @@ export function SessionUpdateToJSONTyped(value?: SessionUpdate | null, ignoreDis
     return {
         
         'title': value['title'],
-        'autoTitle': value['autoTitle'],
         'labels': value['labels'],
         'provider': value['provider'],
         'model': value['model'],

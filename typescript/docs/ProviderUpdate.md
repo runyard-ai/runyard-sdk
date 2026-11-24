@@ -10,6 +10,8 @@ Name | Type
 `isDefault` | boolean
 `everyone` | boolean
 `users` | Array&lt;string&gt;
+`placement` | [Placement](Placement.md)
+`models` | [Array&lt;ModelWrite&gt;](ModelWrite.md)
 
 ## Example
 
@@ -22,6 +24,8 @@ const example = {
   "isDefault": null,
   "everyone": null,
   "users": null,
+  "placement": null,
+  "models": null,
 } satisfies ProviderUpdate
 
 console.log(example)

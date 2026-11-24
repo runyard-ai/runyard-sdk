@@ -12,16 +12,13 @@ All URIs are relative to *http://127.0.0.1:8140*
 | [**getActivity**](SessionsApi.md#getactivity) | **GET** /v1/activity/{activityId} | One request a session sent through a broker, and its answer, whole |
 | [**getActivityBody**](SessionsApi.md#getactivitybody) | **GET** /v1/activity/{activityId}/body | An entry\&#39;s bodies, fetched from the runner that keeps them |
 | [**getAvailableRunners**](SessionsApi.md#getavailablerunners) | **GET** /v1/available-runners | Whether a new session\&#39;s sandbox has somewhere to run |
-| [**getExchange**](SessionsApi.md#getexchange) | **GET** /v1/sessions/{sessionId}/exchanges/{exchangeId} | One call the session\&#39;s harness made to the model, whole |
 | [**getLineage**](SessionsApi.md#getlineage) | **GET** /v1/sessions/{sessionId}/lineage | The tree this session belongs to |
 | [**getSession**](SessionsApi.md#getsession) | **GET** /v1/sessions/{sessionId} | A session |
 | [**getSessionShares**](SessionsApi.md#getsessionshares) | **GET** /v1/sessions/{sessionId}/shares | Whom the session is shared with |
 | [**listActivity**](SessionsApi.md#listactivity) | **GET** /v1/activity | What sessions did through their brokers, newest first |
-| [**listExchanges**](SessionsApi.md#listexchanges) | **GET** /v1/sessions/{sessionId}/exchanges | The calls the session\&#39;s harness made to the model, newest first |
 | [**listSessions**](SessionsApi.md#listsessions) | **GET** /v1/sessions | The account\&#39;s sessions, newest activity first |
 | [**putSessionShares**](SessionsApi.md#putsessionshares) | **PUT** /v1/sessions/{sessionId}/shares | Share the session with these people, and no others |
 | [**restoreSession**](SessionsApi.md#restoresession) | **POST** /v1/sessions/{sessionId}/restore | Bring an archived session back |
-| [**retitle**](SessionsApi.md#retitle) | **POST** /v1/sessions/{sessionId}/retitle | Title the session from its conversation now |
 | [**searchSessions**](SessionsApi.md#searchsessions) | **GET** /v1/search | The sessions whose transcripts say something, newest activity first |
 | [**sleepSession**](SessionsApi.md#sleepsession) | **POST** /v1/sessions/{sessionId}/sleep | Release a session\&#39;s sandbox now, keeping its disk |
 | [**startSession**](SessionsApi.md#startsession) | **POST** /v1/sessions | Start a session |
@@ -674,87 +671,6 @@ This endpoint does not need any parameter.
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
-## getExchange
-
-> Exchange getExchange(sessionId, exchangeId)
-
-One call the session\&#39;s harness made to the model, whole
-
-What the session sent — the request body as it went to the provider: the system prompt, the messages, the tool definitions, thinking, &#x60;max_tokens&#x60;, &#x60;metadata&#x60; and the rest — with the headers that change its meaning (&#x60;anthropic-beta&#x60;, &#x60;anthropic-version&#x60;, &#x60;openai-beta&#x60;, …), and what the provider answered. A credential is never kept, and so is never here.  A streamed answer is the message assembled from its events — what the same call would have answered without &#x60;stream&#x60; — as far as it got: one cut short has no &#x60;stop_reason&#x60;, and one the provider ended with an error event carries that &#x60;error&#x60;. Any other answer is its body; one that is not a JSON object is &#x60;{\&quot;text\&quot;: &lt;the body&gt;}&#x60;.  &#x60;previousId&#x60; and &#x60;nextId&#x60; are the session\&#39;s neighbouring exchanges by when they were sent, so a caller can walk them from any one. 
-
-### Example
-
-```ts
-import {
-  Configuration,
-  SessionsApi,
-} from '@runyard-ai/runyard-sdk';
-import type { GetExchangeRequest } from '@runyard-ai/runyard-sdk';
-
-async function example() {
-  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: console
-    apiKey: "YOUR API KEY",
-    // Configure HTTP bearer authorization: apiKey
-    accessToken: "YOUR BEARER TOKEN",
-    // Configure HTTP bearer authorization: platform
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new SessionsApi(config);
-
-  const body = {
-    // string
-    sessionId: sessionId_example,
-    // string
-    exchangeId: exchangeId_example,
-  } satisfies GetExchangeRequest;
-
-  try {
-    const data = await api.getExchange(body);
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **sessionId** | `string` |  | [Defaults to `undefined`] |
-| **exchangeId** | `string` |  | [Defaults to `undefined`] |
-
-### Return type
-
-[**Exchange**](Exchange.md)
-
-### Authorization
-
-[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** | The exchange. |  -  |
-| **401** | No key, or not a working one — one answer for every cause. |  -  |
-| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
-| **404** | Nothing by that id. |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
 ## getLineage
 
 > Lineage getLineage(sessionId)
@@ -993,7 +909,7 @@ example().catch(console.error);
 
 What sessions did through their brokers, newest first
 
-Every request a session\&#39;s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\&#39;s tool called, a &#x60;git push&#x60; and the refs it moved, a request through an http broker, a host opened through &#x60;egress&#x60;, a tunnel, a session or an image asked for. Kept a while (&#x60;--activity-kept&#x60;, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\&#39;s feed, which this server reads — that record is the entry, through any broker: this server\&#39;s own, a shared one the daemon dials, one a person\&#39;s own program serves (&#x60;kind: gateway&#x60;, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the &#x60;llm&#x60; broker\&#39;s calls, which are the session\&#39;s exchanges (&#x60;GET /v1/sessions/{sessionId}/exchanges&#x60;) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a &#x60;one_off&#x60;.  And beside what sessions did, every call the Runyard platform made to this server\&#39;s API with a platform token: &#x60;kind: api&#x60;, &#x60;actor: platform&#x60;, no session\&#39;s and nobody\&#39;s — an admin\&#39;s to read.  And every program a session\&#39;s machine ran, as its kernel recorded it before it ran (&#x60;kind: exec&#x60;): through no broker, and many for each command a harness runs, so listed only when asked for, with &#x60;kind&#x3D;exec&#x60;.  A summary of each, the newest first; &#x60;GET /v1/activity/{activityId}&#x60; is one whole. A member reads their own sessions\&#39;; an admin, everyone\&#39;s. 
+Every request a session\&#39;s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\&#39;s tool called, a &#x60;git push&#x60; and the refs it moved, a request through an http broker, a host opened through &#x60;egress&#x60;, a tunnel, a session or an image asked for. Kept a while (&#x60;--activity-kept&#x60;, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\&#39;s feed, which this server reads — that record is the entry, through any broker: this server\&#39;s own, a shared one the daemon dials, one a person\&#39;s own program serves (&#x60;kind: gateway&#x60;, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  The &#x60;llm&#x60; broker\&#39;s calls are here as any broker\&#39;s: each a call its harness made to the model from the session\&#39;s sandbox.  And beside what sessions did, every call the Runyard platform made to this server\&#39;s API with a platform token: &#x60;kind: api&#x60;, &#x60;actor: platform&#x60;, no session\&#39;s and nobody\&#39;s — an admin\&#39;s to read.  And every program a session\&#39;s machine ran, as its kernel recorded it before it ran (&#x60;kind: exec&#x60;): through no broker, and many for each command a harness runs, so listed only when asked for, with &#x60;kind&#x3D;exec&#x60;.  A summary of each, the newest first; &#x60;GET /v1/activity/{activityId}&#x60; is one whole. A member reads their own sessions\&#39;; an admin, everyone\&#39;s. 
 
 ### Example
 
@@ -1070,97 +986,6 @@ example().catch(console.error);
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | The entries. |  -  |
-| **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
-| **401** | No key, or not a working one — one answer for every cause. |  -  |
-| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
-| **404** | Nothing by that id. |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
-## listExchanges
-
-> ExchangePage listExchanges(sessionId, limit, cursor, model, status)
-
-The calls the session\&#39;s harness made to the model, newest first
-
-The record of what the harness sent: every call the session\&#39;s &#x60;llm&#x60; broker carried to the provider and back — an *exchange* — kept for a while (&#x60;--exchanges-kept&#x60;, a week by default) and then forgotten, and with the session when it is deleted. Calls that count tokens and that list the models are kept too, told apart by &#x60;path&#x60;.  This is a summary of each, newest first by when it was sent; &#x60;GET …/exchanges/{exchangeId}&#x60; is one whole: the request as sent, and the answer. 
-
-### Example
-
-```ts
-import {
-  Configuration,
-  SessionsApi,
-} from '@runyard-ai/runyard-sdk';
-import type { ListExchangesRequest } from '@runyard-ai/runyard-sdk';
-
-async function example() {
-  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: console
-    apiKey: "YOUR API KEY",
-    // Configure HTTP bearer authorization: apiKey
-    accessToken: "YOUR BEARER TOKEN",
-    // Configure HTTP bearer authorization: platform
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new SessionsApi(config);
-
-  const body = {
-    // string
-    sessionId: sessionId_example,
-    // number | At most this many; the default and ceiling are in `GET /v1/info`. (optional)
-    limit: 56,
-    // string | From a previous page\'s `nextCursor`. Opaque; one made up is `400`. (optional)
-    cursor: cursor_example,
-    // string | One model\'s calls. (optional)
-    model: claude-opus-5-5,
-    // 'ok' | 'error' | `ok`, the calls the provider answered with a status below 400; `error`, those it answered with 400 or more.  (optional)
-    status: status_example,
-  } satisfies ListExchangesRequest;
-
-  try {
-    const data = await api.listExchanges(body);
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **sessionId** | `string` |  | [Defaults to `undefined`] |
-| **limit** | `number` | At most this many; the default and ceiling are in &#x60;GET /v1/info&#x60;. | [Optional] [Defaults to `undefined`] |
-| **cursor** | `string` | From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;. | [Optional] [Defaults to `undefined`] |
-| **model** | `string` | One model\&#39;s calls. | [Optional] [Defaults to `undefined`] |
-| **status** | `ok`, `error` | &#x60;ok&#x60;, the calls the provider answered with a status below 400; &#x60;error&#x60;, those it answered with 400 or more.  | [Optional] [Defaults to `undefined`] [Enum: ok, error] |
-
-### Return type
-
-[**ExchangePage**](ExchangePage.md)
-
-### Authorization
-
-[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** | The exchanges. |  -  |
 | **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
@@ -1438,87 +1263,6 @@ example().catch(console.error);
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 | **404** | Nothing by that id. |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
-## retitle
-
-> Session retitle(sessionId)
-
-Title the session from its conversation now
-
-Asks the session\&#39;s provider for a title of what its conversation is about, and gives the session it: &#x60;titleSource&#x60; is &#x60;summary&#x60;. The call is made by the server, not the session\&#39;s machine, but as the session\&#39;s harness makes its own — its request, its prompt, its model — and is paid for as the session\&#39;s (&#x60;…/costs&#x60;). It is not one of the session\&#39;s exchanges: it is in the activity (&#x60;GET /v1/activity&#x60;), a &#x60;one_off&#x60;.  &#x60;403&#x60; when the workspace\&#39;s &#x60;titleSummaries&#x60; are off; &#x60;400 not_supported&#x60; when the session\&#39;s harness does not title (its &#x60;features&#x60; lack &#x60;title&#x60;); &#x60;409&#x60; when it has not called its model yet, or the conversation has nothing to title; &#x60;502&#x60; when the provider failed or answered no title. 
-
-### Example
-
-```ts
-import {
-  Configuration,
-  SessionsApi,
-} from '@runyard-ai/runyard-sdk';
-import type { RetitleRequest } from '@runyard-ai/runyard-sdk';
-
-async function example() {
-  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: console
-    apiKey: "YOUR API KEY",
-    // Configure HTTP bearer authorization: apiKey
-    accessToken: "YOUR BEARER TOKEN",
-    // Configure HTTP bearer authorization: platform
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new SessionsApi(config);
-
-  const body = {
-    // string
-    sessionId: sessionId_example,
-  } satisfies RetitleRequest;
-
-  try {
-    const data = await api.retitle(body);
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **sessionId** | `string` |  | [Defaults to `undefined`] |
-
-### Return type
-
-[**Session**](Session.md)
-
-### Authorization
-
-[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** | The session, titled. |  -  |
-| **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
-| **401** | No key, or not a working one — one answer for every cause. |  -  |
-| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
-| **404** | Nothing by that id. |  -  |
-| **409** | Not in the state this needs (&#x60;conflict&#x60;), a different spec under an id already used (&#x60;spec_conflict&#x60;), or still used by something (&#x60;in_use&#x60;).  |  -  |
-| **502** | Somebody else\&#39;s server answered badly, or not at all (&#x60;provider_error&#x60;, &#x60;upstream_error&#x60;). |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

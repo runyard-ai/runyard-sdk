@@ -9,9 +9,8 @@ All URIs are relative to *http://127.0.0.1:8140*
 | [**listHarnesses**](ModelsApi.md#listharnesses) | **GET** /v1/harnesses | The harnesses a session may run, and their models |
 | [**listProviders**](ModelsApi.md#listproviders) | **GET** /v1/providers | The providers, and whether each has a working credential |
 | [**putProvider**](ModelsApi.md#putprovider) | **PUT** /v1/providers/{provider} | Make a provider of an API key, or replace one with it |
-| [**refreshProviderModels**](ModelsApi.md#refreshprovidermodels) | **POST** /v1/providers/{provider}/models | Read a provider\&#39;s models again, now |
 | [**startProviderSignIn**](ModelsApi.md#startprovidersignin) | **POST** /v1/providers/{provider}/signin | Start making a provider of a subscription, or replacing one with it |
-| [**updateProvider**](ModelsApi.md#updateprovider) | **PATCH** /v1/providers/{provider} | Retitle a provider, say who may use it, or make it the default |
+| [**updateProvider**](ModelsApi.md#updateprovider) | **PATCH** /v1/providers/{provider} | Retitle a provider, say who may use it, where it runs and its models, or make it the default |
 
 
 
@@ -185,7 +184,7 @@ example().catch(console.error);
 
 The harnesses a session may run, and their models
 
-&#x60;claude-code&#x60; (Claude Code, on &#x60;anthropic&#x60; providers), &#x60;codex&#x60; (OpenAI\&#39;s Codex, on &#x60;openai&#x60; providers) and &#x60;opencode&#x60; (opencode, on &#x60;openai_compatible&#x60; providers). A harness\&#39;s models are not a list this server keeps: they are what its providers\&#39; APIs answered when last asked, so a harness with no provider of a type it runs on has none. 
+&#x60;claude-code&#x60; (Claude Code, on &#x60;anthropic&#x60; providers), &#x60;codex&#x60; (OpenAI\&#39;s Codex, on &#x60;openai&#x60; providers) and &#x60;opencode&#x60; (opencode, on &#x60;openai_compatible&#x60; providers). A harness\&#39;s models are its providers\&#39; &#x60;models&#x60;, as their admins declared them: a harness none of whose providers declares any has none, and a session on it runs the model it names, or its harness\&#39;s own default. 
 
 ### Example
 
@@ -254,7 +253,7 @@ This endpoint does not need any parameter.
 
 The providers, and whether each has a working credential
 
-A provider is a named credential for a model provider\&#39;s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\&#39;s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (&#x60;users&#x60;), or for &#x60;everyone&#x60;: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\&#39;s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on &#x60;POST …/models&#x60;.  An application sees its own, each end user\&#39;s among them. 
+A provider is a named credential for a model provider\&#39;s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\&#39;s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (&#x60;users&#x60;), or for &#x60;everyone&#x60;: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Nothing here calls a provider\&#39;s API: every call to a model is a session\&#39;s harness\&#39;s, made from its sandbox through the &#x60;llm&#x60; broker its runner provides, which this server lends the provider\&#39;s credential for each turn. A provider\&#39;s models are what its admin declared (&#x60;models&#x60;), and a provider that only some runners reach says which (&#x60;placement&#x60;).  An application sees its own, each end user\&#39;s among them. 
 
 ### Example
 
@@ -331,7 +330,7 @@ example().catch(console.error);
 
 Make a provider of an API key, or replace one with it
 
-Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the &#x60;llm&#x60; broker, which puts it on. The server tries it before answering, says what the provider said, and reads the provider\&#39;s models with it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\&#39;s is &#x60;409&#x60;. A provider made is for its maker alone.  An &#x60;openai_compatible&#x60; provider is a server of OpenAI\&#39;s chat completions — llama.cpp\&#39;s llama-server, vLLM — at &#x60;baseUrl&#x60;, which this server reaches: its key is optional, since such a server often takes none. 
+Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the &#x60;llm&#x60; broker its runner provides, which is lent the credential for each turn. It is not tried here — this server calls no provider: a session\&#39;s first call is what tries it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\&#39;s is &#x60;409&#x60;. A provider made is for its maker alone.  An &#x60;openai_compatible&#x60; provider is a server of OpenAI\&#39;s chat completions — Ollama, llama.cpp\&#39;s llama-server, vLLM — that the runners reach: where it is is each runner\&#39;s to say, its &#x60;llm&#x60; broker\&#39;s &#x60;-chat-completions-upstream&#x60;, never this server\&#39;s. Its key is optional, since such a server often takes none. One that only some runners reach — one on a runner\&#39;s own network — says which in &#x60;placement&#x60;, and declares its &#x60;models&#x60;, which such a server says nothing of a harness needs: their context windows. 
 
 ### Example
 
@@ -398,87 +397,9 @@ example().catch(console.error);
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | Replaced, and tried. |  -  |
-| **201** | Made, and tried. |  -  |
+| **200** | Replaced. |  -  |
+| **201** | Made. |  -  |
 | **400** | The request is not one this contract describes, or not one that makes sense. |  -  |
-| **401** | No key, or not a working one — one answer for every cause. |  -  |
-| **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
-| **404** | Nothing by that id. |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
-## refreshProviderModels
-
-> Provider refreshProviderModels(provider)
-
-Read a provider\&#39;s models again, now
-
-Asks the provider\&#39;s API for its models with the provider\&#39;s credential, as the server does every hour. A failure keeps the list read last and says why in &#x60;modelsError&#x60;: the answer is the provider either way, &#x60;modelsReadAt&#x60; saying when its list was read. 
-
-### Example
-
-```ts
-import {
-  Configuration,
-  ModelsApi,
-} from '@runyard-ai/runyard-sdk';
-import type { RefreshProviderModelsRequest } from '@runyard-ai/runyard-sdk';
-
-async function example() {
-  console.log("🚀 Testing @runyard-ai/runyard-sdk SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: console
-    apiKey: "YOUR API KEY",
-    // Configure HTTP bearer authorization: apiKey
-    accessToken: "YOUR BEARER TOKEN",
-    // Configure HTTP bearer authorization: platform
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new ModelsApi(config);
-
-  const body = {
-    // string
-    provider: anthropic,
-  } satisfies RefreshProviderModelsRequest;
-
-  try {
-    const data = await api.refreshProviderModels(body);
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **provider** | `string` |  | [Defaults to `undefined`] |
-
-### Return type
-
-[**Provider**](Provider.md)
-
-### Authorization
-
-[console](../README.md#console), [apiKey](../README.md#apiKey), [platform](../README.md#platform)
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** | The provider, its models read again or why they could not be. |  -  |
 | **401** | No key, or not a working one — one answer for every cause. |  -  |
 | **403** | The key works, and lacks the scope this needs — or its person, what this is. |  -  |
 | **404** | Nothing by that id. |  -  |
@@ -492,7 +413,7 @@ example().catch(console.error);
 
 Start making a provider of a subscription, or replacing one with it
 
-A subscription signs in with OAuth, as its harness does, by one of the &#x60;method&#x60;s its type offers; &#x60;POST …/signin/{flowId}&#x60; finishes, and makes the provider of that name, or replaces it.  - &#x60;code&#x60; (&#x60;anthropic&#x60;, as Claude Code does): the person opens   &#x60;authorizationUrl&#x60;, signs in, and is shown a code; finishing with   that &#x60;code&#x60; makes the provider. - &#x60;device&#x60; (&#x60;openai&#x60;, a ChatGPT plan, as &#x60;codex login   --device-auth&#x60; does): the person opens &#x60;verificationUri&#x60; on any   machine and enters &#x60;userCode&#x60;. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - &#x60;redirect&#x60; (&#x60;openai&#x60;, as &#x60;codex login&#x60; does): the person opens   &#x60;authorizationUrl&#x60; and signs in; their browser is then sent to an   address on &#x60;localhost&#x60; that nothing there answers. Finishing with   that address, pasted from the browser\&#39;s address bar   (&#x60;redirectUrl&#x60;), makes the provider.  The server keeps the refresh token, renews the access token before it expires, and reads the provider\&#39;s models once signed in. An &#x60;openai_compatible&#x60; provider has no subscription: &#x60;400&#x60;. 
+A subscription signs in with OAuth, as its harness does, by one of the &#x60;method&#x60;s its type offers; &#x60;POST …/signin/{flowId}&#x60; finishes, and makes the provider of that name, or replaces it.  - &#x60;code&#x60; (&#x60;anthropic&#x60;, as Claude Code does): the person opens   &#x60;authorizationUrl&#x60;, signs in, and is shown a code; finishing with   that &#x60;code&#x60; makes the provider. - &#x60;device&#x60; (&#x60;openai&#x60;, a ChatGPT plan, as &#x60;codex login   --device-auth&#x60; does): the person opens &#x60;verificationUri&#x60; on any   machine and enters &#x60;userCode&#x60;. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - &#x60;redirect&#x60; (&#x60;openai&#x60;, as &#x60;codex login&#x60; does): the person opens   &#x60;authorizationUrl&#x60; and signs in; their browser is then sent to an   address on &#x60;localhost&#x60; that nothing there answers. Finishing with   that address, pasted from the browser\&#39;s address bar   (&#x60;redirectUrl&#x60;), makes the provider.  The server keeps the refresh token, and renews the access token before it expires. An &#x60;openai_compatible&#x60; provider has no subscription: &#x60;400&#x60;. 
 
 ### Example
 
@@ -573,9 +494,9 @@ example().catch(console.error);
 
 > Provider updateProvider(provider, providerUpdate)
 
-Retitle a provider, say who may use it, or make it the default
+Retitle a provider, say who may use it, where it runs and its models, or make it the default
 
-Absent fields are left as they are. &#x60;isDefault: true&#x60; makes it the default and the one that was stops being; &#x60;false&#x60; is &#x60;400&#x60;, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
+Absent fields are left as they are; &#x60;placement&#x60; replaces the one it had, and one of no labels places it anywhere; &#x60;models&#x60; replaces them all. &#x60;isDefault: true&#x60; makes it the default and the one that was stops being; &#x60;false&#x60; is &#x60;400&#x60;, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
 
 ### Example
 

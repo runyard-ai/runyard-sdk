@@ -1,28 +1,29 @@
 
-# RateLimitWindow
+# ModelWrite
 
+A model a provider offers, as its admin declares it.
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`name` | string
-`windowMinutes` | number
-`utilization` | number
-`resetsAt` | Date
+`id` | string
+`title` | string
+`contextWindow` | number
+`maxOutput` | number
 
 ## Example
 
 ```typescript
-import type { RateLimitWindow } from '@runyard-ai/runyard-sdk'
+import type { ModelWrite } from '@runyard-ai/runyard-sdk'
 
 // TODO: Update the object below with actual values
 const example = {
-  "name": primary,
-  "windowMinutes": 300,
-  "utilization": 0.42,
-  "resetsAt": null,
-} satisfies RateLimitWindow
+  "id": qwen3:32b,
+  "title": null,
+  "contextWindow": 32768,
+  "maxOutput": null,
+} satisfies ModelWrite
 
 console.log(example)
 
@@ -31,7 +32,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as RateLimitWindow
+const exampleParsed = JSON.parse(exampleJSON) as ModelWrite
 console.log(exampleParsed)
 ```
 

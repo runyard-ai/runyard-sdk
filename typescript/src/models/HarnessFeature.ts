@@ -27,7 +27,6 @@ export const HarnessFeature = {
     TaskList: 'task_list',
     Alarms: 'alarms',
     Partials: 'partials',
-    Title: 'title',
 } as const;
 export type HarnessFeature = typeof HarnessFeature[keyof typeof HarnessFeature];
 

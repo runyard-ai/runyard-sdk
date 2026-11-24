@@ -1,7 +1,7 @@
 
 # Model
 
-A model as its provider\'s API lists it. What the API does not say is absent, never guessed: OpenAI\'s `/v1/models` says no context window, for one. 
+A model a provider offers, as its admin declared it. What was not said is absent, never guessed. 
 
 ## Properties
 

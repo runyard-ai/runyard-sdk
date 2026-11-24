@@ -63,14 +63,15 @@ export interface SessionSpec {
      */
     provider?: string;
     /**
-     * One of its provider's `models`, as the provider spells it. When
-     * absent, and nothing it is started from names one: that of the
-     * session that started it, as it runs now, if on the same harness
-     * and its provider lists it; else the server's configured model
-     * for the harness, if its provider lists it; else its provider's
-     * newest. One the provider has not
-     * listed is not refused here — the provider is the judge, at the
-     * turn.
+     * The model, as the provider spells it: one of its provider's
+     * `models`, or any other. When absent, and nothing it is started
+     * from names one: that of the session that started it, as it runs
+     * now, if on the same harness and its provider declares it or
+     * declares none; else
+     * the server's configured model for the harness, if its provider
+     * declares it or declares none; else its provider's first. One
+     * the provider does not declare is not refused here — the
+     * provider is the judge, at the turn.
      * 
      */
     model?: string;
@@ -108,13 +109,6 @@ export interface SessionSpec {
      * Made from the first turn when absent — the one in `firstTurn`, or the first sent.
      */
     title?: string;
-    /**
-     * Title the session from its conversation once its first answer
-     * has begun (`autoTitle`). Absent, its owner's preference
-     * (`/v1/self/preferences`).
-     * 
-     */
-    autoTitle?: boolean;
     /**
      * Whom an application's session is for. Only an application
      * names one, and it is `403` otherwise; absent, the session is
@@ -169,7 +163,6 @@ export function SessionSpecFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'profileId': json['profileId'] == null ? undefined : json['profileId'],
         'profileVersion': json['profileVersion'] == null ? undefined : json['profileVersion'],
         'title': json['title'] == null ? undefined : json['title'],
-        'autoTitle': json['autoTitle'] == null ? undefined : json['autoTitle'],
         'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'parentId': json['parentId'] == null ? undefined : json['parentId'],
         'labels': json['labels'] == null ? undefined : json['labels'],
@@ -200,7 +193,6 @@ export function SessionSpecToJSONTyped(value?: SessionSpec | null, ignoreDiscrim
         'profileId': value['profileId'],
         'profileVersion': value['profileVersion'],
         'title': value['title'],
-        'autoTitle': value['autoTitle'],
         'endUser': EndUserToJSON(value['endUser']),
         'parentId': value['parentId'],
         'labels': value['labels'],

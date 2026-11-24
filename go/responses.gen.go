@@ -168,9 +168,6 @@ func (r *UpdateProviderResponse) Raw() []byte { return r.Body }
 func (r *PutProviderResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
-func (r *RefreshProviderModelsResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
 func (r *StartProviderSignInResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
@@ -193,12 +190,6 @@ func (r *ListNoticesResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *GetSelfPictureResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *GetPreferencesResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *PutPreferencesResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *ListSessionsResponse) Raw() []byte { return r.Body }
@@ -247,12 +238,6 @@ func (r *DropEgressRuleResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *StreamEventsResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *ListExchangesResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *GetExchangeResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *ListFilesResponse) Raw() []byte { return r.Body }
@@ -304,9 +289,6 @@ func (r *InterruptWithQueuedTurnResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *RestoreSessionResponse) Raw() []byte { return r.Body }
-
-// Raw is the body the answer was read from.
-func (r *RetitleResponse) Raw() []byte { return r.Body }
 
 // Raw is the body the answer was read from.
 func (r *RewindResponse) Raw() []byte { return r.Body }

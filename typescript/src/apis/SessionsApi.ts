@@ -39,16 +39,6 @@ import {
     DeletedLaterToJSON,
 } from '../models/DeletedLater.js';
 import {
-    type Exchange,
-    ExchangeFromJSON,
-    ExchangeToJSON,
-} from '../models/Exchange.js';
-import {
-    type ExchangePage,
-    ExchangePageFromJSON,
-    ExchangePageToJSON,
-} from '../models/ExchangePage.js';
-import {
     type ForkRequest,
     ForkRequestFromJSON,
     ForkRequestToJSON,
@@ -174,17 +164,6 @@ export interface GetActivityBodyRequest {
     activityId: string;
 }
 
-export interface GetExchangeRequest {
-    /**
-     * 
-     */
-    sessionId: string;
-    /**
-     * 
-     */
-    exchangeId: string;
-}
-
 export interface GetLineageRequest {
     /**
      * 
@@ -230,31 +209,6 @@ export interface ListActivityRequest {
      * 
      */
     kind?: ListActivityKindEnum;
-}
-
-export interface ListExchangesRequest {
-    /**
-     * 
-     */
-    sessionId: string;
-    /**
-     * At most this many; the default and ceiling are in `GET /v1/info`.
-     */
-    limit?: number;
-    /**
-     * From a previous page's `nextCursor`. Opaque; one made up is `400`.
-     */
-    cursor?: string;
-    /**
-     * One model's calls.
-     */
-    model?: string;
-    /**
-     * `ok`, the calls the provider answered with a status below 400;
-     * `error`, those it answered with 400 or more.
-     * 
-     */
-    status?: ListExchangesStatusEnum;
 }
 
 export interface ListSessionsRequest {
@@ -324,13 +278,6 @@ export interface PutSessionSharesRequest {
 }
 
 export interface RestoreSessionRequest {
-    /**
-     * 
-     */
-    sessionId: string;
-}
-
-export interface RetitleRequest {
     /**
      * 
      */
@@ -597,32 +544,6 @@ export interface SessionsApiInterface {
     getAvailableRunners(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AvailableRunners>;
 
     /**
-     * Creates request options for getExchange without sending the request
-     * @param {string} sessionId 
-     * @param {string} exchangeId 
-     * @throws {RequiredError}
-     * @memberof SessionsApiInterface
-     */
-    getExchangeRequestOpts(requestParameters: GetExchangeRequest): Promise<runtime.RequestOpts>;
-
-    /**
-     * What the session sent — the request body as it went to the provider: the system prompt, the messages, the tool definitions, thinking, `max_tokens`, `metadata` and the rest — with the headers that change its meaning (`anthropic-beta`, `anthropic-version`, `openai-beta`, …), and what the provider answered. A credential is never kept, and so is never here.  A streamed answer is the message assembled from its events — what the same call would have answered without `stream` — as far as it got: one cut short has no `stop_reason`, and one the provider ended with an error event carries that `error`. Any other answer is its body; one that is not a JSON object is `{\"text\": <the body>}`.  `previousId` and `nextId` are the session\'s neighbouring exchanges by when they were sent, so a caller can walk them from any one. 
-     * @summary One call the session\'s harness made to the model, whole
-     * @param {string} sessionId 
-     * @param {string} exchangeId 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof SessionsApiInterface
-     */
-    getExchangeRaw(requestParameters: GetExchangeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Exchange>>;
-
-    /**
-     * What the session sent — the request body as it went to the provider: the system prompt, the messages, the tool definitions, thinking, `max_tokens`, `metadata` and the rest — with the headers that change its meaning (`anthropic-beta`, `anthropic-version`, `openai-beta`, …), and what the provider answered. A credential is never kept, and so is never here.  A streamed answer is the message assembled from its events — what the same call would have answered without `stream` — as far as it got: one cut short has no `stop_reason`, and one the provider ended with an error event carries that `error`. Any other answer is its body; one that is not a JSON object is `{\"text\": <the body>}`.  `previousId` and `nextId` are the session\'s neighbouring exchanges by when they were sent, so a caller can walk them from any one. 
-     * One call the session\'s harness made to the model, whole
-     */
-    getExchange(requestParameters: GetExchangeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Exchange>;
-
-    /**
      * Creates request options for getLineage without sending the request
      * @param {string} sessionId 
      * @throws {RequiredError}
@@ -706,7 +627,7 @@ export interface SessionsApiInterface {
     listActivityRequestOpts(requestParameters: ListActivityRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
+     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  The `llm` broker\'s calls are here as any broker\'s: each a call its harness made to the model from the session\'s sandbox.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
      * @summary What sessions did through their brokers, newest first
      * @param {number} [limit] At most this many; the default and ceiling are in &#x60;GET /v1/info&#x60;.
      * @param {string} [cursor] From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;.
@@ -720,42 +641,10 @@ export interface SessionsApiInterface {
     listActivityRaw(requestParameters: ListActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ActivityPage>>;
 
     /**
-     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
+     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  The `llm` broker\'s calls are here as any broker\'s: each a call its harness made to the model from the session\'s sandbox.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
      * What sessions did through their brokers, newest first
      */
     listActivity(requestParameters: ListActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityPage>;
-
-    /**
-     * Creates request options for listExchanges without sending the request
-     * @param {string} sessionId 
-     * @param {number} [limit] At most this many; the default and ceiling are in &#x60;GET /v1/info&#x60;.
-     * @param {string} [cursor] From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;.
-     * @param {string} [model] One model\&#39;s calls.
-     * @param {'ok' | 'error'} [status] &#x60;ok&#x60;, the calls the provider answered with a status below 400; &#x60;error&#x60;, those it answered with 400 or more. 
-     * @throws {RequiredError}
-     * @memberof SessionsApiInterface
-     */
-    listExchangesRequestOpts(requestParameters: ListExchangesRequest): Promise<runtime.RequestOpts>;
-
-    /**
-     * The record of what the harness sent: every call the session\'s `llm` broker carried to the provider and back — an *exchange* — kept for a while (`--exchanges-kept`, a week by default) and then forgotten, and with the session when it is deleted. Calls that count tokens and that list the models are kept too, told apart by `path`.  This is a summary of each, newest first by when it was sent; `GET …/exchanges/{exchangeId}` is one whole: the request as sent, and the answer. 
-     * @summary The calls the session\'s harness made to the model, newest first
-     * @param {string} sessionId 
-     * @param {number} [limit] At most this many; the default and ceiling are in &#x60;GET /v1/info&#x60;.
-     * @param {string} [cursor] From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;.
-     * @param {string} [model] One model\&#39;s calls.
-     * @param {'ok' | 'error'} [status] &#x60;ok&#x60;, the calls the provider answered with a status below 400; &#x60;error&#x60;, those it answered with 400 or more. 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof SessionsApiInterface
-     */
-    listExchangesRaw(requestParameters: ListExchangesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ExchangePage>>;
-
-    /**
-     * The record of what the harness sent: every call the session\'s `llm` broker carried to the provider and back — an *exchange* — kept for a while (`--exchanges-kept`, a week by default) and then forgotten, and with the session when it is deleted. Calls that count tokens and that list the models are kept too, told apart by `path`.  This is a summary of each, newest first by when it was sent; `GET …/exchanges/{exchangeId}` is one whole: the request as sent, and the answer. 
-     * The calls the session\'s harness made to the model, newest first
-     */
-    listExchanges(requestParameters: ListExchangesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ExchangePage>;
 
     /**
      * Creates request options for listSessions without sending the request
@@ -853,30 +742,6 @@ export interface SessionsApiInterface {
      * Bring an archived session back
      */
     restoreSession(requestParameters: RestoreSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Session>;
-
-    /**
-     * Creates request options for retitle without sending the request
-     * @param {string} sessionId 
-     * @throws {RequiredError}
-     * @memberof SessionsApiInterface
-     */
-    retitleRequestOpts(requestParameters: RetitleRequest): Promise<runtime.RequestOpts>;
-
-    /**
-     * Asks the session\'s provider for a title of what its conversation is about, and gives the session it: `titleSource` is `summary`. The call is made by the server, not the session\'s machine, but as the session\'s harness makes its own — its request, its prompt, its model — and is paid for as the session\'s (`…/costs`). It is not one of the session\'s exchanges: it is in the activity (`GET /v1/activity`), a `one_off`.  `403` when the workspace\'s `titleSummaries` are off; `400 not_supported` when the session\'s harness does not title (its `features` lack `title`); `409` when it has not called its model yet, or the conversation has nothing to title; `502` when the provider failed or answered no title. 
-     * @summary Title the session from its conversation now
-     * @param {string} sessionId 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof SessionsApiInterface
-     */
-    retitleRaw(requestParameters: RetitleRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Session>>;
-
-    /**
-     * Asks the session\'s provider for a title of what its conversation is about, and gives the session it: `titleSource` is `summary`. The call is made by the server, not the session\'s machine, but as the session\'s harness makes its own — its request, its prompt, its model — and is paid for as the session\'s (`…/costs`). It is not one of the session\'s exchanges: it is in the activity (`GET /v1/activity`), a `one_off`.  `403` when the workspace\'s `titleSummaries` are off; `400 not_supported` when the session\'s harness does not title (its `features` lack `title`); `409` when it has not called its model yet, or the conversation has nothing to title; `502` when the provider failed or answered no title. 
-     * Title the session from its conversation now
-     */
-    retitle(requestParameters: RetitleRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Session>;
 
     /**
      * Creates request options for searchSessions without sending the request
@@ -1554,77 +1419,6 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
     }
 
     /**
-     * Creates request options for getExchange without sending the request
-     */
-    async getExchangeRequestOpts(requestParameters: GetExchangeRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['sessionId'] == null) {
-            throw new runtime.RequiredError(
-                'sessionId',
-                'Required parameter "sessionId" was null or undefined when calling getExchange().'
-            );
-        }
-
-        if (requestParameters['exchangeId'] == null) {
-            throw new runtime.RequiredError(
-                'exchangeId',
-                'Required parameter "exchangeId" was null or undefined when calling getExchange().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("apiKey", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("platform", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/sessions/{sessionId}/exchanges/{exchangeId}`;
-        urlPath = urlPath.replace('{sessionId}', encodeURIComponent(String(requestParameters['sessionId'])));
-        urlPath = urlPath.replace('{exchangeId}', encodeURIComponent(String(requestParameters['exchangeId'])));
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     * What the session sent — the request body as it went to the provider: the system prompt, the messages, the tool definitions, thinking, `max_tokens`, `metadata` and the rest — with the headers that change its meaning (`anthropic-beta`, `anthropic-version`, `openai-beta`, …), and what the provider answered. A credential is never kept, and so is never here.  A streamed answer is the message assembled from its events — what the same call would have answered without `stream` — as far as it got: one cut short has no `stop_reason`, and one the provider ended with an error event carries that `error`. Any other answer is its body; one that is not a JSON object is `{\"text\": <the body>}`.  `previousId` and `nextId` are the session\'s neighbouring exchanges by when they were sent, so a caller can walk them from any one. 
-     * One call the session\'s harness made to the model, whole
-     */
-    async getExchangeRaw(requestParameters: GetExchangeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Exchange>> {
-        const requestOptions = await this.getExchangeRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => ExchangeFromJSON(jsonValue));
-    }
-
-    /**
-     * What the session sent — the request body as it went to the provider: the system prompt, the messages, the tool definitions, thinking, `max_tokens`, `metadata` and the rest — with the headers that change its meaning (`anthropic-beta`, `anthropic-version`, `openai-beta`, …), and what the provider answered. A credential is never kept, and so is never here.  A streamed answer is the message assembled from its events — what the same call would have answered without `stream` — as far as it got: one cut short has no `stop_reason`, and one the provider ended with an error event carries that `error`. Any other answer is its body; one that is not a JSON object is `{\"text\": <the body>}`.  `previousId` and `nextId` are the session\'s neighbouring exchanges by when they were sent, so a caller can walk them from any one. 
-     * One call the session\'s harness made to the model, whole
-     */
-    async getExchange(requestParameters: GetExchangeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Exchange> {
-        const response = await this.getExchangeRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Creates request options for getLineage without sending the request
      */
     async getLineageRequestOpts(requestParameters: GetLineageRequest): Promise<runtime.RequestOpts> {
@@ -1867,7 +1661,7 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
     }
 
     /**
-     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
+     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  The `llm` broker\'s calls are here as any broker\'s: each a call its harness made to the model from the session\'s sandbox.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
      * What sessions did through their brokers, newest first
      */
     async listActivityRaw(requestParameters: ListActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ActivityPage>> {
@@ -1878,90 +1672,11 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
     }
 
     /**
-     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
+     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  The `llm` broker\'s calls are here as any broker\'s: each a call its harness made to the model from the session\'s sandbox.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
      * What sessions did through their brokers, newest first
      */
     async listActivity(requestParameters: ListActivityRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityPage> {
         const response = await this.listActivityRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for listExchanges without sending the request
-     */
-    async listExchangesRequestOpts(requestParameters: ListExchangesRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['sessionId'] == null) {
-            throw new runtime.RequiredError(
-                'sessionId',
-                'Required parameter "sessionId" was null or undefined when calling listExchanges().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        if (requestParameters['cursor'] != null) {
-            queryParameters['cursor'] = requestParameters['cursor'];
-        }
-
-        if (requestParameters['model'] != null) {
-            queryParameters['model'] = requestParameters['model'];
-        }
-
-        if (requestParameters['status'] != null) {
-            queryParameters['status'] = requestParameters['status'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("apiKey", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("platform", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/sessions/{sessionId}/exchanges`;
-        urlPath = urlPath.replace('{sessionId}', encodeURIComponent(String(requestParameters['sessionId'])));
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     * The record of what the harness sent: every call the session\'s `llm` broker carried to the provider and back — an *exchange* — kept for a while (`--exchanges-kept`, a week by default) and then forgotten, and with the session when it is deleted. Calls that count tokens and that list the models are kept too, told apart by `path`.  This is a summary of each, newest first by when it was sent; `GET …/exchanges/{exchangeId}` is one whole: the request as sent, and the answer. 
-     * The calls the session\'s harness made to the model, newest first
-     */
-    async listExchangesRaw(requestParameters: ListExchangesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ExchangePage>> {
-        const requestOptions = await this.listExchangesRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => ExchangePageFromJSON(jsonValue));
-    }
-
-    /**
-     * The record of what the harness sent: every call the session\'s `llm` broker carried to the provider and back — an *exchange* — kept for a while (`--exchanges-kept`, a week by default) and then forgotten, and with the session when it is deleted. Calls that count tokens and that list the models are kept too, told apart by `path`.  This is a summary of each, newest first by when it was sent; `GET …/exchanges/{exchangeId}` is one whole: the request as sent, and the answer. 
-     * The calls the session\'s harness made to the model, newest first
-     */
-    async listExchanges(requestParameters: ListExchangesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ExchangePage> {
-        const response = await this.listExchangesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -2203,69 +1918,6 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
      */
     async restoreSession(requestParameters: RestoreSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Session> {
         const response = await this.restoreSessionRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for retitle without sending the request
-     */
-    async retitleRequestOpts(requestParameters: RetitleRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['sessionId'] == null) {
-            throw new runtime.RequiredError(
-                'sessionId',
-                'Required parameter "sessionId" was null or undefined when calling retitle().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("apiKey", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("platform", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/sessions/{sessionId}/retitle`;
-        urlPath = urlPath.replace('{sessionId}', encodeURIComponent(String(requestParameters['sessionId'])));
-
-        return {
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     * Asks the session\'s provider for a title of what its conversation is about, and gives the session it: `titleSource` is `summary`. The call is made by the server, not the session\'s machine, but as the session\'s harness makes its own — its request, its prompt, its model — and is paid for as the session\'s (`…/costs`). It is not one of the session\'s exchanges: it is in the activity (`GET /v1/activity`), a `one_off`.  `403` when the workspace\'s `titleSummaries` are off; `400 not_supported` when the session\'s harness does not title (its `features` lack `title`); `409` when it has not called its model yet, or the conversation has nothing to title; `502` when the provider failed or answered no title. 
-     * Title the session from its conversation now
-     */
-    async retitleRaw(requestParameters: RetitleRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Session>> {
-        const requestOptions = await this.retitleRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => SessionFromJSON(jsonValue));
-    }
-
-    /**
-     * Asks the session\'s provider for a title of what its conversation is about, and gives the session it: `titleSource` is `summary`. The call is made by the server, not the session\'s machine, but as the session\'s harness makes its own — its request, its prompt, its model — and is paid for as the session\'s (`…/costs`). It is not one of the session\'s exchanges: it is in the activity (`GET /v1/activity`), a `one_off`.  `403` when the workspace\'s `titleSummaries` are off; `400 not_supported` when the session\'s harness does not title (its `features` lack `title`); `409` when it has not called its model yet, or the conversation has nothing to title; `502` when the provider failed or answered no title. 
-     * Title the session from its conversation now
-     */
-    async retitle(requestParameters: RetitleRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Session> {
-        const response = await this.retitleRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -2628,14 +2280,6 @@ export const ListActivityKindEnum = {
     Exec: 'exec',
 } as const;
 export type ListActivityKindEnum = typeof ListActivityKindEnum[keyof typeof ListActivityKindEnum];
-/**
- * @export
- */
-export const ListExchangesStatusEnum = {
-    Ok: 'ok',
-    Error: 'error',
-} as const;
-export type ListExchangesStatusEnum = typeof ListExchangesStatusEnum[keyof typeof ListExchangesStatusEnum];
 /**
  * @export
  */

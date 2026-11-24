@@ -13,13 +13,13 @@
  */
 
 import { mapValues, parseDate, parseDateTime, serializeDate, serializeDateTime } from '../runtime.js';
-import type { RateLimits } from './RateLimits.js';
+import type { Placement } from './Placement.js';
 import {
-    RateLimitsFromJSON,
-    RateLimitsFromJSONTyped,
-    RateLimitsToJSON,
-    RateLimitsToJSONTyped,
-} from './RateLimits.js';
+    PlacementFromJSON,
+    PlacementFromJSONTyped,
+    PlacementToJSON,
+    PlacementToJSONTyped,
+} from './Placement.js';
 import type { Model } from './Model.js';
 import {
     ModelFromJSON,
@@ -88,16 +88,10 @@ export interface Provider {
      */
     kind: ProviderKind;
     /**
-     * An `openai_compatible` provider's server, under which its API
-     * is (`/v1/chat/completions`, `/v1/models`). Absent for the
-     * other types.
-     * 
-     */
-    baseUrl?: string;
-    /**
-     * What the provider said the last time the credential was tried
-     * or renewed. `needs_signin` is a subscription whose renewal the
-     * provider refused: sign it in again.
+     * `needs_signin` is a subscription whose renewal the provider
+     * refused: sign it in again. Nothing else is tried here — this
+     * server calls no provider — so what a key's provider says of it is
+     * what its sessions' calls are answered.
      * 
      */
     status: ProviderStatusEnum;
@@ -122,29 +116,22 @@ export interface Provider {
      */
     renewedAt?: Date;
     /**
+     * The runners that reach it: a session on it is placed only on a
+     * runner with every one of these labels, as well as its own
+     * `sandbox.placement`'s, and fails to start when it names a label
+     * otherwise — a model on one runner's own network, say. Absent is
+     * any runner.
      * 
      */
-    checkedAt?: Date;
+    placement?: Placement;
     /**
-     * 
-     */
-    limits?: RateLimits;
-    /**
-     * What the provider's API listed with this credential when last
-     * asked — the models it may run, newest first. Empty until it has
-     * answered once; a failure since keeps the list, and says so in
-     * `modelsError`.
+     * The models it offers, as its admin declared them, in that
+     * order: what a session on it is offered to pick, the first its
+     * default. Empty is none declared — a session on it names its
+     * model, or runs its harness's default.
      * 
      */
     models: Array<Model>;
-    /**
-     * When `models` was read. Absent until it has been.
-     */
-    modelsReadAt?: Date;
-    /**
-     * Why the last time the models were asked failed; absent when it did not.
-     */
-    modelsError?: string;
 }
 
 
@@ -153,8 +140,6 @@ export interface Provider {
  */
 export const ProviderStatusEnum = {
     Ok: 'ok',
-    Rejected: 'rejected',
-    Unreachable: 'unreachable',
     NeedsSignin: 'needs_signin',
 } as const;
 export type ProviderStatusEnum = typeof ProviderStatusEnum[keyof typeof ProviderStatusEnum];
@@ -195,18 +180,14 @@ export function ProviderFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
         'users': json['users'],
         'type': ProviderTypeFromJSON(json['type']),
         'kind': ProviderKindFromJSON(json['kind']),
-        'baseUrl': json['baseUrl'] == null ? undefined : json['baseUrl'],
         'status': json['status'],
         'account': json['account'] == null ? undefined : json['account'],
         'plan': json['plan'] == null ? undefined : json['plan'],
         'isDefault': json['isDefault'],
         'expiresAt': json['expiresAt'] == null ? undefined : (parseDateTime(json['expiresAt'])),
         'renewedAt': json['renewedAt'] == null ? undefined : (parseDateTime(json['renewedAt'])),
-        'checkedAt': json['checkedAt'] == null ? undefined : (parseDateTime(json['checkedAt'])),
-        'limits': json['limits'] == null ? undefined : RateLimitsFromJSON(json['limits']),
+        'placement': json['placement'] == null ? undefined : PlacementFromJSON(json['placement']),
         'models': ((json['models'] as Array<any>).map(ModelFromJSON)),
-        'modelsReadAt': json['modelsReadAt'] == null ? undefined : (parseDateTime(json['modelsReadAt'])),
-        'modelsError': json['modelsError'] == null ? undefined : json['modelsError'],
     };
 }
 
@@ -229,18 +210,14 @@ export function ProviderToJSONTyped(value?: Provider | null, ignoreDiscriminator
         'users': value['users'],
         'type': ProviderTypeToJSON(value['type']),
         'kind': ProviderKindToJSON(value['kind']),
-        'baseUrl': value['baseUrl'],
         'status': value['status'],
         'account': value['account'],
         'plan': value['plan'],
         'isDefault': value['isDefault'],
         'expiresAt': value['expiresAt'] == null ? value['expiresAt'] : serializeDateTime(value['expiresAt']),
         'renewedAt': value['renewedAt'] == null ? value['renewedAt'] : serializeDateTime(value['renewedAt']),
-        'checkedAt': value['checkedAt'] == null ? value['checkedAt'] : serializeDateTime(value['checkedAt']),
-        'limits': RateLimitsToJSON(value['limits']),
+        'placement': PlacementToJSON(value['placement']),
         'models': ((value['models'] as Array<any>).map(ModelToJSON)),
-        'modelsReadAt': value['modelsReadAt'] == null ? value['modelsReadAt'] : serializeDateTime(value['modelsReadAt']),
-        'modelsError': value['modelsError'],
     };
 }
 

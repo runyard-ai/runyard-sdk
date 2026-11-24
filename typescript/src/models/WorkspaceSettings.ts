@@ -31,15 +31,6 @@ export interface WorkspaceSettings {
      * 
      */
     sessionRetention: SessionRetention;
-    /**
-     * Whether sessions' titles may be summarized by their providers —
-     * as each person chooses for their sessions (`autoTitle`), and on
-     * asking (`…/retitle`). Absent is `true`: each summary is a call
-     * to the session's provider, paid for as the session's, which an
-     * admin may want none of.
-     * 
-     */
-    titleSummaries?: boolean;
 }
 
 /**
@@ -61,7 +52,6 @@ export function WorkspaceSettingsFromJSONTyped(json: any, ignoreDiscriminator: b
     return {
         
         'sessionRetention': SessionRetentionFromJSON(json['sessionRetention']),
-        'titleSummaries': json['titleSummaries'] == null ? undefined : json['titleSummaries'],
     };
 }
 
@@ -77,7 +67,6 @@ export function WorkspaceSettingsToJSONTyped(value?: WorkspaceSettings | null, i
     return {
         
         'sessionRetention': SessionRetentionToJSON(value['sessionRetention']),
-        'titleSummaries': value['titleSummaries'],
     };
 }
 

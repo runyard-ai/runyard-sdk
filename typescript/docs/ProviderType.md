@@ -1,7 +1,7 @@
 
 # ProviderType
 
-Whose API a provider reaches. A harness says which types it runs on. `openai_compatible` is a server of OpenAI\'s chat completions that is not OpenAI\'s — llama.cpp\'s llama-server, vLLM — at the provider\'s `baseUrl`. 
+Whose API a provider reaches. A harness says which types it runs on. `openai_compatible` is a server of OpenAI\'s chat completions that is not OpenAI\'s — llama.cpp\'s llama-server, vLLM — that the runners reach. 
 
 ## Properties
 

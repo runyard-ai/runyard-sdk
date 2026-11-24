@@ -94,13 +94,6 @@ export interface PutProviderRequest {
     providerApiKey: ProviderApiKey;
 }
 
-export interface RefreshProviderModelsRequest {
-    /**
-     * 
-     */
-    provider: string;
-}
-
 export interface StartProviderSignInRequest {
     /**
      * 
@@ -190,7 +183,7 @@ export interface ModelsApiInterface {
     listHarnessesRequestOpts(): Promise<runtime.RequestOpts>;
 
     /**
-     * `claude-code` (Claude Code, on `anthropic` providers), `codex` (OpenAI\'s Codex, on `openai` providers) and `opencode` (opencode, on `openai_compatible` providers). A harness\'s models are not a list this server keeps: they are what its providers\' APIs answered when last asked, so a harness with no provider of a type it runs on has none. 
+     * `claude-code` (Claude Code, on `anthropic` providers), `codex` (OpenAI\'s Codex, on `openai` providers) and `opencode` (opencode, on `openai_compatible` providers). A harness\'s models are its providers\' `models`, as their admins declared them: a harness none of whose providers declares any has none, and a session on it runs the model it names, or its harness\'s own default. 
      * @summary The harnesses a session may run, and their models
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -199,7 +192,7 @@ export interface ModelsApiInterface {
     listHarnessesRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListHarnesses200Response>>;
 
     /**
-     * `claude-code` (Claude Code, on `anthropic` providers), `codex` (OpenAI\'s Codex, on `openai` providers) and `opencode` (opencode, on `openai_compatible` providers). A harness\'s models are not a list this server keeps: they are what its providers\' APIs answered when last asked, so a harness with no provider of a type it runs on has none. 
+     * `claude-code` (Claude Code, on `anthropic` providers), `codex` (OpenAI\'s Codex, on `openai` providers) and `opencode` (opencode, on `openai_compatible` providers). A harness\'s models are its providers\' `models`, as their admins declared them: a harness none of whose providers declares any has none, and a session on it runs the model it names, or its harness\'s own default. 
      * The harnesses a session may run, and their models
      */
     listHarnesses(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListHarnesses200Response>;
@@ -213,7 +206,7 @@ export interface ModelsApiInterface {
     listProvidersRequestOpts(requestParameters: ListProvidersRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`.  An application sees its own, each end user\'s among them. 
+     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Nothing here calls a provider\'s API: every call to a model is a session\'s harness\'s, made from its sandbox through the `llm` broker its runner provides, which this server lends the provider\'s credential for each turn. A provider\'s models are what its admin declared (`models`), and a provider that only some runners reach says which (`placement`).  An application sees its own, each end user\'s among them. 
      * @summary The providers, and whether each has a working credential
      * @param {string} [endUser] Those of the end user of this id alone.
      * @param {*} [options] Override http request option.
@@ -223,7 +216,7 @@ export interface ModelsApiInterface {
     listProvidersRaw(requestParameters: ListProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListProviders200Response>>;
 
     /**
-     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`.  An application sees its own, each end user\'s among them. 
+     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Nothing here calls a provider\'s API: every call to a model is a session\'s harness\'s, made from its sandbox through the `llm` broker its runner provides, which this server lends the provider\'s credential for each turn. A provider\'s models are what its admin declared (`models`), and a provider that only some runners reach says which (`placement`).  An application sees its own, each end user\'s among them. 
      * The providers, and whether each has a working credential
      */
     listProviders(requestParameters: ListProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListProviders200Response>;
@@ -238,7 +231,7 @@ export interface ModelsApiInterface {
     putProviderRequestOpts(requestParameters: PutProviderRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the `llm` broker, which puts it on. The server tries it before answering, says what the provider said, and reads the provider\'s models with it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\'s is `409`. A provider made is for its maker alone.  An `openai_compatible` provider is a server of OpenAI\'s chat completions — llama.cpp\'s llama-server, vLLM — at `baseUrl`, which this server reaches: its key is optional, since such a server often takes none. 
+     * Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the `llm` broker its runner provides, which is lent the credential for each turn. It is not tried here — this server calls no provider: a session\'s first call is what tries it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\'s is `409`. A provider made is for its maker alone.  An `openai_compatible` provider is a server of OpenAI\'s chat completions — Ollama, llama.cpp\'s llama-server, vLLM — that the runners reach: where it is is each runner\'s to say, its `llm` broker\'s `-chat-completions-upstream`, never this server\'s. Its key is optional, since such a server often takes none. One that only some runners reach — one on a runner\'s own network — says which in `placement`, and declares its `models`, which such a server says nothing of a harness needs: their context windows. 
      * @summary Make a provider of an API key, or replace one with it
      * @param {string} provider 
      * @param {ProviderApiKey} providerApiKey 
@@ -249,34 +242,10 @@ export interface ModelsApiInterface {
     putProviderRaw(requestParameters: PutProviderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Provider>>;
 
     /**
-     * Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the `llm` broker, which puts it on. The server tries it before answering, says what the provider said, and reads the provider\'s models with it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\'s is `409`. A provider made is for its maker alone.  An `openai_compatible` provider is a server of OpenAI\'s chat completions — llama.cpp\'s llama-server, vLLM — at `baseUrl`, which this server reaches: its key is optional, since such a server often takes none. 
+     * Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the `llm` broker its runner provides, which is lent the credential for each turn. It is not tried here — this server calls no provider: a session\'s first call is what tries it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\'s is `409`. A provider made is for its maker alone.  An `openai_compatible` provider is a server of OpenAI\'s chat completions — Ollama, llama.cpp\'s llama-server, vLLM — that the runners reach: where it is is each runner\'s to say, its `llm` broker\'s `-chat-completions-upstream`, never this server\'s. Its key is optional, since such a server often takes none. One that only some runners reach — one on a runner\'s own network — says which in `placement`, and declares its `models`, which such a server says nothing of a harness needs: their context windows. 
      * Make a provider of an API key, or replace one with it
      */
     putProvider(requestParameters: PutProviderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Provider>;
-
-    /**
-     * Creates request options for refreshProviderModels without sending the request
-     * @param {string} provider 
-     * @throws {RequiredError}
-     * @memberof ModelsApiInterface
-     */
-    refreshProviderModelsRequestOpts(requestParameters: RefreshProviderModelsRequest): Promise<runtime.RequestOpts>;
-
-    /**
-     * Asks the provider\'s API for its models with the provider\'s credential, as the server does every hour. A failure keeps the list read last and says why in `modelsError`: the answer is the provider either way, `modelsReadAt` saying when its list was read. 
-     * @summary Read a provider\'s models again, now
-     * @param {string} provider 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof ModelsApiInterface
-     */
-    refreshProviderModelsRaw(requestParameters: RefreshProviderModelsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Provider>>;
-
-    /**
-     * Asks the provider\'s API for its models with the provider\'s credential, as the server does every hour. A failure keeps the list read last and says why in `modelsError`: the answer is the provider either way, `modelsReadAt` saying when its list was read. 
-     * Read a provider\'s models again, now
-     */
-    refreshProviderModels(requestParameters: RefreshProviderModelsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Provider>;
 
     /**
      * Creates request options for startProviderSignIn without sending the request
@@ -288,7 +257,7 @@ export interface ModelsApiInterface {
     startProviderSignInRequestOpts(requestParameters: StartProviderSignInRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * A subscription signs in with OAuth, as its harness does, by one of the `method`s its type offers; `POST …/signin/{flowId}` finishes, and makes the provider of that name, or replaces it.  - `code` (`anthropic`, as Claude Code does): the person opens   `authorizationUrl`, signs in, and is shown a code; finishing with   that `code` makes the provider. - `device` (`openai`, a ChatGPT plan, as `codex login   --device-auth` does): the person opens `verificationUri` on any   machine and enters `userCode`. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - `redirect` (`openai`, as `codex login` does): the person opens   `authorizationUrl` and signs in; their browser is then sent to an   address on `localhost` that nothing there answers. Finishing with   that address, pasted from the browser\'s address bar   (`redirectUrl`), makes the provider.  The server keeps the refresh token, renews the access token before it expires, and reads the provider\'s models once signed in. An `openai_compatible` provider has no subscription: `400`. 
+     * A subscription signs in with OAuth, as its harness does, by one of the `method`s its type offers; `POST …/signin/{flowId}` finishes, and makes the provider of that name, or replaces it.  - `code` (`anthropic`, as Claude Code does): the person opens   `authorizationUrl`, signs in, and is shown a code; finishing with   that `code` makes the provider. - `device` (`openai`, a ChatGPT plan, as `codex login   --device-auth` does): the person opens `verificationUri` on any   machine and enters `userCode`. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - `redirect` (`openai`, as `codex login` does): the person opens   `authorizationUrl` and signs in; their browser is then sent to an   address on `localhost` that nothing there answers. Finishing with   that address, pasted from the browser\'s address bar   (`redirectUrl`), makes the provider.  The server keeps the refresh token, and renews the access token before it expires. An `openai_compatible` provider has no subscription: `400`. 
      * @summary Start making a provider of a subscription, or replacing one with it
      * @param {string} provider 
      * @param {ProviderSignIn} providerSignIn 
@@ -299,7 +268,7 @@ export interface ModelsApiInterface {
     startProviderSignInRaw(requestParameters: StartProviderSignInRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SignInFlow>>;
 
     /**
-     * A subscription signs in with OAuth, as its harness does, by one of the `method`s its type offers; `POST …/signin/{flowId}` finishes, and makes the provider of that name, or replaces it.  - `code` (`anthropic`, as Claude Code does): the person opens   `authorizationUrl`, signs in, and is shown a code; finishing with   that `code` makes the provider. - `device` (`openai`, a ChatGPT plan, as `codex login   --device-auth` does): the person opens `verificationUri` on any   machine and enters `userCode`. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - `redirect` (`openai`, as `codex login` does): the person opens   `authorizationUrl` and signs in; their browser is then sent to an   address on `localhost` that nothing there answers. Finishing with   that address, pasted from the browser\'s address bar   (`redirectUrl`), makes the provider.  The server keeps the refresh token, renews the access token before it expires, and reads the provider\'s models once signed in. An `openai_compatible` provider has no subscription: `400`. 
+     * A subscription signs in with OAuth, as its harness does, by one of the `method`s its type offers; `POST …/signin/{flowId}` finishes, and makes the provider of that name, or replaces it.  - `code` (`anthropic`, as Claude Code does): the person opens   `authorizationUrl`, signs in, and is shown a code; finishing with   that `code` makes the provider. - `device` (`openai`, a ChatGPT plan, as `codex login   --device-auth` does): the person opens `verificationUri` on any   machine and enters `userCode`. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - `redirect` (`openai`, as `codex login` does): the person opens   `authorizationUrl` and signs in; their browser is then sent to an   address on `localhost` that nothing there answers. Finishing with   that address, pasted from the browser\'s address bar   (`redirectUrl`), makes the provider.  The server keeps the refresh token, and renews the access token before it expires. An `openai_compatible` provider has no subscription: `400`. 
      * Start making a provider of a subscription, or replacing one with it
      */
     startProviderSignIn(requestParameters: StartProviderSignInRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SignInFlow>;
@@ -314,8 +283,8 @@ export interface ModelsApiInterface {
     updateProviderRequestOpts(requestParameters: UpdateProviderRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * Absent fields are left as they are. `isDefault: true` makes it the default and the one that was stops being; `false` is `400`, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
-     * @summary Retitle a provider, say who may use it, or make it the default
+     * Absent fields are left as they are; `placement` replaces the one it had, and one of no labels places it anywhere; `models` replaces them all. `isDefault: true` makes it the default and the one that was stops being; `false` is `400`, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
+     * @summary Retitle a provider, say who may use it, where it runs and its models, or make it the default
      * @param {string} provider 
      * @param {ProviderUpdate} providerUpdate 
      * @param {*} [options] Override http request option.
@@ -325,8 +294,8 @@ export interface ModelsApiInterface {
     updateProviderRaw(requestParameters: UpdateProviderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Provider>>;
 
     /**
-     * Absent fields are left as they are. `isDefault: true` makes it the default and the one that was stops being; `false` is `400`, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
-     * Retitle a provider, say who may use it, or make it the default
+     * Absent fields are left as they are; `placement` replaces the one it had, and one of no labels places it anywhere; `models` replaces them all. `isDefault: true` makes it the default and the one that was stops being; `false` is `400`, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
+     * Retitle a provider, say who may use it, where it runs and its models, or make it the default
      */
     updateProvider(requestParameters: UpdateProviderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Provider>;
 
@@ -509,7 +478,7 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * `claude-code` (Claude Code, on `anthropic` providers), `codex` (OpenAI\'s Codex, on `openai` providers) and `opencode` (opencode, on `openai_compatible` providers). A harness\'s models are not a list this server keeps: they are what its providers\' APIs answered when last asked, so a harness with no provider of a type it runs on has none. 
+     * `claude-code` (Claude Code, on `anthropic` providers), `codex` (OpenAI\'s Codex, on `openai` providers) and `opencode` (opencode, on `openai_compatible` providers). A harness\'s models are its providers\' `models`, as their admins declared them: a harness none of whose providers declares any has none, and a session on it runs the model it names, or its harness\'s own default. 
      * The harnesses a session may run, and their models
      */
     async listHarnessesRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListHarnesses200Response>> {
@@ -520,7 +489,7 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * `claude-code` (Claude Code, on `anthropic` providers), `codex` (OpenAI\'s Codex, on `openai` providers) and `opencode` (opencode, on `openai_compatible` providers). A harness\'s models are not a list this server keeps: they are what its providers\' APIs answered when last asked, so a harness with no provider of a type it runs on has none. 
+     * `claude-code` (Claude Code, on `anthropic` providers), `codex` (OpenAI\'s Codex, on `openai` providers) and `opencode` (opencode, on `openai_compatible` providers). A harness\'s models are its providers\' `models`, as their admins declared them: a harness none of whose providers declares any has none, and a session on it runs the model it names, or its harness\'s own default. 
      * The harnesses a session may run, and their models
      */
     async listHarnesses(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListHarnesses200Response> {
@@ -568,7 +537,7 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`.  An application sees its own, each end user\'s among them. 
+     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Nothing here calls a provider\'s API: every call to a model is a session\'s harness\'s, made from its sandbox through the `llm` broker its runner provides, which this server lends the provider\'s credential for each turn. A provider\'s models are what its admin declared (`models`), and a provider that only some runners reach says which (`placement`).  An application sees its own, each end user\'s among them. 
      * The providers, and whether each has a working credential
      */
     async listProvidersRaw(requestParameters: ListProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListProviders200Response>> {
@@ -579,7 +548,7 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Each provider\'s models are asked of its API, with its own credential, when it is made or signed in, every hour after, and on `POST …/models`.  An application sees its own, each end user\'s among them. 
+     * A provider is a named credential for a model provider\'s API — an API key, or a subscription signed in — so there may be several of one type: two subscriptions and a key, say. Exactly one is the default, which a session runs on unless it names another; the first one made is. A session whose harness does not run on the default\'s type runs on the first provider, by name, of a type it does run on.  A provider is for the people it names (`users`), or for `everyone`: at first, for whoever made it alone. A session runs only on a provider its person may use — the default when they may, else the first by name they may — and a member is shown only those, an admin every one.  Nothing here calls a provider\'s API: every call to a model is a session\'s harness\'s, made from its sandbox through the `llm` broker its runner provides, which this server lends the provider\'s credential for each turn. A provider\'s models are what its admin declared (`models`), and a provider that only some runners reach says which (`placement`).  An application sees its own, each end user\'s among them. 
      * The providers, and whether each has a working credential
      */
     async listProviders(requestParameters: ListProvidersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListProviders200Response> {
@@ -641,7 +610,7 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the `llm` broker, which puts it on. The server tries it before answering, says what the provider said, and reads the provider\'s models with it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\'s is `409`. A provider made is for its maker alone.  An `openai_compatible` provider is a server of OpenAI\'s chat completions — llama.cpp\'s llama-server, vLLM — at `baseUrl`, which this server reaches: its key is optional, since such a server often takes none. 
+     * Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the `llm` broker its runner provides, which is lent the credential for each turn. It is not tried here — this server calls no provider: a session\'s first call is what tries it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\'s is `409`. A provider made is for its maker alone.  An `openai_compatible` provider is a server of OpenAI\'s chat completions — Ollama, llama.cpp\'s llama-server, vLLM — that the runners reach: where it is is each runner\'s to say, its `llm` broker\'s `-chat-completions-upstream`, never this server\'s. Its key is optional, since such a server often takes none. One that only some runners reach — one on a runner\'s own network — says which in `placement`, and declares its `models`, which such a server says nothing of a harness needs: their context windows. 
      * Make a provider of an API key, or replace one with it
      */
     async putProviderRaw(requestParameters: PutProviderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Provider>> {
@@ -652,74 +621,11 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the `llm` broker, which puts it on. The server tries it before answering, says what the provider said, and reads the provider\'s models with it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\'s is `409`. A provider made is for its maker alone.  An `openai_compatible` provider is a server of OpenAI\'s chat completions — llama.cpp\'s llama-server, vLLM — at `baseUrl`, which this server reaches: its key is optional, since such a server often takes none. 
+     * Kept encrypted here, and never sent to a sandbox: the session reaches the provider through the `llm` broker its runner provides, which is lent the credential for each turn. It is not tried here — this server calls no provider: a session\'s first call is what tries it. A provider of that name, a key or a subscription, is replaced — by an admin or whoever made it; another person\'s is `409`. A provider made is for its maker alone.  An `openai_compatible` provider is a server of OpenAI\'s chat completions — Ollama, llama.cpp\'s llama-server, vLLM — that the runners reach: where it is is each runner\'s to say, its `llm` broker\'s `-chat-completions-upstream`, never this server\'s. Its key is optional, since such a server often takes none. One that only some runners reach — one on a runner\'s own network — says which in `placement`, and declares its `models`, which such a server says nothing of a harness needs: their context windows. 
      * Make a provider of an API key, or replace one with it
      */
     async putProvider(requestParameters: PutProviderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Provider> {
         const response = await this.putProviderRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for refreshProviderModels without sending the request
-     */
-    async refreshProviderModelsRequestOpts(requestParameters: RefreshProviderModelsRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['provider'] == null) {
-            throw new runtime.RequiredError(
-                'provider',
-                'Required parameter "provider" was null or undefined when calling refreshProviderModels().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("apiKey", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("platform", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/providers/{provider}/models`;
-        urlPath = urlPath.replace('{provider}', encodeURIComponent(String(requestParameters['provider'])));
-
-        return {
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     * Asks the provider\'s API for its models with the provider\'s credential, as the server does every hour. A failure keeps the list read last and says why in `modelsError`: the answer is the provider either way, `modelsReadAt` saying when its list was read. 
-     * Read a provider\'s models again, now
-     */
-    async refreshProviderModelsRaw(requestParameters: RefreshProviderModelsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Provider>> {
-        const requestOptions = await this.refreshProviderModelsRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => ProviderFromJSON(jsonValue));
-    }
-
-    /**
-     * Asks the provider\'s API for its models with the provider\'s credential, as the server does every hour. A failure keeps the list read last and says why in `modelsError`: the answer is the provider either way, `modelsReadAt` saying when its list was read. 
-     * Read a provider\'s models again, now
-     */
-    async refreshProviderModels(requestParameters: RefreshProviderModelsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Provider> {
-        const response = await this.refreshProviderModelsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -777,7 +683,7 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * A subscription signs in with OAuth, as its harness does, by one of the `method`s its type offers; `POST …/signin/{flowId}` finishes, and makes the provider of that name, or replaces it.  - `code` (`anthropic`, as Claude Code does): the person opens   `authorizationUrl`, signs in, and is shown a code; finishing with   that `code` makes the provider. - `device` (`openai`, a ChatGPT plan, as `codex login   --device-auth` does): the person opens `verificationUri` on any   machine and enters `userCode`. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - `redirect` (`openai`, as `codex login` does): the person opens   `authorizationUrl` and signs in; their browser is then sent to an   address on `localhost` that nothing there answers. Finishing with   that address, pasted from the browser\'s address bar   (`redirectUrl`), makes the provider.  The server keeps the refresh token, renews the access token before it expires, and reads the provider\'s models once signed in. An `openai_compatible` provider has no subscription: `400`. 
+     * A subscription signs in with OAuth, as its harness does, by one of the `method`s its type offers; `POST …/signin/{flowId}` finishes, and makes the provider of that name, or replaces it.  - `code` (`anthropic`, as Claude Code does): the person opens   `authorizationUrl`, signs in, and is shown a code; finishing with   that `code` makes the provider. - `device` (`openai`, a ChatGPT plan, as `codex login   --device-auth` does): the person opens `verificationUri` on any   machine and enters `userCode`. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - `redirect` (`openai`, as `codex login` does): the person opens   `authorizationUrl` and signs in; their browser is then sent to an   address on `localhost` that nothing there answers. Finishing with   that address, pasted from the browser\'s address bar   (`redirectUrl`), makes the provider.  The server keeps the refresh token, and renews the access token before it expires. An `openai_compatible` provider has no subscription: `400`. 
      * Start making a provider of a subscription, or replacing one with it
      */
     async startProviderSignInRaw(requestParameters: StartProviderSignInRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SignInFlow>> {
@@ -788,7 +694,7 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * A subscription signs in with OAuth, as its harness does, by one of the `method`s its type offers; `POST …/signin/{flowId}` finishes, and makes the provider of that name, or replaces it.  - `code` (`anthropic`, as Claude Code does): the person opens   `authorizationUrl`, signs in, and is shown a code; finishing with   that `code` makes the provider. - `device` (`openai`, a ChatGPT plan, as `codex login   --device-auth` does): the person opens `verificationUri` on any   machine and enters `userCode`. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - `redirect` (`openai`, as `codex login` does): the person opens   `authorizationUrl` and signs in; their browser is then sent to an   address on `localhost` that nothing there answers. Finishing with   that address, pasted from the browser\'s address bar   (`redirectUrl`), makes the provider.  The server keeps the refresh token, renews the access token before it expires, and reads the provider\'s models once signed in. An `openai_compatible` provider has no subscription: `400`. 
+     * A subscription signs in with OAuth, as its harness does, by one of the `method`s its type offers; `POST …/signin/{flowId}` finishes, and makes the provider of that name, or replaces it.  - `code` (`anthropic`, as Claude Code does): the person opens   `authorizationUrl`, signs in, and is shown a code; finishing with   that `code` makes the provider. - `device` (`openai`, a ChatGPT plan, as `codex login   --device-auth` does): the person opens `verificationUri` on any   machine and enters `userCode`. The server asks the provider   whether they have from the start, and makes the provider as soon   as they have, whether or not anybody is finishing. - `redirect` (`openai`, as `codex login` does): the person opens   `authorizationUrl` and signs in; their browser is then sent to an   address on `localhost` that nothing there answers. Finishing with   that address, pasted from the browser\'s address bar   (`redirectUrl`), makes the provider.  The server keeps the refresh token, and renews the access token before it expires. An `openai_compatible` provider has no subscription: `400`. 
      * Start making a provider of a subscription, or replacing one with it
      */
     async startProviderSignIn(requestParameters: StartProviderSignInRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SignInFlow> {
@@ -850,8 +756,8 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * Absent fields are left as they are. `isDefault: true` makes it the default and the one that was stops being; `false` is `400`, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
-     * Retitle a provider, say who may use it, or make it the default
+     * Absent fields are left as they are; `placement` replaces the one it had, and one of no labels places it anywhere; `models` replaces them all. `isDefault: true` makes it the default and the one that was stops being; `false` is `400`, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
+     * Retitle a provider, say who may use it, where it runs and its models, or make it the default
      */
     async updateProviderRaw(requestParameters: UpdateProviderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Provider>> {
         const requestOptions = await this.updateProviderRequestOpts(requestParameters);
@@ -861,8 +767,8 @@ export class ModelsApi extends runtime.BaseAPI implements ModelsApiInterface {
     }
 
     /**
-     * Absent fields are left as they are. `isDefault: true` makes it the default and the one that was stops being; `false` is `400`, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
-     * Retitle a provider, say who may use it, or make it the default
+     * Absent fields are left as they are; `placement` replaces the one it had, and one of no labels places it anywhere; `models` replaces them all. `isDefault: true` makes it the default and the one that was stops being; `false` is `400`, since exactly one is: make another the default instead. Whoever made it retitles it and says who may use it; only an admin makes it the default. 
+     * Retitle a provider, say who may use it, where it runs and its models, or make it the default
      */
     async updateProvider(requestParameters: UpdateProviderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Provider> {
         const response = await this.updateProviderRaw(requestParameters, initOverrides);

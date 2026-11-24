@@ -110,15 +110,6 @@ export interface Session {
      */
     titleSource?: TitleSource;
     /**
-     * Whether its title is summarized from its conversation, as its
-     * harness would, a few seconds after its first answer begins —
-     * once, and never over a title a person gave it. Only where its
-     * harness has the `title` feature and the workspace's
-     * `titleSummaries` allow it.
-     * 
-     */
-    autoTitle?: boolean;
-    /**
      * Whose it is — who steers it, shares it and opens its tunnels, and what it may use.
      */
     owner: string;
@@ -288,7 +279,6 @@ export function SessionFromJSONTyped(json: any, ignoreDiscriminator: boolean): S
         'id': json['id'],
         'title': json['title'],
         'titleSource': json['titleSource'] == null ? undefined : TitleSourceFromJSON(json['titleSource']),
-        'autoTitle': json['autoTitle'] == null ? undefined : json['autoTitle'],
         'owner': json['owner'],
         'endUser': json['endUser'] == null ? undefined : EndUserFromJSON(json['endUser']),
         'state': SessionStateFromJSON(json['state']),
@@ -330,7 +320,6 @@ export function SessionToJSONTyped(value?: Session | null, ignoreDiscriminator: 
         'id': value['id'],
         'title': value['title'],
         'titleSource': TitleSourceToJSON(value['titleSource']),
-        'autoTitle': value['autoTitle'],
         'owner': value['owner'],
         'endUser': EndUserToJSON(value['endUser']),
         'state': SessionStateToJSON(value['state']),

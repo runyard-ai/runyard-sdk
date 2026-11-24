@@ -7,7 +7,6 @@
 Name | Type
 ------------ | -------------
 `title` | string
-`autoTitle` | boolean
 `labels` | { [key: string]: string; }
 `provider` | string
 `model` | string
@@ -26,7 +25,6 @@ import type { SessionUpdate } from '@runyard-ai/runyard-sdk'
 // TODO: Update the object below with actual values
 const example = {
   "title": null,
-  "autoTitle": null,
   "labels": null,
   "provider": github,
   "model": null,

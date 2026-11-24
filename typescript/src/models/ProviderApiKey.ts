@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { Placement } from './Placement.js';
+import {
+    PlacementFromJSON,
+    PlacementFromJSONTyped,
+    PlacementToJSON,
+    PlacementToJSONTyped,
+} from './Placement.js';
 import type { ProviderKind } from './ProviderKind.js';
 import {
     ProviderKindFromJSON,
@@ -27,6 +34,13 @@ import {
     ProviderTypeToJSON,
     ProviderTypeToJSONTyped,
 } from './ProviderType.js';
+import type { ModelWrite } from './ModelWrite.js';
+import {
+    ModelWriteFromJSON,
+    ModelWriteFromJSONTyped,
+    ModelWriteToJSON,
+    ModelWriteToJSONTyped,
+} from './ModelWrite.js';
 
 /**
  * 
@@ -55,12 +69,13 @@ export interface ProviderApiKey {
      */
     secret?: string;
     /**
-     * `openai_compatible`'s, and required for it: its server, http
-     * or https, as `http://192.168.1.20:8080`; a `/v1` at its end is
-     * taken off. `400` for the other types.
-     * 
+     * The runners that reach it (`Provider.placement`); any when absent.
      */
-    baseUrl?: string;
+    placement?: Placement;
+    /**
+     * The models it offers (`Provider.models`); none when absent.
+     */
+    models?: Array<ModelWrite>;
 }
 
 
@@ -87,7 +102,8 @@ export function ProviderApiKeyFromJSONTyped(json: any, ignoreDiscriminator: bool
         'kind': json['kind'] == null ? undefined : ProviderKindFromJSON(json['kind']),
         'title': json['title'] == null ? undefined : json['title'],
         'secret': json['secret'] == null ? undefined : json['secret'],
-        'baseUrl': json['baseUrl'] == null ? undefined : json['baseUrl'],
+        'placement': json['placement'] == null ? undefined : PlacementFromJSON(json['placement']),
+        'models': json['models'] == null ? undefined : ((json['models'] as Array<any>).map(ModelWriteFromJSON)),
     };
 }
 
@@ -106,7 +122,8 @@ export function ProviderApiKeyToJSONTyped(value?: ProviderApiKey | null, ignoreD
         'kind': ProviderKindToJSON(value['kind']),
         'title': value['title'],
         'secret': value['secret'],
-        'baseUrl': value['baseUrl'],
+        'placement': PlacementToJSON(value['placement']),
+        'models': value['models'] == null ? undefined : ((value['models'] as Array<any>).map(ModelWriteToJSON)),
     };
 }
 

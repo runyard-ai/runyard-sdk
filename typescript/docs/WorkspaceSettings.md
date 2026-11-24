@@ -7,7 +7,6 @@
 Name | Type
 ------------ | -------------
 `sessionRetention` | [SessionRetention](SessionRetention.md)
-`titleSummaries` | boolean
 
 ## Example
 
@@ -17,7 +16,6 @@ import type { WorkspaceSettings } from '@runyard-ai/runyard-sdk'
 // TODO: Update the object below with actual values
 const example = {
   "sessionRetention": null,
-  "titleSummaries": null,
 } satisfies WorkspaceSettings
 
 console.log(example)

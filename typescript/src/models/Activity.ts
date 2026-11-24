@@ -69,9 +69,6 @@ export interface Activity {
      * `gateway` is the sandboxes daemon's record of the request,
      * through whatever broker: its `action` is what the broker said it
      * was (`Runyard-Activity`), or the method, path and status.
-     * `one_off` is a call the server made for the session through its
-     * `llm` broker, as its harness would have — `summarize title`,
-     * say — and not one its machine sent: its `target` is the model.
      * `api` is a call made to this server's own API by `actor`: its
      * `action` is the method and the path.
      * `exec` is a program the session's machine ran, through no broker
@@ -158,7 +155,6 @@ export const ActivityKindEnum = {
     Sessions: 'sessions',
     Images: 'images',
     Gateway: 'gateway',
-    OneOff: 'one_off',
     Api: 'api',
     Exec: 'exec',
 } as const;

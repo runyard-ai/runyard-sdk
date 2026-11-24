@@ -39,11 +39,6 @@ import {
     NoticeListToJSON,
 } from '../models/NoticeList.js';
 import {
-    type Preferences,
-    PreferencesFromJSON,
-    PreferencesToJSON,
-} from '../models/Preferences.js';
-import {
     type SelfDirectory,
     SelfDirectoryFromJSON,
     SelfDirectoryToJSON,
@@ -73,13 +68,6 @@ export interface GetTrustBundleRequest {
      * The ETag of the bundle the caller holds.
      */
     ifNoneMatch?: string;
-}
-
-export interface PutPreferencesRequest {
-    /**
-     * 
-     */
-    preferences: Preferences;
 }
 
 export interface PutWorkspaceSettingsRequest {
@@ -161,28 +149,6 @@ export interface MetaApiInterface {
      * The workspace, and the server\'s defaults and limits
      */
     getInfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Info>;
-
-    /**
-     * Creates request options for getPreferences without sending the request
-     * @throws {RequiredError}
-     * @memberof MetaApiInterface
-     */
-    getPreferencesRequestOpts(): Promise<runtime.RequestOpts>;
-
-    /**
-     * What the caller\'s person chose for themselves, as opposed to what the workspace\'s admins chose for everybody (`/v1/settings`): a key\'s are its person\'s. A person who never chose has the defaults. Needs `sessions.read`, and `sessions.write` to change them: they are of the person\'s sessions. A session calling through its brokers has none: `403`. 
-     * @summary The person\'s own choices
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof MetaApiInterface
-     */
-    getPreferencesRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Preferences>>;
-
-    /**
-     * What the caller\'s person chose for themselves, as opposed to what the workspace\'s admins chose for everybody (`/v1/settings`): a key\'s are its person\'s. A person who never chose has the defaults. Needs `sessions.read`, and `sessions.write` to change them: they are of the person\'s sessions. A session calling through its brokers has none: `403`. 
-     * The person\'s own choices
-     */
-    getPreferences(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Preferences>;
 
     /**
      * Creates request options for getSelf without sending the request
@@ -340,30 +306,6 @@ export interface MetaApiInterface {
      * What the caller should know and act on
      */
     listNotices(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<NoticeList>;
-
-    /**
-     * Creates request options for putPreferences without sending the request
-     * @param {Preferences} preferences 
-     * @throws {RequiredError}
-     * @memberof MetaApiInterface
-     */
-    putPreferencesRequestOpts(requestParameters: PutPreferencesRequest): Promise<runtime.RequestOpts>;
-
-    /**
-     * Replaces them all, as `PUT /v1/settings` does the workspace\'s.
-     * @summary Change the person\'s own choices
-     * @param {Preferences} preferences 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof MetaApiInterface
-     */
-    putPreferencesRaw(requestParameters: PutPreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Preferences>>;
-
-    /**
-     * Replaces them all, as `PUT /v1/settings` does the workspace\'s.
-     * Change the person\'s own choices
-     */
-    putPreferences(requestParameters: PutPreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Preferences>;
 
     /**
      * Creates request options for putWorkspaceSettings without sending the request
@@ -551,61 +493,6 @@ export class MetaApi extends runtime.BaseAPI implements MetaApiInterface {
      */
     async getInfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Info> {
         const response = await this.getInfoRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for getPreferences without sending the request
-     */
-    async getPreferencesRequestOpts(): Promise<runtime.RequestOpts> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("apiKey", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("platform", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/self/preferences`;
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     * What the caller\'s person chose for themselves, as opposed to what the workspace\'s admins chose for everybody (`/v1/settings`): a key\'s are its person\'s. A person who never chose has the defaults. Needs `sessions.read`, and `sessions.write` to change them: they are of the person\'s sessions. A session calling through its brokers has none: `403`. 
-     * The person\'s own choices
-     */
-    async getPreferencesRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Preferences>> {
-        const requestOptions = await this.getPreferencesRequestOpts();
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => PreferencesFromJSON(jsonValue));
-    }
-
-    /**
-     * What the caller\'s person chose for themselves, as opposed to what the workspace\'s admins chose for everybody (`/v1/settings`): a key\'s are its person\'s. A person who never chose has the defaults. Needs `sessions.read`, and `sessions.write` to change them: they are of the person\'s sessions. A session calling through its brokers has none: `403`. 
-     * The person\'s own choices
-     */
-    async getPreferences(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Preferences> {
-        const response = await this.getPreferencesRaw(initOverrides);
         return await response.value();
     }
 
@@ -969,71 +856,6 @@ export class MetaApi extends runtime.BaseAPI implements MetaApiInterface {
      */
     async listNotices(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<NoticeList> {
         const response = await this.listNoticesRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for putPreferences without sending the request
-     */
-    async putPreferencesRequestOpts(requestParameters: PutPreferencesRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['preferences'] == null) {
-            throw new runtime.RequiredError(
-                'preferences',
-                'Required parameter "preferences" was null or undefined when calling putPreferences().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("apiKey", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("platform", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-
-        let urlPath = `/v1/self/preferences`;
-
-        return {
-            path: urlPath,
-            method: 'PUT',
-            headers: headerParameters,
-            query: queryParameters,
-            body: PreferencesToJSON(requestParameters['preferences']),
-        };
-    }
-
-    /**
-     * Replaces them all, as `PUT /v1/settings` does the workspace\'s.
-     * Change the person\'s own choices
-     */
-    async putPreferencesRaw(requestParameters: PutPreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Preferences>> {
-        const requestOptions = await this.putPreferencesRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => PreferencesFromJSON(jsonValue));
-    }
-
-    /**
-     * Replaces them all, as `PUT /v1/settings` does the workspace\'s.
-     * Change the person\'s own choices
-     */
-    async putPreferences(requestParameters: PutPreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Preferences> {
-        const response = await this.putPreferencesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

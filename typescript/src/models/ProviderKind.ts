@@ -19,11 +19,11 @@
  * An `openai_compatible` provider is an `api_key`, whether or not
  * it was given one.
  * 
- * When the workspace's shared broker `llm` is one its runners provide
- * (declared `url: runner` on the sandboxes server), a session on an
- * `anthropic` or `openai` provider reaches the model through its
- * runner's `llm` broker, which this server lends the credential to
- * for each turn alone, and takes it back from when the turn ends.
+ * A session reaches the model through the `llm` broker its runner
+ * provides — the workspace's shared broker `llm`, declared `url:
+ * runner` on the sandboxes server — which this server lends the
+ * credential to for each turn alone, and takes it back from when the
+ * turn ends.
  * 
  * @export
  */
