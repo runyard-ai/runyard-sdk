@@ -3,6 +3,7 @@
 export * from './Activity.js';
 export * from './ActivityBodies.js';
 export * from './ActivityBody.js';
+export * from './ActivityExec.js';
 export * from './ActivityMessage.js';
 export * from './ActivityPage.js';
 export * from './ActivitySummary.js';

@@ -223,6 +223,13 @@ export interface ListActivityRequest {
      * One broker's, by its name in the machine (`mcp-github`, `my-git`, `egress`).
      */
     broker?: string;
+    /**
+     * One kind's. Without it, every kind but `exec`: the programs a
+     * machine ran are many more than what went through its brokers,
+     * and would bury them.
+     * 
+     */
+    kind?: ListActivityKindEnum;
 }
 
 export interface ListExchangesRequest {
@@ -692,18 +699,20 @@ export interface SessionsApiInterface {
      * @param {string} [cursor] From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;.
      * @param {string} [session] One session\&#39;s.
      * @param {string} [broker] One broker\&#39;s, by its name in the machine (&#x60;mcp-github&#x60;, &#x60;my-git&#x60;, &#x60;egress&#x60;).
+     * @param {'mcp' | 'egress' | 'tunnels' | 'sessions' | 'images' | 'gateway' | 'one_off' | 'api' | 'exec'} [kind] One kind\&#39;s. Without it, every kind but &#x60;exec&#x60;: the programs a machine ran are many more than what went through its brokers, and would bury them. 
      * @throws {RequiredError}
      * @memberof SessionsApiInterface
      */
     listActivityRequestOpts(requestParameters: ListActivityRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
+     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
      * @summary What sessions did through their brokers, newest first
      * @param {number} [limit] At most this many; the default and ceiling are in &#x60;GET /v1/info&#x60;.
      * @param {string} [cursor] From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;.
      * @param {string} [session] One session\&#39;s.
      * @param {string} [broker] One broker\&#39;s, by its name in the machine (&#x60;mcp-github&#x60;, &#x60;my-git&#x60;, &#x60;egress&#x60;).
+     * @param {'mcp' | 'egress' | 'tunnels' | 'sessions' | 'images' | 'gateway' | 'one_off' | 'api' | 'exec'} [kind] One kind\&#39;s. Without it, every kind but &#x60;exec&#x60;: the programs a machine ran are many more than what went through its brokers, and would bury them. 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof SessionsApiInterface
@@ -711,7 +720,7 @@ export interface SessionsApiInterface {
     listActivityRaw(requestParameters: ListActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ActivityPage>>;
 
     /**
-     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
+     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
      * What sessions did through their brokers, newest first
      */
     listActivity(requestParameters: ListActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityPage>;
@@ -1824,6 +1833,10 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
             queryParameters['broker'] = requestParameters['broker'];
         }
 
+        if (requestParameters['kind'] != null) {
+            queryParameters['kind'] = requestParameters['kind'];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         if (this.configuration && this.configuration.accessToken) {
@@ -1854,7 +1867,7 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
     }
 
     /**
-     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
+     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
      * What sessions did through their brokers, newest first
      */
     async listActivityRaw(requestParameters: ListActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ActivityPage>> {
@@ -1865,7 +1878,7 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
     }
 
     /**
-     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
+     * Every request a session\'s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\'s tool called, a `git push` and the refs it moved, a request through an http broker, a host opened through `egress`, a tunnel, a session or an image asked for. Kept a while (`--activity-kept`, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\'s feed, which this server reads — that record is the entry, through any broker: this server\'s own, a shared one the daemon dials, one a person\'s own program serves (`kind: gateway`, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the `llm` broker\'s calls, which are the session\'s exchanges (`GET /v1/sessions/{sessionId}/exchanges`) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a `one_off`.  And beside what sessions did, every call the Runyard platform made to this server\'s API with a platform token: `kind: api`, `actor: platform`, no session\'s and nobody\'s — an admin\'s to read.  And every program a session\'s machine ran, as its kernel recorded it before it ran (`kind: exec`): through no broker, and many for each command a harness runs, so listed only when asked for, with `kind=exec`.  A summary of each, the newest first; `GET /v1/activity/{activityId}` is one whole. A member reads their own sessions\'; an admin, everyone\'s. 
      * What sessions did through their brokers, newest first
      */
     async listActivity(requestParameters: ListActivityRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityPage> {
@@ -2600,6 +2613,21 @@ export class SessionsApi extends runtime.BaseAPI implements SessionsApiInterface
 
 }
 
+/**
+ * @export
+ */
+export const ListActivityKindEnum = {
+    Mcp: 'mcp',
+    Egress: 'egress',
+    Tunnels: 'tunnels',
+    Sessions: 'sessions',
+    Images: 'images',
+    Gateway: 'gateway',
+    OneOff: 'one_off',
+    Api: 'api',
+    Exec: 'exec',
+} as const;
+export type ListActivityKindEnum = typeof ListActivityKindEnum[keyof typeof ListActivityKindEnum];
 /**
  * @export
  */

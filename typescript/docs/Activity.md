@@ -24,6 +24,7 @@ Name | Type
 `request` | [ActivityMessage](ActivityMessage.md)
 `response` | [ActivityMessage](ActivityMessage.md)
 `bodiesOnRunner` | boolean
+`exec` | [ActivityExec](ActivityExec.md)
 
 ## Example
 
@@ -50,6 +51,7 @@ const example = {
   "request": null,
   "response": null,
   "bodiesOnRunner": null,
+  "exec": null,
 } satisfies Activity
 
 console.log(example)

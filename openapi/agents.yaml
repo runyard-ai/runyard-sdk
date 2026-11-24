@@ -3340,6 +3340,11 @@ paths:
         this server's API with a platform token: `kind: api`,
         `actor: platform`, no session's and nobody's — an admin's to read.
 
+        And every program a session's machine ran, as its kernel recorded
+        it before it ran (`kind: exec`): through no broker, and many for
+        each command a harness runs, so listed only when asked for, with
+        `kind=exec`.
+
         A summary of each, the newest first; `GET /v1/activity/{activityId}`
         is one whole. A member reads their own sessions'; an admin, everyone's.
       parameters:
@@ -3353,6 +3358,16 @@ paths:
           in: query
           description: One broker's, by its name in the machine (`mcp-github`, `my-git`, `egress`).
           schema: {type: string}
+        - name: kind
+          in: query
+          description: |
+            One kind's. Without it, every kind but `exec`: the programs a
+            machine ran are many more than what went through its brokers,
+            and would bury them.
+          schema:
+            type: string
+            enum: [mcp, egress, tunnels, sessions, images, gateway, one_off, api, exec]
+            x-go-type: ActivitySummaryKind
       responses:
         "200":
           description: The entries.
@@ -3858,8 +3873,9 @@ paths:
       summary: What the session's machine is using now
       description: |
         As runyard-sandboxes last measured it, from the host: what its
-        machine is using of the `resources` it was given. A session without
-        a machine — asleep, or not yet woken — is `409`.
+        machine is using of the `resources` it was given, beside that size
+        and the runner it is placed on. A session without a machine —
+        asleep, or not yet woken — is `409`.
       responses:
         "200":
           description: The last reading.
@@ -5996,8 +6012,15 @@ components:
           example: 20Gi
     SandboxUsage:
       type: object
-      required: [memoryBytes, diskBytes]
+      required: [memoryBytes, diskBytes, limits]
       properties:
+        limits: {$ref: "#/components/schemas/SandboxLimits"}
+        runner:
+          allOf: [{$ref: "#/components/schemas/SessionSandboxRunner"}]
+          description: |
+            The runner the machine is placed on, as the sandboxes server last
+            heard of it. Absent on a sandboxes server whose machines run on
+            no runner it lists.
         cpuPercent:
           type: number
           format: double
@@ -7358,7 +7381,7 @@ components:
             token (`kind: api`). Absent for everything a session sent.
         kind:
           type: string
-          enum: [mcp, egress, tunnels, sessions, images, gateway, one_off, api]
+          enum: [mcp, egress, tunnels, sessions, images, gateway, one_off, api, exec]
           description: |
             What the broker is, which says how its requests are read.
             `gateway` is the sandboxes daemon's record of the request,
@@ -7369,6 +7392,9 @@ components:
             say — and not one its machine sent: its `target` is the model.
             `api` is a call made to this server's own API by `actor`: its
             `action` is the method and the path.
+            `exec` is a program the session's machine ran, through no broker
+            and taking no time: its `action` is `exec`, the program's name
+            and its arguments, and the entry whole says the rest (`exec`).
         action:
           type: string
           description: What it was, in a few words.
@@ -7431,6 +7457,35 @@ components:
                 runner that saw the exchange: `GET
                 /v1/activity/{activityId}/body` fetches them. Absent when they
                 are here, or there were none.
+            exec: {$ref: "#/components/schemas/ActivityExec"}
+    ActivityExec:
+      type: object
+      description: |
+        The program an entry of `kind: exec` says the machine ran, as the
+        guest's kernel recorded it as the program was loaded, before it ran.
+        It is what that kernel said: one changed by whoever is root in the
+        machine can say anything.
+      required: [path, argv, cwd, pid, ppid, uid, euid, boot, seq, truncated]
+      properties:
+        path: {type: string, description: The program's file.}
+        argv:
+          type: array
+          items: {type: string}
+          description: Its arguments, `argv[0]` first.
+        cwd: {type: string, description: The directory it ran in.}
+        pid:
+          type: integer
+          format: int64
+          description: Its process's, as the guest's kernel numbers it rather than any pid namespace inside the machine.
+        ppid: {type: integer, format: int64, description: "Its parent's, numbered as `pid` is."}
+        uid: {type: integer, format: int64, description: Its real user.}
+        euid: {type: integer, format: int64, description: The user it runs as.}
+        boot: {type: string, description: "Which boot of the machine it was: a random number its kernel chose, hex."}
+        seq:
+          type: integer
+          format: int64
+          description: Its place among that boot's programs, from 1, with no gaps, so a number missing is a program not recorded.
+        truncated: {type: boolean, description: "That the kernel cut `path`, `cwd` or `argv` to fit its record."}
     BodyEncoding:
       type: string
       enum: [utf8, base64]

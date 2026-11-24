@@ -61,6 +61,9 @@ export interface ActivitySummary {
      * say — and not one its machine sent: its `target` is the model.
      * `api` is a call made to this server's own API by `actor`: its
      * `action` is the method and the path.
+     * `exec` is a program the session's machine ran, through no broker
+     * and taking no time: its `action` is `exec`, the program's name
+     * and its arguments, and the entry whole says the rest (`exec`).
      * 
      */
     kind: ActivitySummaryKindEnum;
@@ -124,6 +127,7 @@ export const ActivitySummaryKindEnum = {
     Gateway: 'gateway',
     OneOff: 'one_off',
     Api: 'api',
+    Exec: 'exec',
 } as const;
 export type ActivitySummaryKindEnum = typeof ActivitySummaryKindEnum[keyof typeof ActivitySummaryKindEnum];
 

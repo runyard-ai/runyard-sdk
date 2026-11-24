@@ -13,6 +13,13 @@
  */
 
 import { mapValues, parseDate, parseDateTime, serializeDate, serializeDateTime } from '../runtime.js';
+import type { ActivityExec } from './ActivityExec.js';
+import {
+    ActivityExecFromJSON,
+    ActivityExecFromJSONTyped,
+    ActivityExecToJSON,
+    ActivityExecToJSONTyped,
+} from './ActivityExec.js';
 import type { ActivityMessage } from './ActivityMessage.js';
 import {
     ActivityMessageFromJSON,
@@ -67,6 +74,9 @@ export interface Activity {
      * say — and not one its machine sent: its `target` is the model.
      * `api` is a call made to this server's own API by `actor`: its
      * `action` is the method and the path.
+     * `exec` is a program the session's machine ran, through no broker
+     * and taking no time: its `action` is `exec`, the program's name
+     * and its arguments, and the entry whole says the rest (`exec`).
      * 
      */
     kind: ActivityKindEnum;
@@ -123,6 +133,10 @@ export interface Activity {
      * 
      */
     bodiesOnRunner?: boolean;
+    /**
+     * 
+     */
+    exec?: ActivityExec;
 }
 
 
@@ -146,6 +160,7 @@ export const ActivityKindEnum = {
     Gateway: 'gateway',
     OneOff: 'one_off',
     Api: 'api',
+    Exec: 'exec',
 } as const;
 export type ActivityKindEnum = typeof ActivityKindEnum[keyof typeof ActivityKindEnum];
 
@@ -207,6 +222,7 @@ export function ActivityFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
         'request': ActivityMessageFromJSON(json['request']),
         'response': ActivityMessageFromJSON(json['response']),
         'bodiesOnRunner': json['bodiesOnRunner'] == null ? undefined : json['bodiesOnRunner'],
+        'exec': json['exec'] == null ? undefined : ActivityExecFromJSON(json['exec']),
     };
 }
 
@@ -239,6 +255,7 @@ export function ActivityToJSONTyped(value?: Activity | null, ignoreDiscriminator
         'request': ActivityMessageToJSON(value['request']),
         'response': ActivityMessageToJSON(value['response']),
         'bodiesOnRunner': value['bodiesOnRunner'],
+        'exec': ActivityExecToJSON(value['exec']),
     };
 }
 

@@ -1,6 +1,7 @@
 docs/Activity.md
 docs/ActivityBodies.md
 docs/ActivityBody.md
+docs/ActivityExec.md
 docs/ActivityMessage.md
 docs/ActivityPage.md
 docs/ActivitySummary.md
@@ -286,6 +287,7 @@ src/apis/index.ts
 src/models/Activity.ts
 src/models/ActivityBodies.ts
 src/models/ActivityBody.ts
+src/models/ActivityExec.ts
 src/models/ActivityMessage.ts
 src/models/ActivityPage.ts
 src/models/ActivitySummary.ts

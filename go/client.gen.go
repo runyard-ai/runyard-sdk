@@ -37,6 +37,7 @@ const (
 const (
 	ActivityKindApi      ActivityKind = "api"
 	ActivityKindEgress   ActivityKind = "egress"
+	ActivityKindExec     ActivityKind = "exec"
 	ActivityKindGateway  ActivityKind = "gateway"
 	ActivityKindImages   ActivityKind = "images"
 	ActivityKindMcp      ActivityKind = "mcp"
@@ -63,6 +64,7 @@ const (
 const (
 	ActivitySummaryKindApi      ActivitySummaryKind = "api"
 	ActivitySummaryKindEgress   ActivitySummaryKind = "egress"
+	ActivitySummaryKindExec     ActivitySummaryKind = "exec"
 	ActivitySummaryKindGateway  ActivitySummaryKind = "gateway"
 	ActivitySummaryKindImages   ActivitySummaryKind = "images"
 	ActivitySummaryKindMcp      ActivitySummaryKind = "mcp"
@@ -728,7 +730,13 @@ type Activity struct {
 
 	// Error What went wrong, when something did — the answer's words, or the tool's, or the gateway's.
 	Error *string `json:"error,omitempty"`
-	Id    string  `json:"id"`
+
+	// Exec The program an entry of `kind: exec` says the machine ran, as the
+	// guest's kernel recorded it as the program was loaded, before it ran.
+	// It is what that kernel said: one changed by whoever is root in the
+	// machine can say anything.
+	Exec *ActivityExec `json:"exec,omitempty"`
+	Id   string        `json:"id"`
 
 	// Kind What the broker is, which says how its requests are read.
 	// `gateway` is the sandboxes daemon's record of the request,
@@ -739,6 +747,9 @@ type Activity struct {
 	// say — and not one its machine sent: its `target` is the model.
 	// `api` is a call made to this server's own API by `actor`: its
 	// `action` is the method and the path.
+	// `exec` is a program the session's machine ran, through no broker
+	// and taking no time: its `action` is `exec`, the program's name
+	// and its arguments, and the entry whole says the rest (`exec`).
 	Kind ActivityKind `json:"kind"`
 
 	// Outcome A gateway entry's: `ok`; `refused` by the daemon, nothing sent
@@ -783,6 +794,9 @@ type ActivityActor string
 // say — and not one its machine sent: its `target` is the model.
 // `api` is a call made to this server's own API by `actor`: its
 // `action` is the method and the path.
+// `exec` is a program the session's machine ran, through no broker
+// and taking no time: its `action` is `exec`, the program's name
+// and its arguments, and the entry whole says the rest (`exec`).
 type ActivityKind string
 
 // ActivityOutcome A gateway entry's: `ok`; `refused` by the daemon, nothing sent
@@ -804,6 +818,42 @@ type ActivityBody struct {
 
 	// BodyEncoding `utf8` for a body that is UTF-8 text, `base64` for anything else.
 	BodyEncoding BodyEncoding `json:"bodyEncoding"`
+}
+
+// ActivityExec The program an entry of `kind: exec` says the machine ran, as the
+// guest's kernel recorded it as the program was loaded, before it ran.
+// It is what that kernel said: one changed by whoever is root in the
+// machine can say anything.
+type ActivityExec struct {
+	// Argv Its arguments, `argv[0]` first.
+	Argv []string `json:"argv"`
+
+	// Boot Which boot of the machine it was: a random number its kernel chose, hex.
+	Boot string `json:"boot"`
+
+	// Cwd The directory it ran in.
+	Cwd string `json:"cwd"`
+
+	// Euid The user it runs as.
+	Euid int64 `json:"euid"`
+
+	// Path The program's file.
+	Path string `json:"path"`
+
+	// Pid Its process's, as the guest's kernel numbers it rather than any pid namespace inside the machine.
+	Pid int64 `json:"pid"`
+
+	// Ppid Its parent's, numbered as `pid` is.
+	Ppid int64 `json:"ppid"`
+
+	// Seq Its place among that boot's programs, from 1, with no gaps, so a number missing is a program not recorded.
+	Seq int64 `json:"seq"`
+
+	// Truncated That the kernel cut `path`, `cwd` or `argv` to fit its record.
+	Truncated bool `json:"truncated"`
+
+	// Uid Its real user.
+	Uid int64 `json:"uid"`
 }
 
 // ActivityMessage A request or an answer as it was sent.
@@ -876,6 +926,9 @@ type ActivitySummary struct {
 	// say — and not one its machine sent: its `target` is the model.
 	// `api` is a call made to this server's own API by `actor`: its
 	// `action` is the method and the path.
+	// `exec` is a program the session's machine ran, through no broker
+	// and taking no time: its `action` is `exec`, the program's name
+	// and its arguments, and the entry whole says the rest (`exec`).
 	Kind ActivitySummaryKind `json:"kind"`
 
 	// Outcome A gateway entry's: `ok`; `refused` by the daemon, nothing sent
@@ -914,6 +967,9 @@ type ActivitySummaryActor string
 // say — and not one its machine sent: its `target` is the model.
 // `api` is a call made to this server's own API by `actor`: its
 // `action` is the method and the path.
+// `exec` is a program the session's machine ran, through no broker
+// and taking no time: its `action` is `exec`, the program's name
+// and its arguments, and the entry whole says the rest (`exec`).
 type ActivitySummaryKind string
 
 // ActivitySummaryOutcome A gateway entry's: `ok`; `refused` by the daemon, nothing sent
@@ -3304,8 +3360,17 @@ type SandboxUsage struct {
 	// DiskBytes What its disk has written, of the size it was given.
 	DiskBytes int64 `json:"diskBytes"`
 
+	// Limits The size the machine was given — the session's `resources`, with the
+	// host's defaults filled in. A figure the host did not say is absent.
+	Limits SandboxLimits `json:"limits"`
+
 	// MemoryBytes What its machine holds of the host's memory.
 	MemoryBytes int64 `json:"memoryBytes"`
+
+	// Runner The runner the machine is placed on, as the sandboxes server last
+	// heard of it. Absent on a sandboxes server whose machines run on
+	// no runner it lists.
+	Runner *SessionSandboxRunner `json:"runner,omitempty"`
 }
 
 // SandboxUsageHistory defines model for SandboxUsageHistory.
@@ -4943,6 +5008,11 @@ type ListActivityParams struct {
 
 	// Broker One broker's, by its name in the machine (`mcp-github`, `my-git`, `egress`).
 	Broker *string `form:"broker,omitempty" json:"broker,omitempty"`
+
+	// Kind One kind's. Without it, every kind but `exec`: the programs a
+	// machine ran are many more than what went through its brokers,
+	// and would bury them.
+	Kind *ActivitySummaryKind `form:"kind,omitempty" json:"kind,omitempty"`
 }
 
 // ListBrokersParams defines parameters for ListBrokers.
@@ -8837,6 +8907,22 @@ func NewListActivityRequest(server string, params *ListActivityParams) (*http.Re
 		if params.Broker != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "broker", runtime.ParamLocationQuery, *params.Broker); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "kind", runtime.ParamLocationQuery, *params.Kind); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err

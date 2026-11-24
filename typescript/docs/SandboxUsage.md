@@ -6,6 +6,8 @@
 
 Name | Type
 ------------ | -------------
+`limits` | [SandboxLimits](SandboxLimits.md)
+`runner` | [SessionSandboxRunner](SessionSandboxRunner.md)
 `cpuPercent` | number
 `memoryBytes` | number
 `diskBytes` | number
@@ -17,6 +19,8 @@ import type { SandboxUsage } from '@runyard-ai/runyard-sdk'
 
 // TODO: Update the object below with actual values
 const example = {
+  "limits": null,
+  "runner": null,
   "cpuPercent": 37.5,
   "memoryBytes": null,
   "diskBytes": null,

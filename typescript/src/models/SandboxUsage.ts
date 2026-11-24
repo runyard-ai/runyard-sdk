@@ -13,12 +13,38 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { SandboxLimits } from './SandboxLimits.js';
+import {
+    SandboxLimitsFromJSON,
+    SandboxLimitsFromJSONTyped,
+    SandboxLimitsToJSON,
+    SandboxLimitsToJSONTyped,
+} from './SandboxLimits.js';
+import type { SessionSandboxRunner } from './SessionSandboxRunner.js';
+import {
+    SessionSandboxRunnerFromJSON,
+    SessionSandboxRunnerFromJSONTyped,
+    SessionSandboxRunnerToJSON,
+    SessionSandboxRunnerToJSONTyped,
+} from './SessionSandboxRunner.js';
+
 /**
  * 
  * @export
  * @interface SandboxUsage
  */
 export interface SandboxUsage {
+    /**
+     * 
+     */
+    limits: SandboxLimits;
+    /**
+     * The runner the machine is placed on, as the sandboxes server last
+     * heard of it. Absent on a sandboxes server whose machines run on
+     * no runner it lists.
+     * 
+     */
+    runner?: SessionSandboxRunner;
     /**
      * How busy its CPUs were since the reading before: `100` is every
      * one it was given, busy the whole time. Absent until there are two
@@ -40,6 +66,7 @@ export interface SandboxUsage {
  * Check if a given object implements the SandboxUsage interface.
  */
 export function instanceOfSandboxUsage(value: object): value is SandboxUsage {
+    if (!('limits' in value) || value['limits'] === undefined) return false;
     if (!('memoryBytes' in value) || value['memoryBytes'] === undefined) return false;
     if (!('diskBytes' in value) || value['diskBytes'] === undefined) return false;
     return true;
@@ -55,6 +82,8 @@ export function SandboxUsageFromJSONTyped(json: any, ignoreDiscriminator: boolea
     }
     return {
         
+        'limits': SandboxLimitsFromJSON(json['limits']),
+        'runner': json['runner'] == null ? undefined : SessionSandboxRunnerFromJSON(json['runner']),
         'cpuPercent': json['cpuPercent'] == null ? undefined : json['cpuPercent'],
         'memoryBytes': json['memoryBytes'],
         'diskBytes': json['diskBytes'],
@@ -72,6 +101,8 @@ export function SandboxUsageToJSONTyped(value?: SandboxUsage | null, ignoreDiscr
 
     return {
         
+        'limits': SandboxLimitsToJSON(value['limits']),
+        'runner': SessionSandboxRunnerToJSON(value['runner']),
         'cpuPercent': value['cpuPercent'],
         'memoryBytes': value['memoryBytes'],
         'diskBytes': value['diskBytes'],

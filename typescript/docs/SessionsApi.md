@@ -989,11 +989,11 @@ example().catch(console.error);
 
 ## listActivity
 
-> ActivityPage listActivity(limit, cursor, session, broker)
+> ActivityPage listActivity(limit, cursor, session, broker, kind)
 
 What sessions did through their brokers, newest first
 
-Every request a session\&#39;s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\&#39;s tool called, a &#x60;git push&#x60; and the refs it moved, a request through an http broker, a host opened through &#x60;egress&#x60;, a tunnel, a session or an image asked for. Kept a while (&#x60;--activity-kept&#x60;, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\&#39;s feed, which this server reads — that record is the entry, through any broker: this server\&#39;s own, a shared one the daemon dials, one a person\&#39;s own program serves (&#x60;kind: gateway&#x60;, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the &#x60;llm&#x60; broker\&#39;s calls, which are the session\&#39;s exchanges (&#x60;GET /v1/sessions/{sessionId}/exchanges&#x60;) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a &#x60;one_off&#x60;.  And beside what sessions did, every call the Runyard platform made to this server\&#39;s API with a platform token: &#x60;kind: api&#x60;, &#x60;actor: platform&#x60;, no session\&#39;s and nobody\&#39;s — an admin\&#39;s to read.  A summary of each, the newest first; &#x60;GET /v1/activity/{activityId}&#x60; is one whole. A member reads their own sessions\&#39;; an admin, everyone\&#39;s. 
+Every request a session\&#39;s machine sent through a broker, and the answer — recorded as it passed, not said by the session: an MCP connector\&#39;s tool called, a &#x60;git push&#x60; and the refs it moved, a request through an http broker, a host opened through &#x60;egress&#x60;, a tunnel, a session or an image asked for. Kept a while (&#x60;--activity-kept&#x60;, a week by default) and then forgotten; kept after its session is deleted, until then.  Where the sandboxes daemon keeps a record of every brokered request — its access gateway\&#39;s feed, which this server reads — that record is the entry, through any broker: this server\&#39;s own, a shared one the daemon dials, one a person\&#39;s own program serves (&#x60;kind: gateway&#x60;, with how it ended and what it carried). Before a daemon has one, this server records the brokers it serves itself, and nothing else.  Not here: the &#x60;llm&#x60; broker\&#39;s calls, which are the session\&#39;s exchanges (&#x60;GET /v1/sessions/{sessionId}/exchanges&#x60;) — but the ones the server made itself for the session, as its harness would have, which are no part of its conversation: each is here, a &#x60;one_off&#x60;.  And beside what sessions did, every call the Runyard platform made to this server\&#39;s API with a platform token: &#x60;kind: api&#x60;, &#x60;actor: platform&#x60;, no session\&#39;s and nobody\&#39;s — an admin\&#39;s to read.  And every program a session\&#39;s machine ran, as its kernel recorded it before it ran (&#x60;kind: exec&#x60;): through no broker, and many for each command a harness runs, so listed only when asked for, with &#x60;kind&#x3D;exec&#x60;.  A summary of each, the newest first; &#x60;GET /v1/activity/{activityId}&#x60; is one whole. A member reads their own sessions\&#39;; an admin, everyone\&#39;s. 
 
 ### Example
 
@@ -1025,6 +1025,8 @@ async function example() {
     session: session_example,
     // string | One broker\'s, by its name in the machine (`mcp-github`, `my-git`, `egress`). (optional)
     broker: broker_example,
+    // 'mcp' | 'egress' | 'tunnels' | 'sessions' | 'images' | 'gateway' | 'one_off' | 'api' | 'exec' | One kind\'s. Without it, every kind but `exec`: the programs a machine ran are many more than what went through its brokers, and would bury them.  (optional)
+    kind: kind_example,
   } satisfies ListActivityRequest;
 
   try {
@@ -1048,6 +1050,7 @@ example().catch(console.error);
 | **cursor** | `string` | From a previous page\&#39;s &#x60;nextCursor&#x60;. Opaque; one made up is &#x60;400&#x60;. | [Optional] [Defaults to `undefined`] |
 | **session** | `string` | One session\&#39;s. | [Optional] [Defaults to `undefined`] |
 | **broker** | `string` | One broker\&#39;s, by its name in the machine (&#x60;mcp-github&#x60;, &#x60;my-git&#x60;, &#x60;egress&#x60;). | [Optional] [Defaults to `undefined`] |
+| **kind** | `mcp`, `egress`, `tunnels`, `sessions`, `images`, `gateway`, `one_off`, `api`, `exec` | One kind\&#39;s. Without it, every kind but &#x60;exec&#x60;: the programs a machine ran are many more than what went through its brokers, and would bury them.  | [Optional] [Defaults to `undefined`] [Enum: mcp, egress, tunnels, sessions, images, gateway, one_off, api, exec] |
 
 ### Return type
 

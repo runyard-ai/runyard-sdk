@@ -224,7 +224,7 @@ export interface SandboxApiInterface {
     getSandboxUsageRequestOpts(requestParameters: GetSandboxUsageRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * As runyard-sandboxes last measured it, from the host: what its machine is using of the `resources` it was given. A session without a machine — asleep, or not yet woken — is `409`. 
+     * As runyard-sandboxes last measured it, from the host: what its machine is using of the `resources` it was given, beside that size and the runner it is placed on. A session without a machine — asleep, or not yet woken — is `409`. 
      * @summary What the session\'s machine is using now
      * @param {string} sessionId 
      * @param {*} [options] Override http request option.
@@ -234,7 +234,7 @@ export interface SandboxApiInterface {
     getSandboxUsageRaw(requestParameters: GetSandboxUsageRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SandboxUsage>>;
 
     /**
-     * As runyard-sandboxes last measured it, from the host: what its machine is using of the `resources` it was given. A session without a machine — asleep, or not yet woken — is `409`. 
+     * As runyard-sandboxes last measured it, from the host: what its machine is using of the `resources` it was given, beside that size and the runner it is placed on. A session without a machine — asleep, or not yet woken — is `409`. 
      * What the session\'s machine is using now
      */
     getSandboxUsage(requestParameters: GetSandboxUsageRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SandboxUsage>;
@@ -629,7 +629,7 @@ export class SandboxApi extends runtime.BaseAPI implements SandboxApiInterface {
     }
 
     /**
-     * As runyard-sandboxes last measured it, from the host: what its machine is using of the `resources` it was given. A session without a machine — asleep, or not yet woken — is `409`. 
+     * As runyard-sandboxes last measured it, from the host: what its machine is using of the `resources` it was given, beside that size and the runner it is placed on. A session without a machine — asleep, or not yet woken — is `409`. 
      * What the session\'s machine is using now
      */
     async getSandboxUsageRaw(requestParameters: GetSandboxUsageRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SandboxUsage>> {
@@ -640,7 +640,7 @@ export class SandboxApi extends runtime.BaseAPI implements SandboxApiInterface {
     }
 
     /**
-     * As runyard-sandboxes last measured it, from the host: what its machine is using of the `resources` it was given. A session without a machine — asleep, or not yet woken — is `409`. 
+     * As runyard-sandboxes last measured it, from the host: what its machine is using of the `resources` it was given, beside that size and the runner it is placed on. A session without a machine — asleep, or not yet woken — is `409`. 
      * What the session\'s machine is using now
      */
     async getSandboxUsage(requestParameters: GetSandboxUsageRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SandboxUsage> {

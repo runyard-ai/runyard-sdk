@@ -187,7 +187,7 @@ example().catch(console.error);
 
 What the session\&#39;s machine is using now
 
-As runyard-sandboxes last measured it, from the host: what its machine is using of the &#x60;resources&#x60; it was given. A session without a machine — asleep, or not yet woken — is &#x60;409&#x60;. 
+As runyard-sandboxes last measured it, from the host: what its machine is using of the &#x60;resources&#x60; it was given, beside that size and the runner it is placed on. A session without a machine — asleep, or not yet woken — is &#x60;409&#x60;. 
 
 ### Example
 
