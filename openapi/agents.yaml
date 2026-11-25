@@ -6417,16 +6417,21 @@ components:
 
         | phase | what it means |
         |---|---|
-        | `booting` | its sandbox is being made, and booted |
+        | `image` | its sandbox is being made: its image had on the runner it is placed on — pulled and unpacked, the first time that runner runs it, which takes minutes for an image of a few GB — and its disk and network made |
+        | `booting` | its sandbox is booting |
         | `harness` | its harness is being started in its sandbox |
+
+        A start goes through them in that order. `image` is waited for up to
+        20 minutes, and `booting` up to 3 from when it began; past either,
+        the start fails.
       properties:
         phase:
           type: string
-          enum: [booting, harness]
+          enum: [image, booting, harness]
           # Named here: `booting` is a sandbox's state too, and an enum
           # sharing a value with another leaves oapi-codegen prefixing some
           # other enum's names by chance.
-          x-enum-varnames: [StartingBooting, StartingHarness]
+          x-enum-varnames: [StartingImage, StartingBooting, StartingHarness]
         since:
           type: string
           format: date-time

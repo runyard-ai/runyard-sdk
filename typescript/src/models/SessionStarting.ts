@@ -20,8 +20,13 @@ import { mapValues, parseDate, parseDateTime, serializeDate, serializeDateTime }
  * 
  * | phase | what it means |
  * |---|---|
- * | `booting` | its sandbox is being made, and booted |
+ * | `image` | its sandbox is being made: its image had on the runner it is placed on — pulled and unpacked, the first time that runner runs it, which takes minutes for an image of a few GB — and its disk and network made |
+ * | `booting` | its sandbox is booting |
  * | `harness` | its harness is being started in its sandbox |
+ * 
+ * A start goes through them in that order. `image` is waited for up to
+ * 20 minutes, and `booting` up to 3 from when it began; past either,
+ * the start fails.
  * 
  * @export
  * @interface SessionStarting
@@ -46,6 +51,7 @@ export interface SessionStarting {
  * @export
  */
 export const SessionStartingPhaseEnum = {
+    StartingImage: 'image',
     StartingBooting: 'booting',
     StartingHarness: 'harness',
 } as const;
