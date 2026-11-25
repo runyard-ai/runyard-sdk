@@ -2,7 +2,7 @@ module acme-chat
 
 go 1.26
 
-require github.com/runyard-ai/runyard-sdk/go v0.64.0
+require github.com/runyard-ai/runyard-sdk/go v0.64.1
 
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
