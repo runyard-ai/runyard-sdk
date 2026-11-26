@@ -229,7 +229,7 @@ export interface TurnsApiInterface {
     compactRequestOpts(requestParameters: CompactOperationRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * Answered on the stream with a `compaction` event. `409` while generating.
+     * Answered on the stream with a `compaction` event. `409` while generating; `400 not_supported` when the session\'s harness lacks `compact` (`Session.features`). It runs as a turn of the server\'s: waiting, it is in `queue` with `compact`.  A session token compacts a session for its own end user alone (`403` otherwise), as it interrupts and rewinds: the context of a session for nobody is everybody\'s who talks in it. 
      * @summary Summarise the conversation so far into a smaller context
      * @param {string} sessionId 
      * @param {CompactRequest} [compactRequest] 
@@ -240,7 +240,7 @@ export interface TurnsApiInterface {
     compactRaw(requestParameters: CompactOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
 
     /**
-     * Answered on the stream with a `compaction` event. `409` while generating.
+     * Answered on the stream with a `compaction` event. `409` while generating; `400 not_supported` when the session\'s harness lacks `compact` (`Session.features`). It runs as a turn of the server\'s: waiting, it is in `queue` with `compact`.  A session token compacts a session for its own end user alone (`403` otherwise), as it interrupts and rewinds: the context of a session for nobody is everybody\'s who talks in it. 
      * Summarise the conversation so far into a smaller context
      */
     compact(requestParameters: CompactOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
@@ -629,7 +629,7 @@ export class TurnsApi extends runtime.BaseAPI implements TurnsApiInterface {
     }
 
     /**
-     * Answered on the stream with a `compaction` event. `409` while generating.
+     * Answered on the stream with a `compaction` event. `409` while generating; `400 not_supported` when the session\'s harness lacks `compact` (`Session.features`). It runs as a turn of the server\'s: waiting, it is in `queue` with `compact`.  A session token compacts a session for its own end user alone (`403` otherwise), as it interrupts and rewinds: the context of a session for nobody is everybody\'s who talks in it. 
      * Summarise the conversation so far into a smaller context
      */
     async compactRaw(requestParameters: CompactOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
@@ -640,7 +640,7 @@ export class TurnsApi extends runtime.BaseAPI implements TurnsApiInterface {
     }
 
     /**
-     * Answered on the stream with a `compaction` event. `409` while generating.
+     * Answered on the stream with a `compaction` event. `409` while generating; `400 not_supported` when the session\'s harness lacks `compact` (`Session.features`). It runs as a turn of the server\'s: waiting, it is in `queue` with `compact`.  A session token compacts a session for its own end user alone (`403` otherwise), as it interrupts and rewinds: the context of a session for nobody is everybody\'s who talks in it. 
      * Summarise the conversation so far into a smaller context
      */
     async compact(requestParameters: CompactOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {

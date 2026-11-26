@@ -55,6 +55,13 @@ import {
     QueuedTurnToJSON,
     QueuedTurnToJSONTyped,
 } from './QueuedTurn.js';
+import type { HarnessFeature } from './HarnessFeature.js';
+import {
+    HarnessFeatureFromJSON,
+    HarnessFeatureFromJSONTyped,
+    HarnessFeatureToJSON,
+    HarnessFeatureToJSONTyped,
+} from './HarnessFeature.js';
 import type { TitleSource } from './TitleSource.js';
 import {
     TitleSourceFromJSON,
@@ -136,6 +143,19 @@ export interface Session {
      * 
      */
     config: SessionConfig;
+    /**
+     * What its harness does besides answering turns, as
+     * `Harness.features` says it: what a page showing the session
+     * offers, read from the session itself — a session token reads no
+     * harness. Empty for a terminal session, whose harness is a
+     * person's at their terminal, and for a harness this server no
+     * longer runs. Said as the session is read, never kept with it: a
+     * server that runs its harness otherwise says so of every session.
+     * Always said by a server that knows it; absent only from one older
+     * than it, of which nothing is known.
+     * 
+     */
+    features?: Array<HarnessFeature>;
     /**
      * 
      */
@@ -285,6 +305,7 @@ export function SessionFromJSONTyped(json: any, ignoreDiscriminator: boolean): S
         'error': json['error'] == null ? undefined : json['error'],
         'profile': json['profile'] == null ? undefined : ProfileRefFromJSON(json['profile']),
         'config': SessionConfigFromJSON(json['config']),
+        'features': json['features'] == null ? undefined : ((json['features'] as Array<any>).map(HarnessFeatureFromJSON)),
         'sandbox': SessionSandboxFromJSON(json['sandbox']),
         'starting': json['starting'] == null ? undefined : SessionStartingFromJSON(json['starting']),
         'lineage': SessionLineageFromJSON(json['lineage']),
@@ -326,6 +347,7 @@ export function SessionToJSONTyped(value?: Session | null, ignoreDiscriminator: 
         'error': value['error'],
         'profile': ProfileRefToJSON(value['profile']),
         'config': SessionConfigToJSON(value['config']),
+        'features': value['features'] == null ? undefined : ((value['features'] as Array<any>).map(HarnessFeatureToJSON)),
         'sandbox': SessionSandboxToJSON(value['sandbox']),
         'starting': SessionStartingToJSON(value['starting']),
         'lineage': SessionLineageToJSON(value['lineage']),

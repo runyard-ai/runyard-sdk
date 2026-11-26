@@ -106,7 +106,7 @@ example().catch(console.error);
 
 Summarise the conversation so far into a smaller context
 
-Answered on the stream with a &#x60;compaction&#x60; event. &#x60;409&#x60; while generating.
+Answered on the stream with a &#x60;compaction&#x60; event. &#x60;409&#x60; while generating; &#x60;400 not_supported&#x60; when the session\&#39;s harness lacks &#x60;compact&#x60; (&#x60;Session.features&#x60;). It runs as a turn of the server\&#39;s: waiting, it is in &#x60;queue&#x60; with &#x60;compact&#x60;.  A session token compacts a session for its own end user alone (&#x60;403&#x60; otherwise), as it interrupts and rewinds: the context of a session for nobody is everybody\&#39;s who talks in it. 
 
 ### Example
 

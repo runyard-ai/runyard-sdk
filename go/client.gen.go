@@ -3286,6 +3286,17 @@ type Session struct {
 	// Error Why it failed, or why its last turn did.
 	Error *string `json:"error,omitempty"`
 
+	// Features What its harness does besides answering turns, as
+	// `Harness.features` says it: what a page showing the session
+	// offers, read from the session itself — a session token reads no
+	// harness. Empty for a terminal session, whose harness is a
+	// person's at their terminal, and for a harness this server no
+	// longer runs. Said as the session is read, never kept with it: a
+	// server that runs its harness otherwise says so of every session.
+	// Always said by a server that knows it; absent only from one older
+	// than it, of which nothing is known.
+	Features *[]HarnessFeature `json:"features,omitempty"`
+
 	// FirstSeq The oldest event kept.
 	FirstSeq int64 `json:"firstSeq"`
 

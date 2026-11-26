@@ -15,6 +15,7 @@ Name | Type
 `error` | string
 `profile` | [ProfileRef](ProfileRef.md)
 `config` | [SessionConfig](SessionConfig.md)
+`features` | [Array&lt;HarnessFeature&gt;](HarnessFeature.md)
 `sandbox` | [SessionSandbox](SessionSandbox.md)
 `starting` | [SessionStarting](SessionStarting.md)
 `lineage` | [SessionLineage](SessionLineage.md)
@@ -50,6 +51,7 @@ const example = {
   "error": null,
   "profile": null,
   "config": null,
+  "features": null,
   "sandbox": null,
   "starting": null,
   "lineage": null,

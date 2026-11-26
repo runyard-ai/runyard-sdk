@@ -2851,7 +2851,15 @@ paths:
       x-public: true
       tags: [Turns]
       summary: Summarise the conversation so far into a smaller context
-      description: Answered on the stream with a `compaction` event. `409` while generating.
+      description: |
+        Answered on the stream with a `compaction` event. `409` while
+        generating; `400 not_supported` when the session's harness lacks
+        `compact` (`Session.features`). It runs as a turn of the server's:
+        waiting, it is in `queue` with `compact`.
+
+        A session token compacts a session for its own end user alone
+        (`403` otherwise), as it interrupts and rewinds: the context of a
+        session for nobody is everybody's who talks in it.
       requestBody:
         required: false
         content:
@@ -7214,6 +7222,19 @@ components:
             What it runs with, its profile's and its overrides resolved, and
             its turns' choices since: `provider` and `model` always say
             what it is on.
+        features:
+          type: array
+          description: |
+            What its harness does besides answering turns, as
+            `Harness.features` says it: what a page showing the session
+            offers, read from the session itself — a session token reads no
+            harness. Empty for a terminal session, whose harness is a
+            person's at their terminal, and for a harness this server no
+            longer runs. Said as the session is read, never kept with it: a
+            server that runs its harness otherwise says so of every session.
+            Always said by a server that knows it; absent only from one older
+            than it, of which nothing is known.
+          items: {$ref: "#/components/schemas/HarnessFeature"}
         sandbox: {$ref: "#/components/schemas/SessionSandbox"}
         starting: {$ref: "#/components/schemas/SessionStarting"}
         lineage: {$ref: "#/components/schemas/SessionLineage"}
